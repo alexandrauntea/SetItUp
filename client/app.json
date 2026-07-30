@@ -1,11 +1,12 @@
 {
   "expo": {
-    "name": "client",
-    "slug": "client",
+    "name": "SetItUp",
+    "slug": "setitup",
+    "owner": "ancaxs-team",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
-    "scheme": "client",
+    "scheme": "setitup",
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
     "ios": {
@@ -43,6 +44,12 @@
     "experiments": {
       "typedRoutes": true,
       "reactCompiler": true
+    },
+    "extra": {
+      "router": {},
+      "eas": {
+        "projectId": "f8822dc5-eae8-4f49-8d21-b3dcb1ef4079"
+      }
     }
   }
 }
