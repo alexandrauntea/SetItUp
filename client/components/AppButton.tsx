@@ -37,13 +37,18 @@ export function AppButton({
 
 const styles = StyleSheet.create({
   button: {
-    minHeight: 52,
+    minHeight: 56,
     paddingHorizontal: 20,
     alignItems: "center",
     justifyContent: "center",
     backgroundColor: COLORS.primary,
-    borderRadius: 12,
+    borderRadius: 16,
     width: "100%",
+    shadowColor: COLORS.primary,
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.18,
+    shadowRadius: 10,
+    elevation: 3,
   },
   buttonPressed: {
     backgroundColor: COLORS.primaryPressed,
@@ -54,6 +59,6 @@ const styles = StyleSheet.create({
   text: {
     color: COLORS.background,
     fontSize: 16,
-    fontWeight: "600",
+    fontWeight: "700",
   },
 });

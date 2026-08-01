@@ -44,13 +44,13 @@ const styles = StyleSheet.create({
     fontWeight: "600",
   },
   input: {
-    minHeight: 52,
+    minHeight: 54,
     paddingHorizontal: 16,
     color: COLORS.text,
-    backgroundColor: COLORS.background,
+    backgroundColor: COLORS.surface,
     borderWidth: 1,
-    borderColor: COLORS.border,
-    borderRadius: 12,
+    borderColor: COLORS.surface,
+    borderRadius: 14,
     fontSize: 16,
   },
   inputError: {

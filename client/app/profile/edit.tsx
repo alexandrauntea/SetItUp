@@ -40,6 +40,8 @@ export default function EditProfileScreen() {
       <ScrollView
         contentContainerStyle={styles.container}
         keyboardShouldPersistTaps="handled"
+        keyboardDismissMode="on-drag"
+        showsVerticalScrollIndicator={false}
       >
         <View style={styles.form}>
         <Text style={styles.title}>Editează profilul</Text>
@@ -100,19 +102,30 @@ export default function EditProfileScreen() {
 const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
-    backgroundColor: COLORS.background,
+    backgroundColor: COLORS.canvas,
   },
   container: {
     flexGrow: 1,
-    paddingVertical: 40,
-    backgroundColor: COLORS.background,
+    paddingTop: 24,
+    paddingBottom: 40,
+    paddingHorizontal: 20,
+    backgroundColor: COLORS.canvas,
   },
   form: {
     width: "100%",
     maxWidth: 400,
     alignSelf: "center",
     gap: 16,
-    paddingHorizontal: 24,
+    padding: 24,
+    backgroundColor: COLORS.background,
+    borderWidth: 1,
+    borderColor: COLORS.surface,
+    borderRadius: 24,
+    shadowColor: COLORS.text,
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.08,
+    shadowRadius: 18,
+    elevation: 4,
   },
   title: {
     color: COLORS.text,

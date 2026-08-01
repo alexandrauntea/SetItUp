@@ -27,7 +27,10 @@ export default function ProfileScreen() {
 
   return (
     <SafeAreaView style={styles.safeArea}>
-      <ScrollView contentContainerStyle={styles.container}>
+      <ScrollView
+        contentContainerStyle={styles.container}
+        showsVerticalScrollIndicator={false}
+      >
         <View style={styles.profile}>
         <View style={styles.avatar}>
           <Text style={styles.avatarText}>AB</Text>
@@ -70,13 +73,15 @@ export default function ProfileScreen() {
 const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
-    backgroundColor: COLORS.background,
+    backgroundColor: COLORS.canvas,
   },
   container: {
     flexGrow: 1,
+    justifyContent: "center",
     paddingTop: 16,
     paddingBottom: 40,
-    backgroundColor: COLORS.background,
+    paddingHorizontal: 16,
+    backgroundColor: COLORS.canvas,
   },
   profile: {
     width: "100%",
@@ -85,6 +90,16 @@ const styles = StyleSheet.create({
     alignItems: "center",
     gap: 16,
     paddingHorizontal: 24,
+    paddingVertical: 24,
+    backgroundColor: COLORS.background,
+    borderRadius: 24,
+    borderWidth: 1,
+    borderColor: COLORS.surface,
+    shadowColor: COLORS.text,
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.08,
+    shadowRadius: 18,
+    elevation: 4,
   },
   avatar: {
     width: 100,
@@ -93,6 +108,8 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     backgroundColor: COLORS.primary,
     borderRadius: 50,
+    borderWidth: 6,
+    borderColor: COLORS.primarySoft,
   },
   avatarText: {
     color: COLORS.background,
@@ -119,7 +136,7 @@ const styles = StyleSheet.create({
     gap: 8,
     padding: 16,
     backgroundColor: COLORS.surface,
-    borderRadius: 12,
+    borderRadius: 16,
   },
   detail: {
     color: COLORS.text,

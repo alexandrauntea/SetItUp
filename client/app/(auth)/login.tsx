@@ -1,5 +1,6 @@
 import { AppButton } from "@/components/AppButton";
 import { AppInput } from "@/components/AppInput";
+import { BrandLogo } from "@/components/BrandLogo";
 import { FormError } from "@/components/FormError";
 import { COLORS } from "@/constants/colors";
 import { useState } from "react";
@@ -26,8 +27,12 @@ export default function LoginScreen() {
   return (
     <SafeAreaView style={styles.container}>
       <View style={styles.form}>
+        <BrandLogo />
+
         <Text style={styles.title}>SetItUp</Text>
-        <Text style={styles.subtitle}>Autentifică-te în cont</Text>
+        <Text style={styles.subtitle}>
+          Autentifică-te pentru a continua conexiunile tale.
+        </Text>
 
         <AppInput
           label="Email"
@@ -62,14 +67,24 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     justifyContent: "center",
-    backgroundColor: COLORS.background,
+    paddingHorizontal: 20,
+    backgroundColor: COLORS.canvas,
   },
   form: {
     width: "100%",
     maxWidth: 400,
     alignSelf: "center",
     gap: 16,
-    paddingHorizontal: 24,
+    padding: 24,
+    backgroundColor: COLORS.background,
+    borderWidth: 1,
+    borderColor: COLORS.surface,
+    borderRadius: 24,
+    shadowColor: COLORS.text,
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.08,
+    shadowRadius: 18,
+    elevation: 4,
   },
   title: {
     color: COLORS.text,
@@ -81,6 +96,8 @@ const styles = StyleSheet.create({
     color: COLORS.textSecondary,
     fontSize: 16,
     textAlign: "center",
+    lineHeight: 23,
+    marginBottom: 8,
   },
   link: {
     color: COLORS.primary,

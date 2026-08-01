@@ -1,5 +1,6 @@
 import { AppButton } from "@/components/AppButton";
 import { AppInput } from "@/components/AppInput";
+import { BrandLogo } from "@/components/BrandLogo";
 import { FormError } from "@/components/FormError";
 import { AppCheckbox } from "@/components/AppCheckbox";
 import { COLORS } from "@/constants/colors";
@@ -49,8 +50,12 @@ export default function RegisterScreen() {
       <ScrollView
         contentContainerStyle={styles.container}
         keyboardShouldPersistTaps="handled"
+        keyboardDismissMode="on-drag"
+        showsVerticalScrollIndicator={false}
       >
         <View style={styles.form}>
+          <BrandLogo size={56} />
+
         <Text style={styles.title}>Creează un cont</Text>
 
         <Text style={styles.subtitle}>
@@ -120,20 +125,31 @@ export default function RegisterScreen() {
 const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
-    backgroundColor: COLORS.background,
+    backgroundColor: COLORS.canvas,
   },
   container: {
     flexGrow: 1,
     justifyContent: "center",
-    paddingVertical: 40,
-    backgroundColor: COLORS.background,
+    paddingTop: 24,
+    paddingBottom: 40,
+    paddingHorizontal: 20,
+    backgroundColor: COLORS.canvas,
   },
   form: {
     width: "100%",
     maxWidth: 400,
     alignSelf: "center",
     gap: 16,
-    paddingHorizontal: 24,
+    padding: 24,
+    backgroundColor: COLORS.background,
+    borderWidth: 1,
+    borderColor: COLORS.surface,
+    borderRadius: 24,
+    shadowColor: COLORS.text,
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.08,
+    shadowRadius: 18,
+    elevation: 4,
   },
   title: {
     color: COLORS.text,
