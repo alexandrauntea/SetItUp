@@ -6,6 +6,7 @@ import { COLORS } from "@/constants/colors";
 import { useRouter } from "expo-router";
 import { useState } from "react";
 import { Alert, ScrollView, StyleSheet, Text, View } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
 
 export default function EditProfileScreen() {
   const router = useRouter();
@@ -35,11 +36,12 @@ export default function EditProfileScreen() {
   }
 
   return (
-    <ScrollView
-      contentContainerStyle={styles.container}
-      keyboardShouldPersistTaps="handled"
-    >
-      <View style={styles.form}>
+    <SafeAreaView style={styles.safeArea}>
+      <ScrollView
+        contentContainerStyle={styles.container}
+        keyboardShouldPersistTaps="handled"
+      >
+        <View style={styles.form}>
         <Text style={styles.title}>Editează profilul</Text>
 
         <AppInput
@@ -89,12 +91,17 @@ export default function EditProfileScreen() {
         <FormError message={formError} />
 
         <AppButton title="Salvează modificările" onPress={handleSave} />
-      </View>
-    </ScrollView>
+        </View>
+      </ScrollView>
+    </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
+  safeArea: {
+    flex: 1,
+    backgroundColor: COLORS.background,
+  },
   container: {
     flexGrow: 1,
     paddingVertical: 40,

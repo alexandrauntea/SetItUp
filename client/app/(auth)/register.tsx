@@ -6,6 +6,7 @@ import { COLORS } from "@/constants/colors";
 import { Link } from "expo-router";
 import { useState } from "react";
 import { Alert, ScrollView, StyleSheet, Text, View } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
 
 export default function RegisterScreen() {
   const [username, setUsername] = useState("");
@@ -43,11 +44,12 @@ export default function RegisterScreen() {
   }
 
   return (
-    <ScrollView
-      contentContainerStyle={styles.container}
-      keyboardShouldPersistTaps="handled"
-    >
-      <View style={styles.form}>
+    <SafeAreaView style={styles.safeArea}>
+      <ScrollView
+        contentContainerStyle={styles.container}
+        keyboardShouldPersistTaps="handled"
+      >
+        <View style={styles.form}>
         <Text style={styles.title}>Creează un cont</Text>
 
         <Text style={styles.subtitle}>
@@ -108,12 +110,17 @@ export default function RegisterScreen() {
         <Link href="/login" style={styles.link}>
           Ai deja cont? Autentifică-te
         </Link>
-      </View>
-    </ScrollView>
+        </View>
+      </ScrollView>
+    </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
+  safeArea: {
+    flex: 1,
+    backgroundColor: COLORS.background,
+  },
   container: {
     flexGrow: 1,
     justifyContent: "center",

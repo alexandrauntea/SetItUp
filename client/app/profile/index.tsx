@@ -2,6 +2,7 @@ import { useRouter } from "expo-router";
 import { AppButton } from "@/components/AppButton";
 import { COLORS } from "@/constants/colors";
 import { ScrollView, StyleSheet, Text, View } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
 
 const mockProfile = {
   name: "Andrei Barbuceanu",
@@ -25,8 +26,9 @@ export default function ProfileScreen() {
   }
 
   return (
-    <ScrollView contentContainerStyle={styles.container}>
-      <View style={styles.profile}>
+    <SafeAreaView style={styles.safeArea}>
+      <ScrollView contentContainerStyle={styles.container}>
+        <View style={styles.profile}>
         <View style={styles.avatar}>
           <Text style={styles.avatarText}>AB</Text>
         </View>
@@ -59,15 +61,21 @@ export default function ProfileScreen() {
         <AppButton title="Editează profilul" onPress={handleEditProfile} />
 
         <AppButton title="Logout" onPress={handleLogout} />
-      </View>
-    </ScrollView>
+        </View>
+      </ScrollView>
+    </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
+  safeArea: {
+    flex: 1,
+    backgroundColor: COLORS.background,
+  },
   container: {
     flexGrow: 1,
-    paddingVertical: 40,
+    paddingTop: 16,
+    paddingBottom: 40,
     backgroundColor: COLORS.background,
   },
   profile: {

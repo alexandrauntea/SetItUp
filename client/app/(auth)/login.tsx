@@ -4,6 +4,7 @@ import { FormError } from "@/components/FormError";
 import { COLORS } from "@/constants/colors";
 import { useState } from "react";
 import { StyleSheet, Text, View } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
 import { Link, useRouter } from "expo-router";
 
 export default function LoginScreen() {
@@ -23,7 +24,7 @@ export default function LoginScreen() {
   }
 
   return (
-    <View style={styles.container}>
+    <SafeAreaView style={styles.container}>
       <View style={styles.form}>
         <Text style={styles.title}>SetItUp</Text>
         <Text style={styles.subtitle}>Autentifică-te în cont</Text>
@@ -53,7 +54,7 @@ export default function LoginScreen() {
           Nu ai cont? Înregistrează-te
         </Link>
       </View>
-    </View>
+    </SafeAreaView>
   );
 }
 
