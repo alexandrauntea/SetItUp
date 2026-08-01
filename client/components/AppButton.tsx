@@ -6,6 +6,7 @@ type AppButtonProps = {
   onPress: () => void;
   disabled?: boolean;
   loading?: boolean;
+  variant?: "primary" | "outline";
 };
 
 export function AppButton({
@@ -13,6 +14,7 @@ export function AppButton({
   onPress,
   disabled = false,
   loading = false,
+  variant = "primary",
 }: AppButtonProps) {
   const isDisabled = disabled || loading;
 
@@ -22,14 +24,24 @@ export function AppButton({
       disabled={isDisabled}
       style={({ pressed }) => [
         styles.button,
-        pressed && styles.buttonPressed,
+        variant === "outline" && styles.outlineButton,
+        pressed &&
+          (variant === "outline"
+            ? styles.outlineButtonPressed
+            : styles.buttonPressed),
         isDisabled && styles.buttonDisabled,
       ]}
     >
       {loading ? (
-        <ActivityIndicator color={COLORS.background} />
+        <ActivityIndicator
+          color={variant === "outline" ? COLORS.primary : COLORS.background}
+        />
       ) : (
-        <Text style={styles.text}>{title}</Text>
+        <Text
+          style={[styles.text, variant === "outline" && styles.outlineText]}
+        >
+          {title}
+        </Text>
       )}
     </Pressable>
   );
@@ -53,6 +65,16 @@ const styles = StyleSheet.create({
   buttonPressed: {
     backgroundColor: COLORS.primaryPressed,
   },
+  outlineButton: {
+    backgroundColor: COLORS.background,
+    borderWidth: 1.5,
+    borderColor: COLORS.primary,
+    shadowOpacity: 0,
+    elevation: 0,
+  },
+  outlineButtonPressed: {
+    backgroundColor: COLORS.primarySoft,
+  },
   buttonDisabled: {
     opacity: 0.5,
   },
@@ -60,5 +82,8 @@ const styles = StyleSheet.create({
     color: COLORS.background,
     fontSize: 16,
     fontWeight: "700",
+  },
+  outlineText: {
+    color: COLORS.primary,
   },
 });
