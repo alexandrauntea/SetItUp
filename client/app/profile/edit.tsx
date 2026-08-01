@@ -2,6 +2,7 @@ import { AppButton } from "@/components/AppButton";
 import { AppCheckbox } from "@/components/AppCheckbox";
 import { AppInput } from "@/components/AppInput";
 import { FormError } from "@/components/FormError";
+import { ScreenBackground } from "@/components/ScreenBackground";
 import { COLORS } from "@/constants/colors";
 import { useRouter } from "expo-router";
 import { useState } from "react";
@@ -36,14 +37,15 @@ export default function EditProfileScreen() {
   }
 
   return (
-    <SafeAreaView style={styles.safeArea}>
-      <ScrollView
+    <ScreenBackground>
+      <SafeAreaView style={styles.safeArea}>
+        <ScrollView
         contentContainerStyle={styles.container}
         keyboardShouldPersistTaps="handled"
         keyboardDismissMode="on-drag"
         showsVerticalScrollIndicator={false}
       >
-        <View style={styles.form}>
+          <View style={styles.form}>
         <Text style={styles.title}>Editează profilul</Text>
 
         <AppInput
@@ -93,23 +95,24 @@ export default function EditProfileScreen() {
         <FormError message={formError} />
 
         <AppButton title="Salvează modificările" onPress={handleSave} />
-        </View>
-      </ScrollView>
-    </SafeAreaView>
+          </View>
+        </ScrollView>
+      </SafeAreaView>
+    </ScreenBackground>
   );
 }
 
 const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
-    backgroundColor: COLORS.canvas,
+    backgroundColor: "transparent",
   },
   container: {
     flexGrow: 1,
     paddingTop: 24,
     paddingBottom: 40,
     paddingHorizontal: 20,
-    backgroundColor: COLORS.canvas,
+    backgroundColor: "transparent",
   },
   form: {
     width: "100%",

@@ -2,6 +2,7 @@ import { AppButton } from "@/components/AppButton";
 import { AppInput } from "@/components/AppInput";
 import { BrandLogo } from "@/components/BrandLogo";
 import { FormError } from "@/components/FormError";
+import { ScreenBackground } from "@/components/ScreenBackground";
 import { AppCheckbox } from "@/components/AppCheckbox";
 import { COLORS } from "@/constants/colors";
 import { Link, useRouter } from "expo-router";
@@ -46,14 +47,15 @@ export default function RegisterScreen() {
   }
 
   return (
-    <SafeAreaView style={styles.safeArea}>
-      <ScrollView
+    <ScreenBackground>
+      <SafeAreaView style={styles.safeArea}>
+        <ScrollView
         contentContainerStyle={styles.container}
         keyboardShouldPersistTaps="handled"
         keyboardDismissMode="on-drag"
         showsVerticalScrollIndicator={false}
       >
-        <View style={styles.form}>
+          <View style={styles.form}>
           <BrandLogo size={56} />
 
         <Text style={styles.title}>Creează un cont</Text>
@@ -116,16 +118,17 @@ export default function RegisterScreen() {
         <Link href="/login" style={styles.link}>
           Ai deja cont? Autentifică-te
         </Link>
-        </View>
-      </ScrollView>
-    </SafeAreaView>
+          </View>
+        </ScrollView>
+      </SafeAreaView>
+    </ScreenBackground>
   );
 }
 
 const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
-    backgroundColor: COLORS.canvas,
+    backgroundColor: "transparent",
   },
   container: {
     flexGrow: 1,
@@ -133,7 +136,7 @@ const styles = StyleSheet.create({
     paddingTop: 24,
     paddingBottom: 40,
     paddingHorizontal: 20,
-    backgroundColor: COLORS.canvas,
+    backgroundColor: "transparent",
   },
   form: {
     width: "100%",

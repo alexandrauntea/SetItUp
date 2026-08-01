@@ -2,6 +2,7 @@ import { AppButton } from "@/components/AppButton";
 import { AppInput } from "@/components/AppInput";
 import { BrandLogo } from "@/components/BrandLogo";
 import { FormError } from "@/components/FormError";
+import { ScreenBackground } from "@/components/ScreenBackground";
 import { COLORS } from "@/constants/colors";
 import { useState } from "react";
 import { StyleSheet, Text, View } from "react-native";
@@ -25,8 +26,9 @@ export default function LoginScreen() {
   }
 
   return (
-    <SafeAreaView style={styles.container}>
-      <View style={styles.form}>
+    <ScreenBackground>
+      <SafeAreaView style={styles.container}>
+        <View style={styles.form}>
         <BrandLogo />
 
         <Text style={styles.title}>SetItUp</Text>
@@ -58,8 +60,9 @@ export default function LoginScreen() {
         <Link href="/register" style={styles.link}>
           Nu ai cont? Înregistrează-te
         </Link>
-      </View>
-    </SafeAreaView>
+        </View>
+      </SafeAreaView>
+    </ScreenBackground>
   );
 }
 
@@ -68,7 +71,7 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: "center",
     paddingHorizontal: 20,
-    backgroundColor: COLORS.canvas,
+    backgroundColor: "transparent",
   },
   form: {
     width: "100%",
