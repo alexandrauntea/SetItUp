@@ -1,5 +1,6 @@
 import { AppButton } from "@/components/AppButton";
 import { AppInput } from "@/components/AppInput";
+import { FormError } from "@/components/FormError";
 import { COLORS } from "@/constants/colors";
 import { useState } from "react";
 import { Alert, StyleSheet, Text, View } from "react-native";
@@ -7,8 +8,15 @@ import { Alert, StyleSheet, Text, View } from "react-native";
 export default function HomeScreen() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [formError, setFormError] = useState("");
 
   function handleStart() {
+    if (!email.trim() || !password) {
+      setFormError("Completează emailul și parola.");
+      return;
+    }
+
+    setFormError("");
     Alert.alert("Date introduse", `Email: ${email}`);
   }
 
@@ -34,6 +42,8 @@ export default function HomeScreen() {
           onChangeText={setPassword}
           secureTextEntry
         />
+
+        <FormError message={formError} />
 
         <AppButton title="Login" onPress={handleStart} />
       </View>
