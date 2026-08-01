@@ -1,0 +1,121 @@
+import { AppButton } from "@/components/AppButton";
+import { AppCheckbox } from "@/components/AppCheckbox";
+import { AppInput } from "@/components/AppInput";
+import { FormError } from "@/components/FormError";
+import { COLORS } from "@/constants/colors";
+import { useRouter } from "expo-router";
+import { useState } from "react";
+import { Alert, ScrollView, StyleSheet, Text, View } from "react-native";
+
+export default function EditProfileScreen() {
+  const router = useRouter();
+
+  const [name, setName] = useState("Andrei Barbuceanu");
+  const [description, setDescription] = useState("Esti fabrica de bani.");
+  const [occupation, setOccupation] = useState("Student");
+  const [gender, setGender] = useState("Masculin");
+  const [interests, setInterests] = useState("Bani, Bani, Bani");
+  const [isPrivate, setIsPrivate] = useState(false);
+  const [formError, setFormError] = useState("");
+
+  function handleSave() {
+    if (!name.trim()) {
+      setFormError("Numele este obligatoriu.");
+      return;
+    }
+
+    setFormError("");
+
+    Alert.alert("SetItUp", "Profilul a fost salvat.", [
+      {
+        text: "OK",
+        onPress: () => router.back(),
+      },
+    ]);
+  }
+
+  return (
+    <ScrollView
+      contentContainerStyle={styles.container}
+      keyboardShouldPersistTaps="handled"
+    >
+      <View style={styles.form}>
+        <Text style={styles.title}>Editează profilul</Text>
+
+        <AppInput
+          label="Nume"
+          placeholder="Introdu numele"
+          value={name}
+          onChangeText={setName}
+        />
+
+        <AppInput
+          label="Descriere"
+          placeholder="Scrie câteva lucruri despre tine"
+          value={description}
+          onChangeText={setDescription}
+          multiline
+          numberOfLines={4}
+          style={styles.descriptionInput}
+        />
+
+        <AppInput
+          label="Ocupație"
+          placeholder="Exemplu: Student"
+          value={occupation}
+          onChangeText={setOccupation}
+        />
+
+        <AppInput
+          label="Gen"
+          placeholder="Introdu genul"
+          value={gender}
+          onChangeText={setGender}
+        />
+
+        <AppInput
+          label="Interese"
+          placeholder="Muzică, călătorii, tehnologie"
+          value={interests}
+          onChangeText={setInterests}
+        />
+
+        <AppCheckbox
+          label="Profil privat"
+          value={isPrivate}
+          onValueChange={setIsPrivate}
+        />
+
+        <FormError message={formError} />
+
+        <AppButton title="Salvează modificările" onPress={handleSave} />
+      </View>
+    </ScrollView>
+  );
+}
+
+const styles = StyleSheet.create({
+  container: {
+    flexGrow: 1,
+    paddingVertical: 40,
+    backgroundColor: COLORS.background,
+  },
+  form: {
+    width: "100%",
+    maxWidth: 400,
+    alignSelf: "center",
+    gap: 16,
+    paddingHorizontal: 24,
+  },
+  title: {
+    color: COLORS.text,
+    fontSize: 30,
+    fontWeight: "bold",
+    textAlign: "center",
+  },
+  descriptionInput: {
+    minHeight: 110,
+    paddingTop: 14,
+    textAlignVertical: "top",
+  },
+});

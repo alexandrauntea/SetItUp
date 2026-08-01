@@ -3,13 +3,14 @@ import { AppInput } from "@/components/AppInput";
 import { FormError } from "@/components/FormError";
 import { COLORS } from "@/constants/colors";
 import { useState } from "react";
-import { Alert, StyleSheet, Text, View } from "react-native";
-import { Link } from "expo-router";
+import { StyleSheet, Text, View } from "react-native";
+import { Link, useRouter } from "expo-router";
 
 export default function LoginScreen() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [formError, setFormError] = useState("");
+  const router = useRouter();
 
   function handleStart() {
     if (!email.trim() || !password) {
@@ -18,7 +19,7 @@ export default function LoginScreen() {
     }
 
     setFormError("");
-    Alert.alert("Date introduse", `Email: ${email}`);
+    router.replace("/profile");
   }
 
   return (
