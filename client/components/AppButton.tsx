@@ -43,6 +43,7 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     backgroundColor: COLORS.primary,
     borderRadius: 12,
+    width: "100%",
   },
   buttonPressed: {
     backgroundColor: COLORS.primaryPressed,
