@@ -3,12 +3,13 @@ import { AppInput } from "@/components/AppInput";
 import { FormError } from "@/components/FormError";
 import { AppCheckbox } from "@/components/AppCheckbox";
 import { COLORS } from "@/constants/colors";
-import { Link } from "expo-router";
+import { Link, useRouter } from "expo-router";
 import { useState } from "react";
-import { Alert, ScrollView, StyleSheet, Text, View } from "react-native";
+import { ScrollView, StyleSheet, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
 export default function RegisterScreen() {
+  const router = useRouter();
   const [username, setUsername] = useState("");
   const [email, setEmail] = useState("");
   const [birthDate, setBirthDate] = useState("");
@@ -40,7 +41,7 @@ export default function RegisterScreen() {
     }
 
     setFormError("");
-    Alert.alert("SetItUp", "Formularul este completat corect.");
+    router.replace("/profile");
   }
 
   return (
