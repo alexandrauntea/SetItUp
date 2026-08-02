@@ -22,7 +22,7 @@ export default function LoginScreen() {
     }
 
     setFormError("");
-    router.replace("/profile");
+    router.replace("/profile/view");
   }
 
   return (

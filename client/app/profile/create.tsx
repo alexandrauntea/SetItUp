@@ -104,7 +104,7 @@ export default function CreateProfileScreen() {
       [
         {
           text: "Continuă",
-          onPress: () => router.replace("/profile"),
+          onPress: () => router.replace("/profile/view"),
         },
       ],
     );
