@@ -17,7 +17,7 @@ export default function LoginScreen() {
 
   function handleStart() {
     if (!email.trim() || !password) {
-      setFormError("Completează emailul și parola.");
+      setFormError("Scrie emailul și parola.");
       return;
     }
 
@@ -31,10 +31,7 @@ export default function LoginScreen() {
         <View style={styles.form}>
         <BrandLogo />
 
-        <Text style={styles.title}>SetItUp</Text>
-        <Text style={styles.subtitle}>
-          Autentifică-te pentru a continua conexiunile tale.
-        </Text>
+        <Text style={styles.title}>Bine ai revenit</Text>
 
         <AppInput
           label="Email"
@@ -47,7 +44,7 @@ export default function LoginScreen() {
 
         <AppInput
           label="Parolă"
-          placeholder="Introdu parola"
+          placeholder="Parola ta"
           value={password}
           onChangeText={setPassword}
           secureTextEntry
@@ -55,10 +52,10 @@ export default function LoginScreen() {
 
         <FormError message={formError} />
 
-        <AppButton title="Login" onPress={handleStart} />
+        <AppButton title="Intră în cont" onPress={handleStart} />
 
         <Link href="/register" style={styles.link}>
-          Nu ai cont? Înregistrează-te
+          Prima dată aici? Creează un cont
         </Link>
         </View>
       </SafeAreaView>
@@ -94,13 +91,6 @@ const styles = StyleSheet.create({
     fontSize: 32,
     fontWeight: "bold",
     textAlign: "center",
-  },
-  subtitle: {
-    color: COLORS.textSecondary,
-    fontSize: 16,
-    textAlign: "center",
-    lineHeight: 23,
-    marginBottom: 8,
   },
   link: {
     color: COLORS.primary,

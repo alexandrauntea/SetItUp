@@ -5,6 +5,7 @@ import { FormError } from "@/components/FormError";
 import { ScreenBackground } from "@/components/ScreenBackground";
 import { AppCheckbox } from "@/components/AppCheckbox";
 import { COLORS } from "@/constants/colors";
+import { useProfile } from "@/contexts/ProfileContext";
 import { Link, useRouter } from "expo-router";
 import { useState } from "react";
 import { ScrollView, StyleSheet, Text, View } from "react-native";
@@ -12,6 +13,7 @@ import { SafeAreaView } from "react-native-safe-area-context";
 
 export default function RegisterScreen() {
   const router = useRouter();
+  const { updateProfile } = useProfile();
   const [username, setUsername] = useState("");
   const [email, setEmail] = useState("");
   const [birthDate, setBirthDate] = useState("");
@@ -28,22 +30,27 @@ export default function RegisterScreen() {
       !password ||
       !confirmPassword
     ) {
-      setFormError("Completează toate câmpurile.");
+      setFormError("Mai sunt câmpuri necompletate.");
       return;
     }
 
     if (!gdprAccepted) {
-      setFormError("Trebuie să accepți termenii și politica GDPR.");
+      setFormError("Bifează acordul pentru termeni și politica GDPR.");
       return;
     }
 
     if (password !== confirmPassword) {
-      setFormError("Parolele nu coincid.");
+      setFormError("Parolele nu se potrivesc.");
       return;
     }
 
     setFormError("");
-    router.replace("/profile");
+    updateProfile({
+      username: username.trim(),
+      email: email.trim(),
+      birthDate: birthDate.trim(),
+    });
+    router.replace("/profile/create");
   }
 
   return (
@@ -58,15 +65,11 @@ export default function RegisterScreen() {
           <View style={styles.form}>
           <BrandLogo size={56} />
 
-        <Text style={styles.title}>Creează un cont</Text>
-
-        <Text style={styles.subtitle}>
-          Completează datele pentru înregistrare
-        </Text>
+        <Text style={styles.title}>Creează-ți contul</Text>
 
         <AppInput
-          label="Username"
-          placeholder="Alege un username"
+          label="Nume de utilizator"
+          placeholder="De exemplu: andrei21"
           value={username}
           onChangeText={setUsername}
           autoCapitalize="none"
@@ -91,7 +94,7 @@ export default function RegisterScreen() {
 
         <AppInput
           label="Parolă"
-          placeholder="Introdu parola"
+          placeholder="Alege o parolă"
           value={password}
           onChangeText={setPassword}
           secureTextEntry
@@ -99,7 +102,7 @@ export default function RegisterScreen() {
 
         <AppInput
           label="Confirmă parola"
-          placeholder="Introdu parola din nou"
+          placeholder="Repetă parola"
           value={confirmPassword}
           onChangeText={setConfirmPassword}
           secureTextEntry
@@ -113,10 +116,10 @@ export default function RegisterScreen() {
 
         <FormError message={formError} />
 
-        <AppButton title="Înregistrare" onPress={handleRegister} />
+        <AppButton title="Creează contul" onPress={handleRegister} />
 
         <Link href="/login" style={styles.link}>
-          Ai deja cont? Autentifică-te
+          Ai deja cont? Intră în cont
         </Link>
           </View>
         </ScrollView>
@@ -158,11 +161,6 @@ const styles = StyleSheet.create({
     color: COLORS.text,
     fontSize: 30,
     fontWeight: "bold",
-    textAlign: "center",
-  },
-  subtitle: {
-    color: COLORS.textSecondary,
-    fontSize: 16,
     textAlign: "center",
   },
   link: {

@@ -1,26 +1,35 @@
 import { AppButton } from "@/components/AppButton";
 import { ScreenBackground } from "@/components/ScreenBackground";
 import { COLORS } from "@/constants/colors";
+import { useProfile } from "@/contexts/ProfileContext";
 import { Ionicons } from "@expo/vector-icons";
 import { LinearGradient } from "expo-linear-gradient";
 import { useRouter } from "expo-router";
 import { ScrollView, StyleSheet, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
-const mockProfile = {
-  name: "Andrei Barbuceanu",
-  username: "andrei",
-  description:
-    "Îmi place să cunosc oameni noi și să descopăr lucruri interesante.",
-  occupation: "Student",
-  age: 21,
-  gender: "Masculin",
-  isPrivate: false,
-  interests: ["Tehnologie", "Muzică", "Călătorii"],
-};
+function calculateAge(birthDate: string) {
+  const [day, month, year] = birthDate.split("/").map(Number);
+
+  if (!day || !month || !year) return 0;
+
+  const today = new Date();
+  let age = today.getFullYear() - year;
+  const birthdayHasPassed =
+    today.getMonth() + 1 > month ||
+    (today.getMonth() + 1 === month && today.getDate() >= day);
+
+  if (!birthdayHasPassed) age -= 1;
+
+  return age;
+}
 
 export default function ProfileScreen() {
   const router = useRouter();
+  const { profile } = useProfile();
+  const fullName = `${profile.firstName} ${profile.lastName}`.trim();
+  const initials = `${profile.firstName.charAt(0)}${profile.lastName.charAt(0)}`;
+  const age = calculateAge(profile.birthDate);
 
   function handleEditProfile() {
     router.push("/profile/edit");
@@ -45,20 +54,20 @@ export default function ProfileScreen() {
               style={styles.headerCard}
             >
               <View style={styles.avatar}>
-                <Text style={styles.avatarText}>AB</Text>
+                <Text style={styles.avatarText}>{initials}</Text>
               </View>
 
               <View style={styles.nameRow}>
-                <Text style={styles.name}>{mockProfile.name}</Text>
-                <Text style={styles.age}>{mockProfile.age}</Text>
+                <Text style={styles.name}>{fullName}</Text>
+                {age > 0 ? <Text style={styles.age}>{age}</Text> : null}
               </View>
 
-              <Text style={styles.username}>@{mockProfile.username}</Text>
+              <Text style={styles.username}>@{profile.username}</Text>
             </LinearGradient>
 
           <View style={styles.section}>
             <Text style={styles.sectionTitle}>Despre mine</Text>
-            <Text style={styles.description}>{mockProfile.description}</Text>
+            <Text style={styles.description}>{profile.description}</Text>
           </View>
 
           <View>
@@ -74,7 +83,7 @@ export default function ProfileScreen() {
                   />
                 </View>
                 <Text style={styles.infoLabel}>Ocupație</Text>
-                <Text style={styles.infoValue}>{mockProfile.occupation}</Text>
+                <Text style={styles.infoValue}>{profile.occupation}</Text>
               </View>
 
               <View style={styles.infoCard}>
@@ -86,7 +95,7 @@ export default function ProfileScreen() {
                   />
                 </View>
                 <Text style={styles.infoLabel}>Gen</Text>
-                <Text style={styles.infoValue}>{mockProfile.gender}</Text>
+                <Text style={styles.infoValue}>{profile.gender}</Text>
               </View>
 
               <View style={styles.infoCard}>
@@ -98,14 +107,16 @@ export default function ProfileScreen() {
                   />
                 </View>
                 <Text style={styles.infoLabel}>Vârstă</Text>
-                <Text style={styles.infoValue}>{mockProfile.age} ani</Text>
+                <Text style={styles.infoValue}>
+                  {age > 0 ? `${age} ani` : "—"}
+                </Text>
               </View>
 
               <View style={styles.infoCard}>
                 <View style={styles.infoIcon}>
                   <Ionicons
                     name={
-                      mockProfile.isPrivate
+                      profile.isPrivate
                         ? "lock-closed-outline"
                         : "eye-outline"
                     }
@@ -115,7 +126,7 @@ export default function ProfileScreen() {
                 </View>
                 <Text style={styles.infoLabel}>Vizibilitate</Text>
                 <Text style={styles.infoValue}>
-                  {mockProfile.isPrivate ? "Privat" : "Public"}
+                  {profile.isPrivate ? "Privat" : "Public"}
                 </Text>
               </View>
             </View>
@@ -125,7 +136,7 @@ export default function ProfileScreen() {
             <Text style={styles.sectionTitle}>Interese</Text>
 
             <View style={styles.interests}>
-              {mockProfile.interests.map((interest) => (
+              {profile.interests.map((interest) => (
                 <View key={interest} style={styles.interest}>
                   <Ionicons
                     name="heart-outline"
