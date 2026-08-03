@@ -1,3 +1,4 @@
+//<<<<<<< alexandra
 import '@/services/firebase';
 import { useEffect } from 'react';
 import {ActivityIndicator, View} from 'react-native';
@@ -45,9 +46,20 @@ function RootLayoutNav() {
       </Stack>
       <StatusBar style="auto" />
     </ThemeProvider>
-  );
-}
+   );
+  }
 
+
+// export default function RootLayout() {
+//   return (
+//     <ProfileProvider>
+//       <Stack screenOptions={{ headerShown: false }} />
+//       <StatusBar style="dark" />
+//     </ProfileProvider>
+// 
+//   );
+// }
+//>>>>>>> main
 export default function RootLayout() {
   return (
     <AuthProvider>
