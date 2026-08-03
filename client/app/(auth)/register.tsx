@@ -6,7 +6,11 @@ import { ScreenBackground } from "@/components/ScreenBackground";
 import { AppCheckbox } from "@/components/AppCheckbox";
 import { COLORS } from "@/constants/colors";
 import { useProfile } from "@/contexts/ProfileContext";
-import { logoutUser, registerUser } from "@/services/authService";
+import {
+  deleteCurrentUserAccount,
+  logoutUser,
+  registerUser,
+} from "@/services/authService";
 import { createUserProfile } from "@/services/profileService";
 import { getFirebaseErrorMessage } from "@/utils/firebaseErrors";
 import {
@@ -78,9 +82,15 @@ export default function RegisterScreen() {
 
       if (accountWasCreated) {
         try {
-          await logoutUser();
-        } catch (logoutError) {
-          console.error("Contul nou nu a putut fi deconectat:", logoutError);
+          await deleteCurrentUserAccount();
+        } catch (deleteError) {
+          console.error("Contul incomplet nu a putut fi șters:", deleteError);
+
+          try {
+            await logoutUser();
+          } catch (logoutError) {
+            console.error("Contul nou nu a putut fi deconectat:", logoutError);
+          }
         }
       }
 

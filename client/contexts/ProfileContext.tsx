@@ -16,11 +16,19 @@ import type { UpdateUserProfileInput, UserProfile } from "@/types/profile";
 
 type ProfileContextValue = {
   profile: UserProfile | null;
+  profileStatus: ProfileStatus;
   isProfileLoading: boolean;
   profileError: string;
   refreshProfile: (uid?: string) => Promise<void>;
   updateProfile: (changes: UpdateUserProfileInput) => Promise<void>;
 };
+
+export type ProfileStatus =
+  | "idle"
+  | "loading"
+  | "ready"
+  | "missing"
+  | "error";
 
 const ProfileContext = createContext<ProfileContextValue | undefined>(
   undefined,
@@ -33,11 +41,12 @@ type ProfileProviderProps = {
 export function ProfileProvider({ children }: ProfileProviderProps) {
   const { user } = useAuth();
   const [profile, setProfile] = useState<UserProfile | null>(null);
-  const [isLoadingRequest, setIsLoadingRequest] = useState(false);
+  const [profileStatus, setProfileStatus] = useState<ProfileStatus>("idle");
   const [loadedProfileUid, setLoadedProfileUid] = useState<string | null>(null);
   const [profileError, setProfileError] = useState("");
   const isProfileLoading =
-    isLoadingRequest || Boolean(user && loadedProfileUid !== user.uid);
+    profileStatus === "loading" ||
+    Boolean(user && loadedProfileUid !== user.uid);
 
   const refreshProfile = useCallback(async (uid?: string) => {
     const profileUid = uid ?? user?.uid;
@@ -46,24 +55,24 @@ export function ProfileProvider({ children }: ProfileProviderProps) {
       setProfile(null);
       setLoadedProfileUid(null);
       setProfileError("");
-      setIsLoadingRequest(false);
+      setProfileStatus("idle");
       return;
     }
 
-    setIsLoadingRequest(true);
+    setProfileStatus("loading");
     setProfileError("");
 
     try {
       const savedProfile = await getUserProfile(profileUid);
       setProfile(savedProfile);
       setLoadedProfileUid(profileUid);
+      setProfileStatus(savedProfile ? "ready" : "missing");
     } catch (error) {
       console.error("Profilul nu a putut fi încărcat:", error);
       setProfile(null);
       setLoadedProfileUid(profileUid);
       setProfileError("Profilul nu a putut fi încărcat.");
-    } finally {
-      setIsLoadingRequest(false);
+      setProfileStatus("error");
     }
   }, [user]);
 
@@ -84,6 +93,7 @@ export function ProfileProvider({ children }: ProfileProviderProps) {
     <ProfileContext.Provider
       value={{
         profile,
+        profileStatus,
         isProfileLoading,
         profileError,
         refreshProfile,
