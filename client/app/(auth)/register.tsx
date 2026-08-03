@@ -10,6 +10,7 @@ import { logoutUser, registerUser } from "@/services/authService";
 import { createUserProfile } from "@/services/profileService";
 import { getFirebaseErrorMessage } from "@/utils/firebaseErrors";
 import {
+  formatBirthDateInput,
   getFirstValidationError,
   validateRegisterForm,
 } from "@/utils/validation";
@@ -132,8 +133,11 @@ export default function RegisterScreen() {
               label="Data nașterii"
               placeholder="ZZ/LL/AAAA"
               value={birthDate}
-              onChangeText={setBirthDate}
+              onChangeText={(value) =>
+                setBirthDate(formatBirthDateInput(value))
+              }
               keyboardType="number-pad"
+              maxLength={10}
             />
 
             <AppInput
