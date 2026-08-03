@@ -26,14 +26,15 @@ export default function EditProfileScreen() {
   const router = useRouter();
   const { profile, updateProfile } = useProfile();
 
-  const [firstName, setFirstName] = useState(profile.firstName);
-  const [lastName, setLastName] = useState(profile.lastName);
-  const [description, setDescription] = useState(profile.description);
-  const [occupation, setOccupation] = useState(profile.occupation);
-  const [gender, setGender] = useState(profile.gender);
-  const [interests, setInterests] = useState<string[]>(profile.interests);
-  const [isPrivate, setIsPrivate] = useState(profile.isPrivate);
+  const [firstName, setFirstName] = useState(profile?.firstName ?? "");
+  const [lastName, setLastName] = useState(profile?.lastName ?? "");
+  const [description, setDescription] = useState(profile?.description ?? "");
+  const [occupation, setOccupation] = useState(profile?.occupation ?? "");
+  const [gender, setGender] = useState(profile?.gender ?? "other");
+  const [interests, setInterests] = useState<string[]>(profile?.interests ?? []);
+  const [isPrivate, setIsPrivate] = useState(profile?.isPrivate ?? false);
   const [formError, setFormError] = useState("");
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   function toggleInterest(interest: string) {
     setInterests((currentInterests) => {
@@ -45,7 +46,7 @@ export default function EditProfileScreen() {
     });
   }
 
-  function handleSave() {
+  async function handleSave() {
     if (!firstName.trim()) {
       setFormError("Scrie prenumele tău.");
       return;
@@ -78,22 +79,31 @@ export default function EditProfileScreen() {
 
     setFormError("");
 
-    updateProfile({
-      firstName: firstName.trim(),
-      lastName: lastName.trim(),
-      description: description.trim(),
-      occupation: occupation.trim(),
-      gender,
-      interests,
-      isPrivate,
-    });
+    setIsSubmitting(true);
 
-    Alert.alert("SetItUp", "Profilul a fost actualizat.", [
-      {
-        text: "OK",
-        onPress: () => router.back(),
-      },
-    ]);
+    try {
+      await updateProfile({
+        firstName: firstName.trim(),
+        lastName: lastName.trim(),
+        description: description.trim(),
+        occupation: occupation.trim(),
+        gender,
+        interests,
+        isPrivate,
+      });
+
+      Alert.alert("SetItUp", "Profilul a fost actualizat.", [
+        {
+          text: "OK",
+          onPress: () => router.back(),
+        },
+      ]);
+    } catch (error) {
+      console.error("Profilul nu a putut fi actualizat:", error);
+      setFormError("Modificările nu au putut fi salvate.");
+    } finally {
+      setIsSubmitting(false);
+    }
   }
 
   return (
@@ -267,7 +277,11 @@ export default function EditProfileScreen() {
 
                 <FormError message={formError} />
 
-                <AppButton title="Salvează" onPress={handleSave} />
+                <AppButton
+                  title="Salvează"
+                  onPress={handleSave}
+                  loading={isSubmitting}
+                />
                 <AppButton
                   title="Anulează"
                   variant="outline"

@@ -1,27 +1,25 @@
-import { createContext, ReactNode, useContext, useState } from "react";
-import type { UserProfile } from "@/types/profile";
+import {
+  createContext,
+  ReactNode,
+  useCallback,
+  useContext,
+  useEffect,
+  useState,
+} from "react";
 
-const initialProfile: UserProfile = {
-  uid: "demo-user",
-  username: "andrei",
-  email: "andrei@email.com",
-  birthDate: "02/08/2005",
-  firstName: "Andrei",
-  lastName: "Barbuceanu",
-  description: "Student, pasionat de tehnologie, concerte și city break-uri.",
-  occupation: "Student",
-  gender: "male",
-  interests: ["Tehnologie", "Muzică", "Călătorii"],
-  isPrivate: false,
-  gdprAcceptedAt: new Date(0).toISOString(),
-  profileCompleted: true,
-  createdAt: new Date(0).toISOString(),
-  updatedAt: new Date(0).toISOString(),
-};
+import { useAuth } from "@/contexts/AuthContext";
+import {
+  getUserProfile,
+  updateUserProfile,
+} from "@/services/profileService";
+import type { UpdateUserProfileInput, UserProfile } from "@/types/profile";
 
 type ProfileContextValue = {
-  profile: UserProfile;
-  updateProfile: (changes: Partial<UserProfile>) => void;
+  profile: UserProfile | null;
+  isProfileLoading: boolean;
+  profileError: string;
+  refreshProfile: (uid?: string) => Promise<void>;
+  updateProfile: (changes: UpdateUserProfileInput) => Promise<void>;
 };
 
 const ProfileContext = createContext<ProfileContextValue | undefined>(
@@ -33,17 +31,65 @@ type ProfileProviderProps = {
 };
 
 export function ProfileProvider({ children }: ProfileProviderProps) {
-  const [profile, setProfile] = useState(initialProfile);
+  const { user } = useAuth();
+  const [profile, setProfile] = useState<UserProfile | null>(null);
+  const [isLoadingRequest, setIsLoadingRequest] = useState(false);
+  const [loadedProfileUid, setLoadedProfileUid] = useState<string | null>(null);
+  const [profileError, setProfileError] = useState("");
+  const isProfileLoading =
+    isLoadingRequest || Boolean(user && loadedProfileUid !== user.uid);
 
-  function updateProfile(changes: Partial<UserProfile>) {
-    setProfile((currentProfile) => ({
-      ...currentProfile,
-      ...changes,
-    }));
+  const refreshProfile = useCallback(async (uid?: string) => {
+    const profileUid = uid ?? user?.uid;
+
+    if (!profileUid) {
+      setProfile(null);
+      setLoadedProfileUid(null);
+      setProfileError("");
+      setIsLoadingRequest(false);
+      return;
+    }
+
+    setIsLoadingRequest(true);
+    setProfileError("");
+
+    try {
+      const savedProfile = await getUserProfile(profileUid);
+      setProfile(savedProfile);
+      setLoadedProfileUid(profileUid);
+    } catch (error) {
+      console.error("Profilul nu a putut fi încărcat:", error);
+      setProfile(null);
+      setLoadedProfileUid(profileUid);
+      setProfileError("Profilul nu a putut fi încărcat.");
+    } finally {
+      setIsLoadingRequest(false);
+    }
+  }, [user]);
+
+  useEffect(() => {
+    void refreshProfile();
+  }, [refreshProfile]);
+
+  async function updateProfile(changes: UpdateUserProfileInput) {
+    if (!user) {
+      throw new Error("AUTH_REQUIRED");
+    }
+
+    await updateUserProfile(user.uid, changes);
+    await refreshProfile();
   }
 
   return (
-    <ProfileContext.Provider value={{ profile, updateProfile }}>
+    <ProfileContext.Provider
+      value={{
+        profile,
+        isProfileLoading,
+        profileError,
+        refreshProfile,
+        updateProfile,
+      }}
+    >
       {children}
     </ProfileContext.Provider>
   );

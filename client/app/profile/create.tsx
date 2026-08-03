@@ -32,6 +32,7 @@ export default function CreateProfileScreen() {
   const [interests, setInterests] = useState<string[]>([]);
   const [isPrivate, setIsPrivate] = useState(false);
   const [formError, setFormError] = useState("");
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   function toggleInterest(interest: string) {
     setInterests((currentInterests) => {
@@ -45,7 +46,7 @@ export default function CreateProfileScreen() {
     });
   }
 
-  function handleContinue() {
+  async function handleContinue() {
     if (step === 1) {
       const missingFields: string[] = [];
 
@@ -92,22 +93,32 @@ export default function CreateProfileScreen() {
 
     setFormError("");
 
-    updateProfile({
-      firstName: firstName.trim(),
-      lastName: lastName.trim(),
-      occupation,
-      gender,
-      description,
-      interests,
-      isPrivate,
-    });
+    setIsSubmitting(true);
 
-    Alert.alert("Gata!", "Profilul tău este pregătit.", [
-      {
-        text: "Continuă",
-        onPress: () => router.replace("/profile/view"),
-      },
-    ]);
+    try {
+      await updateProfile({
+        firstName: firstName.trim(),
+        lastName: lastName.trim(),
+        occupation: occupation.trim(),
+        gender,
+        description: description.trim(),
+        interests,
+        isPrivate,
+        profileCompleted: true,
+      });
+
+      Alert.alert("Gata!", "Profilul tău este pregătit.", [
+        {
+          text: "Continuă",
+          onPress: () => router.replace("/profile/view"),
+        },
+      ]);
+    } catch (error) {
+      console.error("Profilul nu a putut fi salvat:", error);
+      setFormError("Profilul nu a putut fi salvat. Încearcă din nou.");
+    } finally {
+      setIsSubmitting(false);
+    }
   }
 
   return (
@@ -304,6 +315,7 @@ export default function CreateProfileScreen() {
                 <AppButton
                   title={step === 3 ? "Creează profilul" : "Continuă"}
                   onPress={handleContinue}
+                  loading={isSubmitting}
                 />
 
                 {step > 1 ? (

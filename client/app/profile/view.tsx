@@ -3,10 +3,17 @@ import { ScreenBackground } from "@/components/ScreenBackground";
 import { COLORS } from "@/constants/colors";
 import { GENDER_OPTIONS } from "@/constants/profileOptions";
 import { useProfile } from "@/contexts/ProfileContext";
+import { logoutUser } from "@/services/authService";
 import { Ionicons } from "@expo/vector-icons";
 import { LinearGradient } from "expo-linear-gradient";
 import { useRouter } from "expo-router";
-import { ScrollView, StyleSheet, Text, View } from "react-native";
+import {
+  ActivityIndicator,
+  ScrollView,
+  StyleSheet,
+  Text,
+  View,
+} from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
 function calculateAge(birthDate: string) {
@@ -28,6 +35,17 @@ function calculateAge(birthDate: string) {
 export default function ProfileScreen() {
   const router = useRouter();
   const { profile } = useProfile();
+
+  if (!profile) {
+    return (
+      <ScreenBackground>
+        <View style={styles.loadingContainer}>
+          <ActivityIndicator size="large" color={COLORS.primary} />
+        </View>
+      </ScreenBackground>
+    );
+  }
+
   const fullName = `${profile.firstName} ${profile.lastName}`.trim();
   const initials = `${profile.firstName.charAt(0)}${profile.lastName.charAt(0)}`;
   const age = calculateAge(profile.birthDate);
@@ -39,8 +57,12 @@ export default function ProfileScreen() {
     router.push("/profile/edit");
   }
 
-  function handleLogout() {
-    router.replace("/login");
+  async function handleLogout() {
+    try {
+      await logoutUser();
+    } catch (error) {
+      console.error("Deconectarea a eșuat:", error);
+    }
   }
 
   return (
@@ -169,6 +191,11 @@ export default function ProfileScreen() {
 }
 
 const styles = StyleSheet.create({
+  loadingContainer: {
+    flex: 1,
+    alignItems: "center",
+    justifyContent: "center",
+  },
   safeArea: {
     flex: 1,
     backgroundColor: "transparent",

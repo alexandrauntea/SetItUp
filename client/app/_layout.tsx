@@ -1,4 +1,3 @@
-//<<<<<<< alexandra
 import "@/services/firebase";
 import { useEffect } from "react";
 import { ActivityIndicator, View } from "react-native";
@@ -7,26 +6,37 @@ import { StatusBar } from "expo-status-bar";
 import "react-native-reanimated";
 
 import { AuthProvider, useAuth } from "../contexts/AuthContext";
-import { ProfileProvider } from "@/contexts/ProfileContext";
-
-export const unstable_settings = {
-  anchor: "(tabs)",
-};
+import { ProfileProvider, useProfile } from "@/contexts/ProfileContext";
 
 function RootLayoutNav() {
-  const { isAuthenticated, isLoading } = useAuth();
+  const { user, isLoading } = useAuth();
+  const { profile, isProfileLoading } = useProfile();
   const segments = useSegments();
   const router = useRouter();
+
   useEffect(() => {
-    if (isLoading) return;
+    if (isLoading || (user && isProfileLoading)) return;
+
     const inAuthGroup = segments[0] === "(auth)";
-    if (!isAuthenticated && !inAuthGroup) {
+    const inCreateProfile =
+      segments[0] === "profile" && segments[1] === "create";
+
+    if (!user && !inAuthGroup) {
       router.replace("/(auth)/login");
-    } else if (isAuthenticated && inAuthGroup) {
+      return;
+    }
+
+    if (user && (!profile || !profile.profileCompleted) && !inCreateProfile) {
+      router.replace("/profile/create");
+      return;
+    }
+
+    if (user && profile?.profileCompleted && (inAuthGroup || inCreateProfile)) {
       router.replace("/profile/view");
     }
-  }, [isAuthenticated, isLoading, segments, router]);
-  if (isLoading) {
+  }, [isLoading, isProfileLoading, profile, router, segments, user]);
+
+  if (isLoading || (user && isProfileLoading)) {
     return (
       <View style={{ flex: 1, justifyContent: "center", alignItems: "center" }}>
         <ActivityIndicator size="large" />

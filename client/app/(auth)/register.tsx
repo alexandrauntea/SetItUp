@@ -6,6 +6,13 @@ import { ScreenBackground } from "@/components/ScreenBackground";
 import { AppCheckbox } from "@/components/AppCheckbox";
 import { COLORS } from "@/constants/colors";
 import { useProfile } from "@/contexts/ProfileContext";
+import { logoutUser, registerUser } from "@/services/authService";
+import { createUserProfile } from "@/services/profileService";
+import { getFirebaseErrorMessage } from "@/utils/firebaseErrors";
+import {
+  getFirstValidationError,
+  validateRegisterForm,
+} from "@/utils/validation";
 import { Link, useRouter } from "expo-router";
 import { useState } from "react";
 import { ScrollView, StyleSheet, Text, View } from "react-native";
@@ -13,7 +20,7 @@ import { SafeAreaView } from "react-native-safe-area-context";
 
 export default function RegisterScreen() {
   const router = useRouter();
-  const { updateProfile } = useProfile();
+  const { refreshProfile } = useProfile();
   const [username, setUsername] = useState("");
   const [email, setEmail] = useState("");
   const [birthDate, setBirthDate] = useState("");
@@ -21,36 +28,73 @@ export default function RegisterScreen() {
   const [confirmPassword, setConfirmPassword] = useState("");
   const [formError, setFormError] = useState("");
   const [gdprAccepted, setGdprAccepted] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
-  function handleRegister() {
-    if (
-      !username.trim() ||
-      !email.trim() ||
-      !birthDate.trim() ||
-      !password ||
-      !confirmPassword
-    ) {
-      setFormError("Completeaza toate campurile.");
-      return;
-    }
+  async function handleRegister() {
+    const validation = validateRegisterForm({
+      username,
+      email,
+      birthDate,
+      password,
+      confirmPassword,
+      gdprConsent: gdprAccepted,
+    });
 
-    if (!gdprAccepted) {
-      setFormError("Bifează acordul pentru termeni și politica GDPR.");
-      return;
-    }
-
-    if (password !== confirmPassword) {
-      setFormError("Parolele nu se potrivesc.");
+    if (!validation.isValid) {
+      setFormError(getFirstValidationError(validation.errors));
       return;
     }
 
     setFormError("");
-    updateProfile({
-      username: username.trim(),
-      email: email.trim(),
-      birthDate: birthDate.trim(),
-    });
-    router.replace("/profile/create");
+    setIsSubmitting(true);
+    let accountWasCreated = false;
+
+    try {
+      const user = await registerUser(email.trim(), password);
+      accountWasCreated = true;
+
+      await createUserProfile({
+        uid: user.uid,
+        username: username.trim(),
+        email: email.trim().toLowerCase(),
+        birthDate: birthDate.trim(),
+        firstName: "",
+        lastName: "",
+        occupation: "",
+        gender: "other",
+        description: "",
+        interests: [],
+        isPrivate: false,
+        gdprAcceptedAt: new Date().toISOString(),
+        profileCompleted: false,
+      });
+
+      await refreshProfile(user.uid);
+      router.replace("/profile/create");
+    } catch (error) {
+      console.error("Înregistrarea a eșuat:", error);
+
+      if (accountWasCreated) {
+        try {
+          await logoutUser();
+        } catch (logoutError) {
+          console.error("Contul nou nu a putut fi deconectat:", logoutError);
+        }
+      }
+
+      if (error instanceof Error && error.message === "USERNAME_TAKEN") {
+        setFormError("Numele de utilizator este deja folosit.");
+      } else {
+        setFormError(
+          getFirebaseErrorMessage(
+            error,
+            "Contul nu a putut fi creat. Încearcă din nou.",
+          ),
+        );
+      }
+    } finally {
+      setIsSubmitting(false);
+    }
   }
 
   return (
@@ -116,7 +160,11 @@ export default function RegisterScreen() {
 
             <FormError message={formError} />
 
-            <AppButton title="Creează contul" onPress={handleRegister} />
+            <AppButton
+              title="Creează contul"
+              onPress={handleRegister}
+              loading={isSubmitting}
+            />
 
             <Link href="/login" style={styles.link}>
               Ai deja cont? Intră în cont
