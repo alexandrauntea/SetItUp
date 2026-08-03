@@ -1,4 +1,4 @@
-export interface RegisterFormdata {
+export interface RegisterFormData {
     username: string;
     email: string;
     password: string;
@@ -7,7 +7,7 @@ export interface RegisterFormdata {
     gdprConsent: boolean;
 }
 
-export interface LoginFormdata {
+export interface LoginFormData {
     email: string;
     password: string;
 }
@@ -38,7 +38,7 @@ export const validateBirthDate = (dateString: string): boolean => {
     return age >= 18;
 };
 
-export const validateRegisterForm = (formData: RegisterFormdata) => {
+export const validateRegisterForm = (formData: RegisterFormData) => {
     const errors: Record<string, string> = {};
     if (!validateUsername(formData.username)) {
         errors.username = 'Username must be 3-20 characters long and can only contain letters, numbers, and underscores.';
@@ -64,7 +64,7 @@ export const validateRegisterForm = (formData: RegisterFormdata) => {
     };
 };
 
-export const validateLoginForm = (data: LoginFormdata) => {
+export const validateLoginForm = (data: LoginFormData) => {
     const errors: Record<string, string> = {};
     if (!validateEmail(data.email)) {
         errors.email = 'Invalid email address.';
