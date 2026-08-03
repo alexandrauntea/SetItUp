@@ -1,0 +1,118 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isOwner(userId) {
+      return isSignedIn() && request.auth.uid == userId;
+    }
+
+    function hasValidProfileFields() {
+      return request.resource.data.keys().hasOnly([
+          'uid',
+          'username',
+          'email',
+          'birthDate',
+          'firstName',
+          'lastName',
+          'occupation',
+          'gender',
+          'description',
+          'interests',
+          'isPrivate',
+          'gdprAcceptedAt',
+          'profileCompleted',
+          'createdAt',
+          'updatedAt',
+          'photoUrl'
+        ])
+        && request.resource.data.keys().hasAll([
+          'uid',
+          'username',
+          'email',
+          'birthDate',
+          'firstName',
+          'lastName',
+          'occupation',
+          'gender',
+          'description',
+          'interests',
+          'isPrivate',
+          'gdprAcceptedAt',
+          'profileCompleted',
+          'createdAt',
+          'updatedAt'
+        ])
+        && request.resource.data.uid is string
+        && request.resource.data.username is string
+        && request.resource.data.username.matches('^[a-z0-9_]{3,20}$')
+        && request.resource.data.email is string
+        && request.resource.data.birthDate is string
+        && request.resource.data.firstName is string
+        && request.resource.data.lastName is string
+        && request.resource.data.occupation is string
+        && request.resource.data.gender in ['female', 'male', 'other']
+        && request.resource.data.description is string
+        && request.resource.data.interests is list
+        && request.resource.data.isPrivate is bool
+        && request.resource.data.gdprAcceptedAt is string
+        && request.resource.data.profileCompleted is bool
+        && request.resource.data.createdAt is string
+        && request.resource.data.updatedAt is string
+        && (!('photoUrl' in request.resource.data)
+          || request.resource.data.photoUrl is string);
+    }
+
+    match /users/{userId} {
+      allow get: if isOwner(userId);
+      allow list: if false;
+
+      allow create: if isOwner(userId)
+        && hasValidProfileFields()
+        && request.resource.data.uid == userId
+        && request.resource.data.email == request.auth.token.email
+        && getAfter(
+          /databases/$(database)/documents/usernames/$(request.resource.data.username)
+        ).data.uid == userId;
+
+      allow update: if isOwner(userId)
+        && hasValidProfileFields()
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly([
+          'firstName',
+          'lastName',
+          'occupation',
+          'gender',
+          'description',
+          'interests',
+          'isPrivate',
+          'photoUrl',
+          'profileCompleted',
+          'updatedAt'
+        ]);
+
+      allow delete: if isOwner(userId);
+    }
+
+    match /usernames/{username} {
+      allow get: if isSignedIn();
+      allow list: if false;
+
+      allow create: if isSignedIn()
+        && request.resource.data.keys().hasOnly(['uid', 'createdAt'])
+        && request.resource.data.uid == request.auth.uid
+        && request.resource.data.createdAt is string
+        && username.matches('^[a-z0-9_]{3,20}$')
+        && !exists(/databases/$(database)/documents/usernames/$(username))
+        && getAfter(
+          /databases/$(database)/documents/users/$(request.auth.uid)
+        ).data.username == username;
+
+      allow update: if false;
+      allow delete: if isSignedIn()
+        && resource.data.uid == request.auth.uid;
+    }
+  }
+}

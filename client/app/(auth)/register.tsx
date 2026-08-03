@@ -49,15 +49,16 @@ export default function RegisterScreen() {
     setFormError("");
     setIsSubmitting(true);
     let accountWasCreated = false;
+    const normalizedEmail = email.trim().toLowerCase();
 
     try {
-      const user = await registerUser(email.trim(), password);
+      const user = await registerUser(normalizedEmail, password);
       accountWasCreated = true;
 
       await createUserProfile({
         uid: user.uid,
         username: username.trim(),
-        email: email.trim().toLowerCase(),
+        email: normalizedEmail,
         birthDate: birthDate.trim(),
         firstName: "",
         lastName: "",
