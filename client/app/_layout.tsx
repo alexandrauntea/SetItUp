@@ -113,9 +113,12 @@ function RootLayoutNav() {
 
   return (
     <>
-      <Stack>
+      <Stack screenOptions={{ headerShown: false }}>
         <Stack.Screen name="(auth)" options={{ headerShown: false }} />
-        <Stack.Screen name="profile" options={{ headerShown: false }} />
+        <Stack.Screen name="profile/view" options={{ headerShown: false }} />
+        <Stack.Screen name="profile/edit" options={{ headerShown: false }} />
+        <Stack.Screen name="profile/create" options={{ headerShown: false }} />
+        <Stack.Screen name="profile/recover" options={{ headerShown: false }} />
       </Stack>
       <StatusBar style="auto" />
     </>

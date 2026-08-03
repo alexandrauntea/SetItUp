@@ -95,7 +95,7 @@ export default function EditProfileScreen() {
       Alert.alert("SetItUp", "Profilul a fost actualizat.", [
         {
           text: "OK",
-          onPress: () => router.back(),
+          onPress: () => router.replace("/profile/view"),
         },
       ]);
     } catch (error) {
@@ -285,7 +285,7 @@ export default function EditProfileScreen() {
                 <AppButton
                   title="Anulează"
                   variant="outline"
-                  onPress={() => router.back()}
+                  onPress={() => router.replace("/profile/view")}
                 />
               </View>
             </View>
