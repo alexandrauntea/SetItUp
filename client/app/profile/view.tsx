@@ -5,6 +5,7 @@ import { GENDER_OPTIONS } from "@/constants/profileOptions";
 import { useProfile } from "@/contexts/ProfileContext";
 import { logoutUser } from "@/services/authService";
 import { Ionicons } from "@expo/vector-icons";
+import { Image } from "expo-image";
 import { LinearGradient } from "expo-linear-gradient";
 import { useRouter } from "expo-router";
 import {
@@ -80,7 +81,18 @@ export default function ProfileScreen() {
               style={styles.headerCard}
             >
               <View style={styles.avatar}>
-                <Text style={styles.avatarText}>{initials}</Text>
+                {profile.photoUrl ? (
+                  <Image
+                    source={{
+                      uri: profile.photoUrl,
+                      cacheKey: profile.updatedAt,
+                    }}
+                    contentFit="cover"
+                    style={styles.avatarImage}
+                  />
+                ) : (
+                  <Text style={styles.avatarText}>{initials}</Text>
+                )}
               </View>
 
               <View style={styles.nameRow}>
@@ -238,6 +250,11 @@ const styles = StyleSheet.create({
     color: COLORS.primary,
     fontSize: 30,
     fontWeight: "bold",
+  },
+  avatarImage: {
+    width: "100%",
+    height: "100%",
+    borderRadius: 48,
   },
   nameRow: {
     flexDirection: "row",

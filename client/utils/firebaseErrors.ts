@@ -8,6 +8,12 @@ const FIREBASE_ERROR_MESSAGES: Record<string, string> = {
     "Au fost prea multe încercări. Încearcă din nou mai târziu.",
   "auth/network-request-failed":
     "Nu ne-am putut conecta. Verifică legătura la internet.",
+  "storage/unauthorized":
+    "Nu ai permisiunea să încarci această fotografie.",
+  "storage/retry-limit-exceeded":
+    "Încărcarea fotografiei a durat prea mult. Încearcă din nou.",
+  "storage/unknown":
+    "Fotografia nu a putut fi încărcată. Încearcă din nou.",
 };
 
 export function getFirebaseErrorMessage(

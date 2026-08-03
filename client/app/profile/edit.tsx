@@ -1,14 +1,21 @@
 import { AppButton } from "@/components/AppButton";
 import { AppInput } from "@/components/AppInput";
 import { FormError } from "@/components/FormError";
+import {
+  ProfilePhotoPicker,
+  type SelectedProfilePhoto,
+} from "@/components/ProfilePhotoPicker";
 import { ScreenBackground } from "@/components/ScreenBackground";
 import { COLORS } from "@/constants/colors";
+import { useAuth } from "@/contexts/AuthContext";
 import { useProfile } from "@/contexts/ProfileContext";
 import {
   GENDER_OPTIONS,
   INTEREST_OPTIONS,
 } from "@/constants/profileOptions";
 import { useRouter } from "expo-router";
+import { uploadProfilePhoto } from "@/services/profileImageService";
+import { getFirebaseErrorMessage } from "@/utils/firebaseErrors";
 import { useState } from "react";
 import {
   Alert,
@@ -24,6 +31,7 @@ import { SafeAreaView } from "react-native-safe-area-context";
 
 export default function EditProfileScreen() {
   const router = useRouter();
+  const { user } = useAuth();
   const { profile, updateProfile } = useProfile();
 
   const [firstName, setFirstName] = useState(profile?.firstName ?? "");
@@ -33,6 +41,8 @@ export default function EditProfileScreen() {
   const [gender, setGender] = useState(profile?.gender ?? "other");
   const [interests, setInterests] = useState<string[]>(profile?.interests ?? []);
   const [isPrivate, setIsPrivate] = useState(profile?.isPrivate ?? false);
+  const [selectedPhoto, setSelectedPhoto] =
+    useState<SelectedProfilePhoto | null>(null);
   const [formError, setFormError] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -82,6 +92,18 @@ export default function EditProfileScreen() {
     setIsSubmitting(true);
 
     try {
+      if (!user) {
+        throw new Error("AUTH_REQUIRED");
+      }
+
+      const photoUrl = selectedPhoto
+        ? await uploadProfilePhoto(
+            user.uid,
+            selectedPhoto.uri,
+            selectedPhoto.mimeType,
+          )
+        : profile?.photoUrl;
+
       await updateProfile({
         firstName: firstName.trim(),
         lastName: lastName.trim(),
@@ -90,6 +112,7 @@ export default function EditProfileScreen() {
         gender,
         interests,
         isPrivate,
+        ...(photoUrl ? { photoUrl } : {}),
       });
 
       Alert.alert("SetItUp", "Profilul a fost actualizat.", [
@@ -100,7 +123,12 @@ export default function EditProfileScreen() {
       ]);
     } catch (error) {
       console.error("Profilul nu a putut fi actualizat:", error);
-      setFormError("Modificările nu au putut fi salvate.");
+      setFormError(
+        getFirebaseErrorMessage(
+          error,
+          "Fotografia sau modificările nu au putut fi salvate.",
+        ),
+      );
     } finally {
       setIsSubmitting(false);
     }
@@ -125,6 +153,13 @@ export default function EditProfileScreen() {
               </View>
 
               <View style={styles.form}>
+                <ProfilePhotoPicker
+                  initials={`${firstName.charAt(0)}${lastName.charAt(0)}`.toUpperCase()}
+                  photoUri={selectedPhoto?.uri ?? profile?.photoUrl}
+                  onPhotoSelected={setSelectedPhoto}
+                  disabled={isSubmitting}
+                />
+
                 <AppInput
                   label="Prenume"
                   placeholder="De exemplu: Andrei"
