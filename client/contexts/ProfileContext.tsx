@@ -1,19 +1,8 @@
 import { createContext, ReactNode, useContext, useState } from "react";
+import type { UserProfile } from "@/types/profile";
 
-export type ProfileData = {
-  username: string;
-  email: string;
-  birthDate: string;
-  firstName: string;
-  lastName: string;
-  description: string;
-  occupation: string;
-  gender: string;
-  interests: string[];
-  isPrivate: boolean;
-};
-
-const initialProfile: ProfileData = {
+const initialProfile: UserProfile = {
+  uid: "demo-user",
   username: "andrei",
   email: "andrei@email.com",
   birthDate: "02/08/2005",
@@ -21,14 +10,18 @@ const initialProfile: ProfileData = {
   lastName: "Barbuceanu",
   description: "Student, pasionat de tehnologie, concerte și city break-uri.",
   occupation: "Student",
-  gender: "Masculin",
+  gender: "male",
   interests: ["Tehnologie", "Muzică", "Călătorii"],
   isPrivate: false,
+  gdprAcceptedAt: new Date(0).toISOString(),
+  profileCompleted: true,
+  createdAt: new Date(0).toISOString(),
+  updatedAt: new Date(0).toISOString(),
 };
 
 type ProfileContextValue = {
-  profile: ProfileData;
-  updateProfile: (changes: Partial<ProfileData>) => void;
+  profile: UserProfile;
+  updateProfile: (changes: Partial<UserProfile>) => void;
 };
 
 const ProfileContext = createContext<ProfileContextValue | undefined>(
@@ -42,7 +35,7 @@ type ProfileProviderProps = {
 export function ProfileProvider({ children }: ProfileProviderProps) {
   const [profile, setProfile] = useState(initialProfile);
 
-  function updateProfile(changes: Partial<ProfileData>) {
+  function updateProfile(changes: Partial<UserProfile>) {
     setProfile((currentProfile) => ({
       ...currentProfile,
       ...changes,

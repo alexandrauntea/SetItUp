@@ -1,6 +1,7 @@
 import { AppButton } from "@/components/AppButton";
 import { ScreenBackground } from "@/components/ScreenBackground";
 import { COLORS } from "@/constants/colors";
+import { GENDER_OPTIONS } from "@/constants/profileOptions";
 import { useProfile } from "@/contexts/ProfileContext";
 import { Ionicons } from "@expo/vector-icons";
 import { LinearGradient } from "expo-linear-gradient";
@@ -30,6 +31,9 @@ export default function ProfileScreen() {
   const fullName = `${profile.firstName} ${profile.lastName}`.trim();
   const initials = `${profile.firstName.charAt(0)}${profile.lastName.charAt(0)}`;
   const age = calculateAge(profile.birthDate);
+  const genderLabel =
+    GENDER_OPTIONS.find((option) => option.value === profile.gender)?.label ??
+    profile.gender;
 
   function handleEditProfile() {
     router.push("/profile/edit");
@@ -95,7 +99,7 @@ export default function ProfileScreen() {
                   />
                 </View>
                 <Text style={styles.infoLabel}>Gen</Text>
-                <Text style={styles.infoValue}>{profile.gender}</Text>
+                <Text style={styles.infoValue}>{genderLabel}</Text>
               </View>
 
               <View style={styles.infoCard}>

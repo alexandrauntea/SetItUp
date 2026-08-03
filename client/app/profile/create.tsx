@@ -5,6 +5,7 @@ import { ScreenBackground } from "@/components/ScreenBackground";
 import { COLORS } from "@/constants/colors";
 import { useProfile } from "@/contexts/ProfileContext";
 import { GENDER_OPTIONS, INTEREST_OPTIONS } from "@/constants/profileOptions";
+import type { Gender } from "@/types/profile";
 import { useRouter } from "expo-router";
 import { useState } from "react";
 import {
@@ -26,7 +27,7 @@ export default function CreateProfileScreen() {
   const [firstName, setFirstName] = useState("");
   const [lastName, setLastName] = useState("");
   const [occupation, setOccupation] = useState("");
-  const [gender, setGender] = useState("");
+  const [gender, setGender] = useState<Gender | "">("");
   const [description, setDescription] = useState("");
   const [interests, setInterests] = useState<string[]>([]);
   const [isPrivate, setIsPrivate] = useState(false);
@@ -80,6 +81,12 @@ export default function CreateProfileScreen() {
 
       setFormError("");
       setStep(3);
+      return;
+    }
+
+    if (!gender) {
+      setFormError("Selectează genul.");
+      setStep(1);
       return;
     }
 
@@ -171,12 +178,12 @@ export default function CreateProfileScreen() {
 
                       <View style={styles.genderOptions}>
                         {GENDER_OPTIONS.map((option) => {
-                          const isSelected = gender === option;
+                          const isSelected = gender === option.value;
 
                           return (
                             <Pressable
-                              key={option}
-                              onPress={() => setGender(option)}
+                              key={option.value}
+                              onPress={() => setGender(option.value)}
                               style={[
                                 styles.genderOption,
                                 isSelected && styles.genderOptionSelected,
@@ -188,7 +195,7 @@ export default function CreateProfileScreen() {
                                   isSelected && styles.genderTextSelected,
                                 ]}
                               >
-                                {option}
+                                {option.label}
                               </Text>
                             </Pressable>
                           );

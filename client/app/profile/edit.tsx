@@ -144,12 +144,12 @@ export default function EditProfileScreen() {
 
                   <View style={styles.optionsRow}>
                     {GENDER_OPTIONS.map((option) => {
-                      const isSelected = gender === option;
+                      const isSelected = gender === option.value;
 
                       return (
                         <Pressable
-                          key={option}
-                          onPress={() => setGender(option)}
+                          key={option.value}
+                          onPress={() => setGender(option.value)}
                           style={[
                             styles.genderOption,
                             isSelected && styles.optionSelected,
@@ -161,7 +161,7 @@ export default function EditProfileScreen() {
                               isSelected && styles.optionTextSelected,
                             ]}
                           >
-                            {option}
+                            {option.label}
                           </Text>
                         </Pressable>
                       );
