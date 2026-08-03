@@ -1,69 +1,55 @@
 //<<<<<<< alexandra
-import '@/services/firebase';
-import { useEffect } from 'react';
-import {ActivityIndicator, View} from 'react-native';
-import { DarkTheme, DefaultTheme, ThemeProvider } from '@react-navigation/native';
-import { Stack, useRouter, useSegments } from 'expo-router';
-import { StatusBar } from 'expo-status-bar';
-import 'react-native-reanimated';
+import "@/services/firebase";
+import { useEffect } from "react";
+import { ActivityIndicator, View } from "react-native";
+import { Stack, useRouter, useSegments } from "expo-router";
+import { StatusBar } from "expo-status-bar";
+import "react-native-reanimated";
 
-import { useColorScheme } from '@/hooks/use-color-scheme';
-
-import { AuthProvider, useAuth } from '../contexts/AuthContext';
+import { AuthProvider, useAuth } from "../contexts/AuthContext";
+import { ProfileProvider } from "@/contexts/ProfileContext";
 
 export const unstable_settings = {
-  anchor: '(tabs)',
+  anchor: "(tabs)",
 };
 
 function RootLayoutNav() {
-  const colorScheme = useColorScheme();
-  const {isAuthenticated, isLoading} = useAuth();
+  const { isAuthenticated, isLoading } = useAuth();
   const segments = useSegments();
   const router = useRouter();
   useEffect(() => {
-    if (isLoading) return; 
-    const inAuthGroyp = segments[0] === '(auth)';
-    if (!isAuthenticated && !inAuthGroyp) {
-      router.replace('/(auth)/login');
-    } else if (isAuthenticated && inAuthGroyp) {
-      router.replace('/(tabs)');
+    if (isLoading) return;
+    const inAuthGroup = segments[0] === "(auth)";
+    if (!isAuthenticated && !inAuthGroup) {
+      router.replace("/(auth)/login");
+    } else if (isAuthenticated && inAuthGroup) {
+      router.replace("/profile/view");
     }
-  }, [isAuthenticated, isLoading, segments]
-  );
+  }, [isAuthenticated, isLoading, segments, router]);
   if (isLoading) {
     return (
-      <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
+      <View style={{ flex: 1, justifyContent: "center", alignItems: "center" }}>
         <ActivityIndicator size="large" />
       </View>
     );
   }
   return (
-    <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
+    <>
       <Stack>
-        <Stack.Screen name = "(auth" options={{ headerShown: false }} />
-        <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-        <Stack.Screen name="modal" options={{ presentation: 'modal', title: 'Modal' }} />
+        <Stack.Screen name="(auth)" options={{ headerShown: false }} />
+        <Stack.Screen name="profile" options={{ headerShown: false }} />
       </Stack>
       <StatusBar style="auto" />
-    </ThemeProvider>
-   );
-  }
+    </>
+  );
+}
 
-
-// export default function RootLayout() {
-//   return (
-//     <ProfileProvider>
-//       <Stack screenOptions={{ headerShown: false }} />
-//       <StatusBar style="dark" />
-//     </ProfileProvider>
-// 
-//   );
-// }
-//>>>>>>> main
 export default function RootLayout() {
   return (
     <AuthProvider>
-      <RootLayoutNav />
+      <ProfileProvider>
+        <RootLayoutNav />
+      </ProfileProvider>
     </AuthProvider>
   );
 }
