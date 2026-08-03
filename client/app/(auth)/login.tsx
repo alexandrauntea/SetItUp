@@ -17,7 +17,7 @@ export default function LoginScreen() {
 
   function handleStart() {
     if (!email.trim() || !password) {
-      setFormError("Scrie emailul și parola.");
+      setFormError("Completeaza campurile.");
       return;
     }
 
@@ -29,34 +29,34 @@ export default function LoginScreen() {
     <ScreenBackground>
       <SafeAreaView style={styles.container}>
         <View style={styles.form}>
-        <BrandLogo />
+          <BrandLogo />
 
-        <Text style={styles.title}>Bine ai revenit</Text>
+          <Text style={styles.title}>Bine ai revenit</Text>
 
-        <AppInput
-          label="Email"
-          placeholder="nume@email.com"
-          value={email}
-          onChangeText={setEmail}
-          keyboardType="email-address"
-          autoCapitalize="none"
-        />
+          <AppInput
+            label="Email"
+            placeholder="adresa@email.com"
+            value={email}
+            onChangeText={setEmail}
+            keyboardType="email-address"
+            autoCapitalize="none"
+          />
 
-        <AppInput
-          label="Parolă"
-          placeholder="Parola ta"
-          value={password}
-          onChangeText={setPassword}
-          secureTextEntry
-        />
+          <AppInput
+            label="Parolă"
+            placeholder="Parola ta"
+            value={password}
+            onChangeText={setPassword}
+            secureTextEntry
+          />
 
-        <FormError message={formError} />
+          <FormError message={formError} />
 
-        <AppButton title="Intră în cont" onPress={handleStart} />
+          <AppButton title="Intră în cont" onPress={handleStart} />
 
-        <Link href="/register" style={styles.link}>
-          Prima dată aici? Creează un cont
-        </Link>
+          <Link href="/register" style={styles.link}>
+            Nu ai cont? Creează unul
+          </Link>
         </View>
       </SafeAreaView>
     </ScreenBackground>

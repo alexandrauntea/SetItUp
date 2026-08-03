@@ -4,10 +4,7 @@ import { FormError } from "@/components/FormError";
 import { ScreenBackground } from "@/components/ScreenBackground";
 import { COLORS } from "@/constants/colors";
 import { useProfile } from "@/contexts/ProfileContext";
-import {
-  GENDER_OPTIONS,
-  INTEREST_OPTIONS,
-} from "@/constants/profileOptions";
+import { GENDER_OPTIONS, INTEREST_OPTIONS } from "@/constants/profileOptions";
 import { useRouter } from "expo-router";
 import { useState } from "react";
 import {
@@ -72,7 +69,7 @@ export default function CreateProfileScreen() {
 
     if (step === 2) {
       if (!description.trim()) {
-        setFormError("Scrie câteva lucruri despre tine.");
+        setFormError("Completeaza descrierea.");
         return;
       }
 
@@ -98,16 +95,12 @@ export default function CreateProfileScreen() {
       isPrivate,
     });
 
-    Alert.alert(
-      "Gata!",
-      "Profilul tău este pregătit.",
-      [
-        {
-          text: "Continuă",
-          onPress: () => router.replace("/profile/view"),
-        },
-      ],
-    );
+    Alert.alert("Gata!", "Profilul tău este pregătit.", [
+      {
+        text: "Continuă",
+        onPress: () => router.replace("/profile/view"),
+      },
+    ]);
   }
 
   return (
@@ -129,8 +122,7 @@ export default function CreateProfileScreen() {
                     style={[
                       styles.progressValue,
                       {
-                        width:
-                          step === 1 ? "33%" : step === 2 ? "66%" : "100%",
+                        width: step === 1 ? "33%" : step === 2 ? "66%" : "100%",
                       },
                     ]}
                   />
@@ -208,7 +200,7 @@ export default function CreateProfileScreen() {
                   <>
                     <AppInput
                       label="Descriere"
-                      placeholder="Ce ai vrea să știe ceilalți despre tine?"
+                      placeholder="Scrie câteva cuvinte"
                       value={description}
                       onChangeText={setDescription}
                       multiline
@@ -219,9 +211,6 @@ export default function CreateProfileScreen() {
 
                     <View style={styles.interestsSection}>
                       <Text style={styles.label}>Interese</Text>
-                      <Text style={styles.helperText}>
-                        Alege ce ți se potrivește.
-                      </Text>
 
                       <View style={styles.interestOptions}>
                         {INTEREST_OPTIONS.map((interest) => {
@@ -263,7 +252,8 @@ export default function CreateProfileScreen() {
                         <View style={styles.visibilityTextContainer}>
                           <Text style={styles.visibilityTitle}>Public</Text>
                           <Text style={styles.visibilityDescription}>
-                            Profilul poate fi descoperit de ceilalți utilizatori.
+                            Profilul poate fi descoperit de ceilalți
+                            utilizatori.
                           </Text>
                         </View>
                         <View
@@ -299,7 +289,6 @@ export default function CreateProfileScreen() {
                         </View>
                       </Pressable>
                     </View>
-
                   </>
                 )}
 
@@ -428,10 +417,6 @@ const styles = StyleSheet.create({
   },
   interestsSection: {
     gap: 8,
-  },
-  helperText: {
-    color: COLORS.textSecondary,
-    fontSize: 14,
   },
   interestOptions: {
     flexDirection: "row",

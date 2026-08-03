@@ -30,7 +30,7 @@ export default function RegisterScreen() {
       !password ||
       !confirmPassword
     ) {
-      setFormError("Mai sunt câmpuri necompletate.");
+      setFormError("Completeaza toate campurile.");
       return;
     }
 
@@ -57,70 +57,70 @@ export default function RegisterScreen() {
     <ScreenBackground>
       <SafeAreaView style={styles.safeArea}>
         <ScrollView
-        contentContainerStyle={styles.container}
-        keyboardShouldPersistTaps="handled"
-        keyboardDismissMode="on-drag"
-        showsVerticalScrollIndicator={false}
-      >
+          contentContainerStyle={styles.container}
+          keyboardShouldPersistTaps="handled"
+          keyboardDismissMode="on-drag"
+          showsVerticalScrollIndicator={false}
+        >
           <View style={styles.form}>
-          <BrandLogo size={56} />
+            <BrandLogo size={56} />
 
-        <Text style={styles.title}>Creează-ți contul</Text>
+            <Text style={styles.title}>Creează-ți contul</Text>
 
-        <AppInput
-          label="Nume de utilizator"
-          placeholder="De exemplu: andrei21"
-          value={username}
-          onChangeText={setUsername}
-          autoCapitalize="none"
-        />
+            <AppInput
+              label="Nume de utilizator"
+              placeholder="De exemplu: andrei21"
+              value={username}
+              onChangeText={setUsername}
+              autoCapitalize="none"
+            />
 
-        <AppInput
-          label="Email"
-          placeholder="nume@email.com"
-          value={email}
-          onChangeText={setEmail}
-          keyboardType="email-address"
-          autoCapitalize="none"
-        />
+            <AppInput
+              label="Email"
+              placeholder="adresa@email.com"
+              value={email}
+              onChangeText={setEmail}
+              keyboardType="email-address"
+              autoCapitalize="none"
+            />
 
-        <AppInput
-          label="Data nașterii"
-          placeholder="ZZ/LL/AAAA"
-          value={birthDate}
-          onChangeText={setBirthDate}
-          keyboardType="number-pad"
-        />
+            <AppInput
+              label="Data nașterii"
+              placeholder="ZZ/LL/AAAA"
+              value={birthDate}
+              onChangeText={setBirthDate}
+              keyboardType="number-pad"
+            />
 
-        <AppInput
-          label="Parolă"
-          placeholder="Alege o parolă"
-          value={password}
-          onChangeText={setPassword}
-          secureTextEntry
-        />
+            <AppInput
+              label="Parolă"
+              placeholder="Alege o parolă"
+              value={password}
+              onChangeText={setPassword}
+              secureTextEntry
+            />
 
-        <AppInput
-          label="Confirmă parola"
-          placeholder="Repetă parola"
-          value={confirmPassword}
-          onChangeText={setConfirmPassword}
-          secureTextEntry
-        />
+            <AppInput
+              label="Confirmă parola"
+              placeholder="Confirmă parola"
+              value={confirmPassword}
+              onChangeText={setConfirmPassword}
+              secureTextEntry
+            />
 
-        <AppCheckbox
-          label="Sunt de acord cu termenii și politica GDPR."
-          value={gdprAccepted}
-          onValueChange={setGdprAccepted}
-        />
+            <AppCheckbox
+              label="Sunt de acord cu termenii și politica GDPR."
+              value={gdprAccepted}
+              onValueChange={setGdprAccepted}
+            />
 
-        <FormError message={formError} />
+            <FormError message={formError} />
 
-        <AppButton title="Creează contul" onPress={handleRegister} />
+            <AppButton title="Creează contul" onPress={handleRegister} />
 
-        <Link href="/login" style={styles.link}>
-          Ai deja cont? Intră în cont
-        </Link>
+            <Link href="/login" style={styles.link}>
+              Ai deja cont? Intră în cont
+            </Link>
           </View>
         </ScrollView>
       </SafeAreaView>
