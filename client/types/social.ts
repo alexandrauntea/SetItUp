@@ -1,10 +1,5 @@
 export type FriendRequestStatus = "pending";
-
-export type RelationshipState =
-  | "none"
-  | "request-sent"
-  | "request-received"
-  | "friends";
+export type RelationshipState = "none" | "request-sent" | "request-received" | "friends";
 
 export interface UsernameDirectoryEntry {
   uid: string;
