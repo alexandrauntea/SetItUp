@@ -1,3 +1,4 @@
+import { COLORS } from "@/constants/colors";
 import React from "react";
 import {
   ActivityIndicator,
@@ -63,7 +64,7 @@ export const ManagerCard: React.FC<ManagerCardProps> = ({
       </View>
 
       {loading ? (
-        <ActivityIndicator size="small" color="#7000FF" style={styles.loader} />
+        <ActivityIndicator size="small" color={COLORS.primary} style={styles.loader} />
       ) : (
         <View style={styles.actionsRow}>
           {type === "incoming" && (
@@ -112,12 +113,17 @@ export const ManagerCard: React.FC<ManagerCardProps> = ({
 
 const styles = StyleSheet.create({
   card: {
-    backgroundColor: "#1E1E2D",
-    borderRadius: 12,
+    backgroundColor: COLORS.background,
+    borderRadius: 18,
     padding: 16,
     marginVertical: 6,
     borderWidth: 1,
-    borderColor: "#2C2C3E",
+    borderColor: COLORS.primarySoft,
+    shadowColor: COLORS.text,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.04,
+    shadowRadius: 10,
+    elevation: 1,
   },
   headerRow: {
     flexDirection: "row",
@@ -127,13 +133,13 @@ const styles = StyleSheet.create({
     width: 44,
     height: 44,
     borderRadius: 22,
-    backgroundColor: "#3A3A52",
+    backgroundColor: COLORS.primarySoft,
     justifyContent: "center",
     alignItems: "center",
     marginRight: 12,
   },
   avatarText: {
-    color: "#FFFFFF",
+    color: COLORS.primary,
     fontSize: 16,
     fontWeight: "bold",
   },
@@ -141,24 +147,24 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   username: {
-    color: "#FFFFFF",
+    color: COLORS.text,
     fontSize: 16,
     fontWeight: "600",
   },
   subtitle: {
-    color: "#A0A0B2",
+    color: COLORS.textSecondary,
     fontSize: 13,
     marginTop: 2,
   },
   badge: {
-    backgroundColor: "#2C2C3E",
-    paddingHorizontal: 8,
+    backgroundColor: COLORS.primarySoft,
+    paddingHorizontal: 10,
     paddingVertical: 4,
-    borderRadius: 6,
+    borderRadius: 12,
   },
   badgeText: {
-    color: "#9E9EB4",
-    fontSize: 11,
+    color: COLORS.primary,
+    fontSize: 12,
     fontWeight: "600",
   },
   loader: {
@@ -172,41 +178,41 @@ const styles = StyleSheet.create({
   button: {
     flex: 1,
     paddingVertical: 10,
-    borderRadius: 8,
+    borderRadius: 12,
     alignItems: "center",
     justifyContent: "center",
   },
   acceptButton: {
-    backgroundColor: "#7000FF",
+    backgroundColor: COLORS.primary,
   },
   acceptButtonText: {
-    color: "#FFFFFF",
+    color: COLORS.background,
     fontWeight: "600",
     fontSize: 14,
   },
   declineButton: {
-    backgroundColor: "transparent",
+    backgroundColor: COLORS.surface,
     borderWidth: 1,
-    borderColor: "#3A3A52",
+    borderColor: COLORS.border,
   },
   declineButtonText: {
-    color: "#A0A0B2",
+    color: COLORS.textSecondary,
     fontWeight: "600",
     fontSize: 14,
   },
   cancelButton: {
-    backgroundColor: "#2C2C3E",
+    backgroundColor: COLORS.primarySoft,
   },
   cancelButtonText: {
-    color: "#FF4D4D",
+    color: COLORS.primary,
     fontWeight: "600",
     fontSize: 14,
   },
   removeButton: {
-    backgroundColor: "#2C2C3E",
+    backgroundColor: COLORS.primarySoft,
   },
   removeButtonText: {
-    color: "#FF4D4D",
+    color: COLORS.primary,
     fontWeight: "600",
     fontSize: 14,
   },

@@ -83,35 +83,45 @@ export async function sendManagerRequest(
 export async function getIncomingManagerRequests(
   uid: string
 ): Promise<ManagerRequest[]> {
-  const requestsRef = collection(db, MANAGER_REQUESTS_COLLECTION);
-  const q = query(
-    requestsRef,
-    where("managerId", "==", uid),
-    where("status", "==", "pending")
-  );
+  try {
+    const requestsRef = collection(db, MANAGER_REQUESTS_COLLECTION);
+    const q = query(
+      requestsRef,
+      where("managerId", "==", uid),
+      where("status", "==", "pending")
+    );
 
-  const snapshot = await getDocs(q);
-  return snapshot.docs.map((docSnap) => ({
-    id: docSnap.id,
-    ...docSnap.data(),
-  })) as ManagerRequest[];
+    const snapshot = await getDocs(q);
+    return snapshot.docs.map((docSnap) => ({
+      id: docSnap.id,
+      ...docSnap.data(),
+    })) as ManagerRequest[];
+  } catch (error) {
+    console.error("Error fetching incoming manager requests:", error);
+    return [];
+  }
 }
 
 export async function getOutgoingManagerRequests(
   uid: string
 ): Promise<ManagerRequest[]> {
-  const requestsRef = collection(db, MANAGER_REQUESTS_COLLECTION);
-  const q = query(
-    requestsRef,
-    where("ownerId", "==", uid),
-    where("status", "==", "pending")
-  );
+  try {
+    const requestsRef = collection(db, MANAGER_REQUESTS_COLLECTION);
+    const q = query(
+      requestsRef,
+      where("ownerId", "==", uid),
+      where("status", "==", "pending")
+    );
 
-  const snapshot = await getDocs(q);
-  return snapshot.docs.map((docSnap) => ({
-    id: docSnap.id,
-    ...docSnap.data(),
-  })) as ManagerRequest[];
+    const snapshot = await getDocs(q);
+    return snapshot.docs.map((docSnap) => ({
+      id: docSnap.id,
+      ...docSnap.data(),
+    })) as ManagerRequest[];
+  } catch (error) {
+    console.error("Error fetching outgoing manager requests:", error);
+    return [];
+  }
 }
 
 export async function acceptManagerRequest(
@@ -184,16 +194,21 @@ export async function declineManagerRequest(
 export async function getManagerRelationship(
   ownerId: string
 ): Promise<ManagerRelationship | null> {
-  const relRef = doc(db, MANAGER_RELATIONSHIPS_COLLECTION, ownerId);
-  const relSnap = await getDoc(relRef);
+  try {
+    const relRef = doc(db, MANAGER_RELATIONSHIPS_COLLECTION, ownerId);
+    const relSnap = await getDoc(relRef);
 
-  if (!relSnap.exists()) {
+    if (!relSnap.exists()) {
+      return null;
+    }
+
+    return {
+      ...relSnap.data(),
+    } as ManagerRelationship;
+  } catch (error) {
+    console.error("Error fetching manager relationship:", error);
     return null;
   }
-
-  return {
-    ...relSnap.data(),
-  } as ManagerRelationship;
 }
 
 export async function isManagerForUser(

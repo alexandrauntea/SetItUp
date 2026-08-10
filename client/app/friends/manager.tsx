@@ -1,4 +1,6 @@
+import { ScreenBackground } from "@/components/ScreenBackground";
 import { ManagerCard } from "@/components/social/ManagerCard";
+import { COLORS } from "@/constants/colors";
 import { useAuth } from "@/contexts/AuthContext";
 import { getFriends } from "@/services/social/friendshipService";
 import {
@@ -11,6 +13,7 @@ import {
   sendManagerRequest,
 } from "@/services/social/managerService";
 import { Friendship, ManagerRelationship, ManagerRequest } from "@/types/social";
+import { LinearGradient } from "expo-linear-gradient";
 import React, { useCallback, useEffect, useState } from "react";
 import {
   ActivityIndicator,
@@ -22,6 +25,7 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
 
 export default function ManagerScreen() {
   const { user } = useAuth();
@@ -45,24 +49,36 @@ export default function ManagerScreen() {
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
   const loadData = useCallback(async () => {
-    if (!uid) return;
+    if (!uid) {
+      setLoading(false);
+      setRefreshing(false);
+      return;
+    }
     setErrorMessage(null);
 
     try {
-      const [managerRel, incoming, outgoing, friendList] = await Promise.all([
-        getManagerRelationship(uid),
-        getIncomingManagerRequests(uid),
-        getOutgoingManagerRequests(uid),
-        getFriends(uid),
-      ]);
+      const [managerRelResult, incomingResult, outgoingResult, friendsResult] =
+        await Promise.allSettled([
+          getManagerRelationship(uid),
+          getIncomingManagerRequests(uid),
+          getOutgoingManagerRequests(uid),
+          getFriends(uid),
+        ]);
 
-      setActiveManager(managerRel);
-      setIncomingRequests(incoming);
-      setOutgoingRequests(outgoing);
-      setFriends(friendList);
+      if (managerRelResult.status === "fulfilled") {
+        setActiveManager(managerRelResult.value);
+      }
+      if (incomingResult.status === "fulfilled") {
+        setIncomingRequests(incomingResult.value);
+      }
+      if (outgoingResult.status === "fulfilled") {
+        setOutgoingRequests(outgoingResult.value);
+      }
+      if (friendsResult.status === "fulfilled") {
+        setFriends(friendsResult.value);
+      }
     } catch (error: any) {
       console.error("Error loading manager data:", error);
-      setErrorMessage("A apărut o eroare la încărcarea datelor.");
     } finally {
       setLoading(false);
       setRefreshing(false);
@@ -197,256 +213,295 @@ export default function ManagerScreen() {
 
   if (loading) {
     return (
-      <View style={styles.centerContainer}>
-        <ActivityIndicator size="large" color="#7000FF" />
-        <Text style={styles.loadingText}>Se încarcă datele de manager...</Text>
-      </View>
+      <ScreenBackground>
+        <View style={styles.centerContainer}>
+          <ActivityIndicator size="large" color={COLORS.primary} />
+          <Text style={styles.loadingText}>Se încarcă datele de manager...</Text>
+        </View>
+      </ScreenBackground>
     );
   }
 
   return (
-    <ScrollView
-      style={styles.container}
-      contentContainerStyle={styles.contentContainer}
-      refreshControl={
-        <RefreshControl
-          refreshing={refreshing}
-          onRefresh={onRefresh}
-          tintColor="#7000FF"
-        />
-      }
-    >
-      <View style={styles.header}>
-        <Text style={styles.title}>Gestionare Manager</Text>
-        <Text style={styles.subtitle}>
-          Setează un prieten drept manager pentru a-i oferi acces la profilul și activitatea ta.
-        </Text>
-      </View>
-
-      {errorMessage && (
-        <View style={styles.errorBanner}>
-          <Text style={styles.errorText}>{errorMessage}</Text>
-        </View>
-      )}
-
-      {/* 1. Relație Activă */}
-      <View style={styles.section}>
-        <Text style={styles.sectionTitle}>Managerul Tău Activ</Text>
-        {activeManager ? (
-          <ManagerCard
-            username={activeManager.managerUsername}
-            type="active_as_owner"
-            onRemove={handleRemoveManager}
-            loading={actionLoadingId === "remove-manager"}
-          />
-        ) : (
-          <View style={styles.emptyCard}>
-            <Text style={styles.emptyText}>
-              Nu ai niciun manager desemnat în acest moment.
-            </Text>
-          </View>
-        )}
-      </View>
-
-      {/* 2. Propune Prieten ca Manager */}
-      {!activeManager && outgoingRequests.length === 0 && (
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Propune un Manager</Text>
-          {friends.length === 0 ? (
-            <View style={styles.emptyCard}>
-              <Text style={styles.emptyText}>
-                Trebuie să ai cel puțin un prieten în listă pentru a-l propune drept manager.
+    <ScreenBackground>
+      <SafeAreaView style={styles.safeArea}>
+        <ScrollView
+          style={styles.container}
+          contentContainerStyle={styles.contentContainer}
+          showsVerticalScrollIndicator={false}
+          refreshControl={
+            <RefreshControl
+              refreshing={refreshing}
+              onRefresh={onRefresh}
+              tintColor={COLORS.primary}
+            />
+          }
+        >
+          <View style={styles.content}>
+            <LinearGradient
+              colors={[COLORS.primary, COLORS.primaryPressed]}
+              start={{ x: 0, y: 0 }}
+              end={{ x: 1, y: 1 }}
+              style={styles.headerCard}
+            >
+              <Text style={styles.title}>Gestionare Manager</Text>
+              <Text style={styles.subtitle}>
+                Setează un prieten drept manager pentru a-i oferi acces la profilul și activitatea ta.
               </Text>
-            </View>
-          ) : (
-            <View style={styles.proposalCard}>
-              <Text style={styles.proposalLabel}>
-                Alege un prieten din listă:
-              </Text>
-              <ScrollView
-                horizontal
-                showsHorizontalScrollIndicator={false}
-                style={styles.friendsPickerScroll}
-              >
-                {friends.map((f) => {
-                  const details = getFriendDetails(f);
-                  const isSelected = selectedFriend?.uid === details.uid;
-                  return (
-                    <TouchableOpacity
-                      key={f.id}
-                      style={[
-                        styles.friendChip,
-                        isSelected && styles.friendChipSelected,
-                      ]}
-                      onPress={() => setSelectedFriend(details)}
-                      activeOpacity={0.7}
-                    >
-                      <Text
-                        style={[
-                          styles.friendChipText,
-                          isSelected && styles.friendChipTextSelected,
-                        ]}
-                      >
-                        @{details.username}
-                      </Text>
-                    </TouchableOpacity>
-                  );
-                })}
-              </ScrollView>
+            </LinearGradient>
 
-              {selectedFriend && (
-                <TouchableOpacity
-                  style={styles.submitButton}
-                  onPress={handleSendProposal}
-                  disabled={actionLoadingId === "send-proposal"}
-                  activeOpacity={0.8}
-                >
-                  {actionLoadingId === "send-proposal" ? (
-                    <ActivityIndicator size="small" color="#FFFFFF" />
-                  ) : (
-                    <Text style={styles.submitButtonText}>
-                      Trimite propunere către @{selectedFriend.username}
-                    </Text>
-                  )}
-                </TouchableOpacity>
+            {errorMessage && (
+              <View style={styles.errorBanner}>
+                <Text style={styles.errorText}>{errorMessage}</Text>
+              </View>
+            )}
+
+            {/* 1. Relație Activă */}
+            <View style={styles.section}>
+              <Text style={styles.sectionTitle}>Managerul Tău Activ</Text>
+              {activeManager ? (
+                <ManagerCard
+                  username={activeManager.managerUsername}
+                  type="active_as_owner"
+                  onRemove={handleRemoveManager}
+                  loading={actionLoadingId === "remove-manager"}
+                />
+              ) : (
+                <View style={styles.emptyCard}>
+                  <Text style={styles.emptyText}>
+                    Nu ai niciun manager desemnat în acest moment.
+                  </Text>
+                </View>
               )}
             </View>
-          )}
-        </View>
-      )}
 
-      {/* 3. Cereri Primite */}
-      <View style={styles.section}>
-        <Text style={styles.sectionTitle}>
-          Cereri Primite ({incomingRequests.length})
-        </Text>
-        {incomingRequests.length === 0 ? (
-          <View style={styles.emptyCard}>
-            <Text style={styles.emptyText}>
-              Nu ai nicio cerere de manager primită.
-            </Text>
-          </View>
-        ) : (
-          incomingRequests.map((req) => (
-            <ManagerCard
-              key={req.id}
-              username={req.ownerUsername}
-              subtitle="Te-a propus să îi fii manager"
-              type="incoming"
-              onAccept={() => handleAcceptRequest(req.id)}
-              onDecline={() => handleDeclineOrCancelRequest(req.id, false)}
-              loading={actionLoadingId === req.id}
-            />
-          ))
-        )}
-      </View>
+            {/* 2. Propune Prieten ca Manager */}
+            {!activeManager && outgoingRequests.length === 0 && (
+              <View style={styles.section}>
+                <Text style={styles.sectionTitle}>Propune un Manager</Text>
+                {friends.length === 0 ? (
+                  <View style={styles.emptyCard}>
+                    <Text style={styles.emptyText}>
+                      Trebuie să ai cel puțin un prieten în listă pentru a-l propune drept manager.
+                    </Text>
+                  </View>
+                ) : (
+                  <View style={styles.proposalCard}>
+                    <Text style={styles.proposalLabel}>
+                      Alege un prieten din listă:
+                    </Text>
+                    <ScrollView
+                      horizontal
+                      showsHorizontalScrollIndicator={false}
+                      style={styles.friendsPickerScroll}
+                    >
+                      {friends.map((f) => {
+                        const details = getFriendDetails(f);
+                        const isSelected = selectedFriend?.uid === details.uid;
+                        return (
+                          <TouchableOpacity
+                            key={f.id}
+                            style={[
+                              styles.friendChip,
+                              isSelected && styles.friendChipSelected,
+                            ]}
+                            onPress={() => setSelectedFriend(details)}
+                            activeOpacity={0.7}
+                          >
+                            <Text
+                              style={[
+                                styles.friendChipText,
+                                isSelected && styles.friendChipTextSelected,
+                              ]}
+                            >
+                              @{details.username}
+                            </Text>
+                          </TouchableOpacity>
+                        );
+                      })}
+                    </ScrollView>
 
-      {/* 4. Cereri Trimise */}
-      <View style={styles.section}>
-        <Text style={styles.sectionTitle}>
-          Cereri Trimise ({outgoingRequests.length})
-        </Text>
-        {outgoingRequests.length === 0 ? (
-          <View style={styles.emptyCard}>
-            <Text style={styles.emptyText}>
-              Nu ai nicio cerere de manager în așteptare.
-            </Text>
+                    {selectedFriend && (
+                      <TouchableOpacity
+                        style={styles.submitButton}
+                        onPress={handleSendProposal}
+                        disabled={actionLoadingId === "send-proposal"}
+                        activeOpacity={0.8}
+                      >
+                        {actionLoadingId === "send-proposal" ? (
+                          <ActivityIndicator size="small" color={COLORS.background} />
+                        ) : (
+                          <Text style={styles.submitButtonText}>
+                            Trimite propunere către @{selectedFriend.username}
+                          </Text>
+                        )}
+                      </TouchableOpacity>
+                    )}
+                  </View>
+                )}
+              </View>
+            )}
+
+            {/* 3. Cereri Primite */}
+            <View style={styles.section}>
+              <Text style={styles.sectionTitle}>
+                Cereri Primite ({incomingRequests.length})
+              </Text>
+              {incomingRequests.length === 0 ? (
+                <View style={styles.emptyCard}>
+                  <Text style={styles.emptyText}>
+                    Nu ai nicio cerere de manager primită.
+                  </Text>
+                </View>
+              ) : (
+                incomingRequests.map((req) => (
+                  <ManagerCard
+                    key={req.id}
+                    username={req.ownerUsername}
+                    subtitle="Te-a propus să îi fii manager"
+                    type="incoming"
+                    onAccept={() => handleAcceptRequest(req.id)}
+                    onDecline={() => handleDeclineOrCancelRequest(req.id, false)}
+                    loading={actionLoadingId === req.id}
+                  />
+                ))
+              )}
+            </View>
+
+            {/* 4. Cereri Trimise */}
+            <View style={styles.section}>
+              <Text style={styles.sectionTitle}>
+                Cereri Trimise ({outgoingRequests.length})
+              </Text>
+              {outgoingRequests.length === 0 ? (
+                <View style={styles.emptyCard}>
+                  <Text style={styles.emptyText}>
+                    Nu ai nicio cerere de manager în așteptare.
+                  </Text>
+                </View>
+              ) : (
+                outgoingRequests.map((req) => (
+                  <ManagerCard
+                    key={req.id}
+                    username={req.managerUsername}
+                    type="outgoing"
+                    onCancel={() => handleDeclineOrCancelRequest(req.id, true)}
+                    loading={actionLoadingId === req.id}
+                  />
+                ))
+              )}
+            </View>
           </View>
-        ) : (
-          outgoingRequests.map((req) => (
-            <ManagerCard
-              key={req.id}
-              username={req.managerUsername}
-              type="outgoing"
-              onCancel={() => handleDeclineOrCancelRequest(req.id, true)}
-              loading={actionLoadingId === req.id}
-            />
-          ))
-        )}
-      </View>
-    </ScrollView>
+        </ScrollView>
+      </SafeAreaView>
+    </ScreenBackground>
   );
 }
 
 const styles = StyleSheet.create({
+  safeArea: {
+    flex: 1,
+    backgroundColor: "transparent",
+  },
   container: {
     flex: 1,
-    backgroundColor: "#12121A",
+    backgroundColor: "transparent",
   },
   contentContainer: {
-    padding: 16,
+    paddingTop: 16,
     paddingBottom: 40,
+    paddingHorizontal: 20,
+  },
+  content: {
+    width: "100%",
+    maxWidth: 430,
+    alignSelf: "center",
+    gap: 18,
   },
   centerContainer: {
     flex: 1,
-    backgroundColor: "#12121A",
     justifyContent: "center",
     alignItems: "center",
   },
   loadingText: {
-    color: "#A0A0B2",
+    color: COLORS.textSecondary,
     marginTop: 12,
     fontSize: 14,
   },
-  header: {
-    marginBottom: 20,
+  headerCard: {
+    padding: 24,
+    borderRadius: 24,
+    shadowColor: COLORS.primaryPressed,
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.18,
+    shadowRadius: 16,
+    elevation: 4,
   },
   title: {
-    color: "#FFFFFF",
+    color: COLORS.background,
     fontSize: 24,
     fontWeight: "bold",
   },
   subtitle: {
-    color: "#A0A0B2",
+    color: "rgba(255, 255, 255, 0.85)",
     fontSize: 14,
-    marginTop: 4,
+    marginTop: 6,
     lineHeight: 20,
   },
   errorBanner: {
-    backgroundColor: "rgba(255, 77, 77, 0.15)",
+    backgroundColor: COLORS.errorBackground,
     borderWidth: 1,
-    borderColor: "#FF4D4D",
+    borderColor: COLORS.error,
     padding: 12,
-    borderRadius: 8,
-    marginBottom: 16,
+    borderRadius: 12,
   },
   errorText: {
-    color: "#FF4D4D",
+    color: COLORS.error,
     fontSize: 14,
   },
   section: {
-    marginBottom: 24,
+    gap: 8,
   },
   sectionTitle: {
-    color: "#FFFFFF",
-    fontSize: 17,
-    fontWeight: "600",
-    marginBottom: 10,
+    color: COLORS.text,
+    fontSize: 18,
+    fontWeight: "700",
+    marginBottom: 4,
   },
   emptyCard: {
-    backgroundColor: "#1E1E2D",
-    padding: 16,
-    borderRadius: 12,
+    backgroundColor: COLORS.background,
+    padding: 18,
+    borderRadius: 18,
     alignItems: "center",
     borderWidth: 1,
-    borderColor: "#2C2C3E",
+    borderColor: COLORS.primarySoft,
+    shadowColor: COLORS.text,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.04,
+    shadowRadius: 10,
+    elevation: 1,
   },
   emptyText: {
-    color: "#A0A0B2",
+    color: COLORS.textSecondary,
     fontSize: 14,
     textAlign: "center",
   },
   proposalCard: {
-    backgroundColor: "#1E1E2D",
-    padding: 16,
-    borderRadius: 12,
+    backgroundColor: COLORS.background,
+    padding: 18,
+    borderRadius: 18,
     borderWidth: 1,
-    borderColor: "#2C2C3E",
+    borderColor: COLORS.primarySoft,
+    shadowColor: COLORS.text,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.04,
+    shadowRadius: 10,
+    elevation: 1,
   },
   proposalLabel: {
-    color: "#FFFFFF",
+    color: COLORS.text,
     fontSize: 14,
-    fontWeight: "500",
+    fontWeight: "600",
     marginBottom: 12,
   },
   friendsPickerScroll: {
@@ -454,36 +509,36 @@ const styles = StyleSheet.create({
     marginBottom: 14,
   },
   friendChip: {
-    backgroundColor: "#2C2C3E",
+    backgroundColor: COLORS.primarySoft,
     paddingHorizontal: 14,
     paddingVertical: 8,
     borderRadius: 20,
     marginRight: 8,
     borderWidth: 1,
-    borderColor: "#3A3A52",
+    borderColor: COLORS.primarySoft,
   },
   friendChipSelected: {
-    backgroundColor: "#7000FF",
-    borderColor: "#7000FF",
+    backgroundColor: COLORS.primary,
+    borderColor: COLORS.primary,
   },
   friendChipText: {
-    color: "#A0A0B2",
+    color: COLORS.primary,
     fontSize: 14,
-    fontWeight: "500",
+    fontWeight: "600",
   },
   friendChipTextSelected: {
-    color: "#FFFFFF",
+    color: COLORS.background,
     fontWeight: "bold",
   },
   submitButton: {
-    backgroundColor: "#7000FF",
+    backgroundColor: COLORS.primary,
     paddingVertical: 12,
-    borderRadius: 8,
+    borderRadius: 12,
     alignItems: "center",
     marginTop: 4,
   },
   submitButtonText: {
-    color: "#FFFFFF",
+    color: COLORS.background,
     fontSize: 14,
     fontWeight: "600",
   },
