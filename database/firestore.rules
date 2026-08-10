@@ -187,7 +187,14 @@ service cloud.firestore {
     }
 
     match /friendRequests/{requestId} {
-      allow get, list: if isMember(resource.data);
+      // O cerere nouă nu există încă. Clientul trebuie să poată verifica
+      // documentul exact înainte să îl creeze, fără să poată lista cererile
+      // altor utilizatori.
+      allow get: if isSignedIn()
+        && (!exists(
+          /databases/$(database)/documents/friendRequests/$(requestId)
+        ) || isMember(resource.data));
+      allow list: if isMember(resource.data);
 
       allow create: if isMember(request.resource.data)
         && request.resource.data.senderId == request.auth.uid
@@ -204,7 +211,12 @@ service cloud.firestore {
     }
 
     match /friendships/{friendshipId} {
-      allow get, list: if isMember(resource.data);
+      // Aceeași verificare este necesară înainte să existe o prietenie.
+      allow get: if isSignedIn()
+        && (!exists(
+          /databases/$(database)/documents/friendships/$(friendshipId)
+        ) || isMember(resource.data));
+      allow list: if isMember(resource.data);
       allow create: if isMember(request.resource.data);
       allow update: if false;
       allow delete: if isMember(resource.data);
