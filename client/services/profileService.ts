@@ -1,18 +1,16 @@
-import {
+import type {
   CreateUserProfileInput,
   UpdateUserProfileInput,
   UserProfile,
 } from "@/types/profile";
-import {
-  doc,
-  getDoc,
-  runTransaction,
-  updateDoc,
-} from "firebase/firestore";
+import type { PublicProfile } from "@/types/social";
+import { doc, getDoc, runTransaction, setDoc, updateDoc } from "firebase/firestore";
+
 import { db } from "./firebase";
 
 const USERS_COLLECTION = "users";
 const USERNAMES_COLLECTION = "usernames";
+const PUBLIC_PROFILES_COLLECTION = "publicProfiles";
 
 export function normalizeUsername(username: string): string {
   return username.trim().toLowerCase();
@@ -24,6 +22,53 @@ export async function isUsernameAvailable(username: string): Promise<boolean> {
   const snapshot = await getDoc(usernameRef);
 
   return !snapshot.exists();
+}
+
+function calculateAge(birthDate: string): number {
+  const [day, month, year] = birthDate.split("/").map(Number);
+
+  if (!day || !month || !year) return 0;
+
+  const today = new Date();
+  let age = today.getFullYear() - year;
+  const birthdayHasPassed =
+    today.getMonth() + 1 > month ||
+    (today.getMonth() + 1 === month && today.getDate() >= day);
+
+  if (!birthdayHasPassed) age -= 1;
+
+  return Math.max(age, 0);
+}
+
+function toPublicProfile(profile: UserProfile): PublicProfile {
+  const publicProfile: PublicProfile = {
+    uid: profile.uid,
+    username: profile.username,
+    firstName: profile.firstName,
+    lastName: profile.lastName,
+    occupation: profile.occupation,
+    gender: profile.gender,
+    description: profile.description,
+    interests: profile.interests,
+    age: calculateAge(profile.birthDate),
+    isPrivate: profile.isPrivate,
+    updatedAt: new Date().toISOString(),
+  };
+
+  if (profile.photoUrl) {
+    publicProfile.photoUrl = profile.photoUrl;
+  }
+
+  return publicProfile;
+}
+
+export async function syncProfileToSocial(
+  profile: UserProfile,
+): Promise<void> {
+  await setDoc(
+    doc(db, PUBLIC_PROFILES_COLLECTION, profile.uid),
+    toPublicProfile(profile),
+  );
 }
 
 export async function createUserProfile(
@@ -56,6 +101,8 @@ export async function createUserProfile(
     transaction.set(profileRef, profile);
   });
 
+  await syncProfileToSocial(profile);
+
   return profile;
 }
 
@@ -79,4 +126,9 @@ export async function updateUserProfile(
     ...updates,
     updatedAt: new Date().toISOString(),
   });
+
+  const updatedProfile = await getUserProfile(uid);
+  if (updatedProfile) {
+    await syncProfileToSocial(updatedProfile);
+  }
 }

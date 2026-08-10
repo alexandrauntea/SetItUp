@@ -118,6 +118,7 @@ function RootLayoutNav() {
         <Stack.Screen name="profile/edit" options={{ headerShown: false }} />
         <Stack.Screen name="profile/create" options={{ headerShown: false }} />
         <Stack.Screen name="profile/recover" options={{ headerShown: false }} />
+        <Stack.Screen name="friends" options={{ headerShown: false }} />
       </Stack>
       <StatusBar style="auto" />
     </>

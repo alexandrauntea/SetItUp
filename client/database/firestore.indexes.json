@@ -1,0 +1,50 @@
+{
+  "indexes": [
+    {
+      "collectionId": "friendRequests",
+      "fields": [
+        { "fieldPath": "receiverId", "mode": "ASCENDING" },
+        { "fieldPath": "status", "mode": "ASCENDING" },
+        { "fieldPath": "createdAt", "mode": "DESCENDING" }
+      ]
+    },
+    {
+      "collectionId": "friendRequests",
+      "fields": [
+        { "fieldPath": "senderId", "mode": "ASCENDING" },
+        { "fieldPath": "status", "mode": "ASCENDING" },
+        { "fieldPath": "createdAt", "mode": "DESCENDING" }
+      ]
+    },
+    {
+      "collectionId": "friendships",
+      "fields": [
+        { "fieldPath": "memberIds", "mode": "ARRAY_CONTAINS" },
+        { "fieldPath": "createdAt", "mode": "DESCENDING" }
+      ]
+    },
+    {
+      "collectionId": "managerRequests",
+      "fields": [
+        { "fieldPath": "managerId", "mode": "ASCENDING" },
+        { "fieldPath": "status", "mode": "ASCENDING" },
+        { "fieldPath": "createdAt", "mode": "DESCENDING" }
+      ]
+    },
+    {
+      "collectionId": "managerRequests",
+      "fields": [
+        { "fieldPath": "ownerId", "mode": "ASCENDING" },
+        { "fieldPath": "status", "mode": "ASCENDING" },
+        { "fieldPath": "createdAt", "mode": "DESCENDING" }
+      ]
+    },
+    {
+      "collectionId": "managerRelationships",
+      "fields": [
+        { "fieldPath": "managerId", "mode": "ASCENDING" },
+        { "fieldPath": "createdAt", "mode": "DESCENDING" }
+      ]
+    }
+  ]
+}

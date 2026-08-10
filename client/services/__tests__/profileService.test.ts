@@ -1,4 +1,10 @@
-import { doc, getDoc, runTransaction, updateDoc } from "firebase/firestore";
+import {
+  doc,
+  getDoc,
+  runTransaction,
+  setDoc,
+  updateDoc,
+} from "firebase/firestore";
 
 import type { CreateUserProfileInput, UserProfile } from "@/types/profile";
 import {
@@ -13,6 +19,7 @@ jest.mock("firebase/firestore", () => ({
   doc: jest.fn(),
   getDoc: jest.fn(),
   runTransaction: jest.fn(),
+  setDoc: jest.fn(),
   updateDoc: jest.fn(),
 }));
 
@@ -23,6 +30,7 @@ jest.mock("../firebase", () => ({
 const mockedDoc = jest.mocked(doc);
 const mockedGetDoc = jest.mocked(getDoc);
 const mockedRunTransaction = jest.mocked(runTransaction);
+const mockedSetDoc = jest.mocked(setDoc);
 const mockedUpdateDoc = jest.mocked(updateDoc);
 
 const input: CreateUserProfileInput = {
@@ -43,10 +51,11 @@ const input: CreateUserProfileInput = {
 
 describe("Serviciul de profil", () => {
   beforeEach(() => {
-    jest.clearAllMocks();
+    jest.resetAllMocks();
     mockedDoc.mockImplementation((...args: unknown[]) =>
       args.slice(1).join("/") as never,
     );
+    mockedSetDoc.mockResolvedValue(undefined);
   });
 
   describe("normalizeUsername", () => {
@@ -113,6 +122,16 @@ describe("Serviciul de profil", () => {
         "users/user-123",
         result,
       );
+      expect(mockedSetDoc).toHaveBeenCalledWith(
+        "publicProfiles/user-123",
+        expect.objectContaining({
+          uid: "user-123",
+          username: "andrei_21",
+          firstName: "Andrei",
+          lastName: "Barbuceanu",
+          age: expect.any(Number),
+        }),
+      );
     });
 
     test("oprește crearea când username-ul este deja rezervat", async () => {
@@ -162,6 +181,17 @@ describe("Serviciul de profil", () => {
   describe("updateUserProfile", () => {
     test("actualizează câmpurile și data ultimei modificări", async () => {
       mockedUpdateDoc.mockResolvedValue(undefined);
+      mockedGetDoc.mockResolvedValue({
+        exists: () => true,
+        data: () => ({
+          ...input,
+          username: "andrei_21",
+          occupation: "Developer",
+          interests: ["Tehnologie", "Muzică"],
+          createdAt: "2026-08-01T10:00:00.000Z",
+          updatedAt: "2026-08-10T10:00:00.000Z",
+        }),
+      } as never);
 
       await updateUserProfile("user-123", {
         occupation: "Developer",
@@ -173,6 +203,13 @@ describe("Serviciul de profil", () => {
         interests: ["Tehnologie", "Muzică"],
         updatedAt: expect.any(String),
       });
+      expect(mockedSetDoc).toHaveBeenCalledWith(
+        "publicProfiles/user-123",
+        expect.objectContaining({
+          occupation: "Developer",
+          interests: ["Tehnologie", "Muzică"],
+        }),
+      );
     });
 
     test("transmite mai departe eroarea Firestore", async () => {
