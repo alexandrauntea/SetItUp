@@ -35,11 +35,10 @@ function RootLayoutNav() {
   useEffect(() => {
     if (isLoading || (user && isProfileLoading)) return;
 
+    const currentPath = segments.join("/");
     const inAuthGroup = segments[0] === "(auth)";
-    const inCreateProfile =
-      segments[0] === "profile" && segments[1] === "create";
-    const inRecoverProfile =
-      segments[0] === "profile" && segments[1] === "recover";
+    const inCreateProfile = currentPath === "profile/create";
+    const inRecoverProfile = currentPath === "profile/recover";
 
     if (!user && !inAuthGroup) {
       router.replace("/(auth)/login");

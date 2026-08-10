@@ -41,7 +41,12 @@ export default function ProfileScreen() {
     return (
       <ScreenBackground>
         <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" color={COLORS.primary} />
+          <ActivityIndicator
+            accessibilityLabel="Se încarcă profilul"
+            accessibilityRole="progressbar"
+            size="large"
+            color={COLORS.primary}
+          />
         </View>
       </ScreenBackground>
     );
