@@ -1,10 +1,18 @@
 import { AppButton } from "@/components/AppButton";
 import { AppInput } from "@/components/AppInput";
 import { FormError } from "@/components/FormError";
+import {
+  ProfilePhotoPicker,
+  type SelectedProfilePhoto,
+} from "@/components/ProfilePhotoPicker";
 import { ScreenBackground } from "@/components/ScreenBackground";
 import { COLORS } from "@/constants/colors";
+import { useAuth } from "@/contexts/AuthContext";
 import { useProfile } from "@/contexts/ProfileContext";
 import { GENDER_OPTIONS, INTEREST_OPTIONS } from "@/constants/profileOptions";
+import { uploadProfilePhoto } from "@/services/profileImageService";
+import type { Gender } from "@/types/profile";
+import { getFirebaseErrorMessage } from "@/utils/firebaseErrors";
 import { useRouter } from "expo-router";
 import { useState } from "react";
 import {
@@ -21,16 +29,20 @@ import { SafeAreaView } from "react-native-safe-area-context";
 
 export default function CreateProfileScreen() {
   const router = useRouter();
-  const { updateProfile } = useProfile();
+  const { user } = useAuth();
+  const { profile, updateProfile } = useProfile();
   const [step, setStep] = useState(1);
   const [firstName, setFirstName] = useState("");
   const [lastName, setLastName] = useState("");
   const [occupation, setOccupation] = useState("");
-  const [gender, setGender] = useState("");
+  const [gender, setGender] = useState<Gender | "">("");
   const [description, setDescription] = useState("");
   const [interests, setInterests] = useState<string[]>([]);
   const [isPrivate, setIsPrivate] = useState(false);
+  const [selectedPhoto, setSelectedPhoto] =
+    useState<SelectedProfilePhoto | null>(null);
   const [formError, setFormError] = useState("");
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   function toggleInterest(interest: string) {
     setInterests((currentInterests) => {
@@ -44,7 +56,7 @@ export default function CreateProfileScreen() {
     });
   }
 
-  function handleContinue() {
+  async function handleContinue() {
     if (step === 1) {
       const missingFields: string[] = [];
 
@@ -83,24 +95,58 @@ export default function CreateProfileScreen() {
       return;
     }
 
+    if (!gender) {
+      setFormError("Selectează genul.");
+      setStep(1);
+      return;
+    }
+
     setFormError("");
 
-    updateProfile({
-      firstName: firstName.trim(),
-      lastName: lastName.trim(),
-      occupation,
-      gender,
-      description,
-      interests,
-      isPrivate,
-    });
+    setIsSubmitting(true);
 
-    Alert.alert("Gata!", "Profilul tău este pregătit.", [
-      {
-        text: "Continuă",
-        onPress: () => router.replace("/profile/view"),
-      },
-    ]);
+    try {
+      if (!user) {
+        throw new Error("AUTH_REQUIRED");
+      }
+
+      const photoUrl = selectedPhoto
+        ? await uploadProfilePhoto(
+            user.uid,
+            selectedPhoto.uri,
+            selectedPhoto.mimeType,
+          )
+        : profile?.photoUrl;
+
+      await updateProfile({
+        firstName: firstName.trim(),
+        lastName: lastName.trim(),
+        occupation: occupation.trim(),
+        gender,
+        description: description.trim(),
+        interests,
+        isPrivate,
+        profileCompleted: true,
+        ...(photoUrl ? { photoUrl } : {}),
+      });
+
+      Alert.alert("Gata!", "Profilul tău este pregătit.", [
+        {
+          text: "Continuă",
+          onPress: () => router.replace("/profile/view"),
+        },
+      ]);
+    } catch (error) {
+      console.error("Profilul nu a putut fi salvat:", error);
+      setFormError(
+        getFirebaseErrorMessage(
+          error,
+          "Fotografia sau profilul nu a putut fi salvat. Încearcă din nou.",
+        ),
+      );
+    } finally {
+      setIsSubmitting(false);
+    }
   }
 
   return (
@@ -142,6 +188,13 @@ export default function CreateProfileScreen() {
               <View style={styles.form}>
                 {step === 1 ? (
                   <>
+                    <ProfilePhotoPicker
+                      initials={`${firstName.charAt(0)}${lastName.charAt(0)}`.toUpperCase()}
+                      photoUri={selectedPhoto?.uri ?? profile?.photoUrl}
+                      onPhotoSelected={setSelectedPhoto}
+                      disabled={isSubmitting}
+                    />
+
                     <AppInput
                       label="Prenume"
                       placeholder="De exemplu: Andrei"
@@ -171,12 +224,12 @@ export default function CreateProfileScreen() {
 
                       <View style={styles.genderOptions}>
                         {GENDER_OPTIONS.map((option) => {
-                          const isSelected = gender === option;
+                          const isSelected = gender === option.value;
 
                           return (
                             <Pressable
-                              key={option}
-                              onPress={() => setGender(option)}
+                              key={option.value}
+                              onPress={() => setGender(option.value)}
                               style={[
                                 styles.genderOption,
                                 isSelected && styles.genderOptionSelected,
@@ -188,7 +241,7 @@ export default function CreateProfileScreen() {
                                   isSelected && styles.genderTextSelected,
                                 ]}
                               >
-                                {option}
+                                {option.label}
                               </Text>
                             </Pressable>
                           );
@@ -297,6 +350,7 @@ export default function CreateProfileScreen() {
                 <AppButton
                   title={step === 3 ? "Creează profilul" : "Continuă"}
                   onPress={handleContinue}
+                  loading={isSubmitting}
                 />
 
                 {step > 1 ? (

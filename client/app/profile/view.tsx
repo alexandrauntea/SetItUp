@@ -1,11 +1,20 @@
 import { AppButton } from "@/components/AppButton";
 import { ScreenBackground } from "@/components/ScreenBackground";
 import { COLORS } from "@/constants/colors";
+import { GENDER_OPTIONS } from "@/constants/profileOptions";
 import { useProfile } from "@/contexts/ProfileContext";
+import { logoutUser } from "@/services/authService";
 import { Ionicons } from "@expo/vector-icons";
+import { Image } from "expo-image";
 import { LinearGradient } from "expo-linear-gradient";
 import { useRouter } from "expo-router";
-import { ScrollView, StyleSheet, Text, View } from "react-native";
+import {
+  ActivityIndicator,
+  ScrollView,
+  StyleSheet,
+  Text,
+  View,
+} from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
 function calculateAge(birthDate: string) {
@@ -27,16 +36,39 @@ function calculateAge(birthDate: string) {
 export default function ProfileScreen() {
   const router = useRouter();
   const { profile } = useProfile();
+
+  if (!profile) {
+    return (
+      <ScreenBackground>
+        <View style={styles.loadingContainer}>
+          <ActivityIndicator
+            accessibilityLabel="Se încarcă profilul"
+            accessibilityRole="progressbar"
+            size="large"
+            color={COLORS.primary}
+          />
+        </View>
+      </ScreenBackground>
+    );
+  }
+
   const fullName = `${profile.firstName} ${profile.lastName}`.trim();
   const initials = `${profile.firstName.charAt(0)}${profile.lastName.charAt(0)}`;
   const age = calculateAge(profile.birthDate);
+  const genderLabel =
+    GENDER_OPTIONS.find((option) => option.value === profile.gender)?.label ??
+    profile.gender;
 
   function handleEditProfile() {
     router.push("/profile/edit");
   }
 
-  function handleLogout() {
-    router.replace("/login");
+  async function handleLogout() {
+    try {
+      await logoutUser();
+    } catch (error) {
+      console.error("Deconectarea a eșuat:", error);
+    }
   }
 
   return (
@@ -54,7 +86,18 @@ export default function ProfileScreen() {
               style={styles.headerCard}
             >
               <View style={styles.avatar}>
-                <Text style={styles.avatarText}>{initials}</Text>
+                {profile.photoUrl ? (
+                  <Image
+                    source={{
+                      uri: profile.photoUrl,
+                      cacheKey: profile.updatedAt,
+                    }}
+                    contentFit="cover"
+                    style={styles.avatarImage}
+                  />
+                ) : (
+                  <Text style={styles.avatarText}>{initials}</Text>
+                )}
               </View>
 
               <View style={styles.nameRow}>
@@ -95,7 +138,7 @@ export default function ProfileScreen() {
                   />
                 </View>
                 <Text style={styles.infoLabel}>Gen</Text>
-                <Text style={styles.infoValue}>{profile.gender}</Text>
+                <Text style={styles.infoValue}>{genderLabel}</Text>
               </View>
 
               <View style={styles.infoCard}>
@@ -165,6 +208,11 @@ export default function ProfileScreen() {
 }
 
 const styles = StyleSheet.create({
+  loadingContainer: {
+    flex: 1,
+    alignItems: "center",
+    justifyContent: "center",
+  },
   safeArea: {
     flex: 1,
     backgroundColor: "transparent",
@@ -207,6 +255,11 @@ const styles = StyleSheet.create({
     color: COLORS.primary,
     fontSize: 30,
     fontWeight: "bold",
+  },
+  avatarImage: {
+    width: "100%",
+    height: "100%",
+    borderRadius: 48,
   },
   nameRow: {
     flexDirection: "row",

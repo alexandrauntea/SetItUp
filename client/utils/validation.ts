@@ -1,79 +1,132 @@
 export interface RegisterFormData {
-    username: string;
-    email: string;
-    password: string;
-    confirmPassword: string;
-    birthDate: string;
-    gdprConsent: boolean;
+  username: string;
+  email: string;
+  password: string;
+  confirmPassword: string;
+  birthDate: string;
+  gdprConsent: boolean;
 }
 
 export interface LoginFormData {
-    email: string;
-    password: string;
+  email: string;
+  password: string;
 }
 
-export const validateUsername = (username: string): boolean => {
-  const usernameRegex = /^[a-zA-Z0-9_]{3,20}$/;
-  return usernameRegex.test(username);
+export type ValidationResult = {
+  isValid: boolean;
+  errors: Record<string, string>;
 };
 
-export const validateEmail = (email: string): boolean => {
-  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-  return emailRegex.test(email);
-};
+export function validateUsername(username: string): boolean {
+  return /^[a-zA-Z0-9_]{3,20}$/.test(username.trim());
+}
 
-export const validatePassword = (password: string): boolean => {
-    return password.length >= 8;
-};
+export function validateEmail(email: string): boolean {
+  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim());
+}
 
-export const validateBirthDate = (dateString: string): boolean => {
-    if (!dateString) return false;
-    const birthDate = new Date(dateString);
-    const today = new Date();
-    let age = today.getFullYear() - birthDate.getFullYear();
-    const monthDifference = today.getMonth() - birthDate.getMonth();
-    if (monthDifference < 0 || (monthDifference === 0 && today.getDate() < birthDate.getDate())) {
-        age--;
-    }
-    return age >= 18;
-};
+export function validatePassword(password: string): boolean {
+  return password.length >= 8;
+}
 
-export const validateRegisterForm = (formData: RegisterFormData) => {
-    const errors: Record<string, string> = {};
-    if (!validateUsername(formData.username)) {
-        errors.username = 'Username must be 3-20 characters long and can only contain letters, numbers, and underscores.';
-    }
-    if (!validateEmail(formData.email)) {
-        errors.email = 'Invalid email address.';
-    }
-    if (!validatePassword(formData.password)) {
-        errors.password = 'Password must be at least 8 characters long.';
-    }
-    if (formData.password !== formData.confirmPassword) {
-        errors.confirmPassword = 'Passwords do not match.';
-    }
-    if (!validateBirthDate(formData.birthDate)) {
-        errors.birthDate = 'You must be at least 18 years old.';
-    }
-    if (!formData.gdprConsent) {
-        errors.gdprConsent = 'You must accept the GDPR consent.';
-    }
-    return {
-        isValid: Object.keys(errors).length === 0,
-        errors
-    };
-};
+export function formatBirthDateInput(value: string): string {
+  const digits = value.replace(/\D/g, "").slice(0, 8);
 
-export const validateLoginForm = (data: LoginFormData) => {
-    const errors: Record<string, string> = {};
-    if (!validateEmail(data.email)) {
-        errors.email = 'Invalid email address.';
-    }
-    if (!validatePassword(data.password)) {
-        errors.password = 'Password must be at least 8 characters long.';
-    }
-    return {
-        isValid: Object.keys(errors).length === 0,
-        errors
-    };
-};
+  if (digits.length <= 2) {
+    return digits;
+  }
+
+  if (digits.length <= 4) {
+    return `${digits.slice(0, 2)}/${digits.slice(2)}`;
+  }
+
+  return `${digits.slice(0, 2)}/${digits.slice(2, 4)}/${digits.slice(4)}`;
+}
+
+export function validateBirthDate(dateString: string): boolean {
+  const match = /^(\d{2})\/(\d{2})\/(\d{4})$/.exec(dateString.trim());
+
+  if (!match) return false;
+
+  const day = Number(match[1]);
+  const month = Number(match[2]);
+  const year = Number(match[3]);
+  const birthDate = new Date(year, month - 1, day);
+
+  const isRealDate =
+    birthDate.getFullYear() === year &&
+    birthDate.getMonth() === month - 1 &&
+    birthDate.getDate() === day;
+
+  if (!isRealDate) return false;
+
+  const today = new Date();
+  let age = today.getFullYear() - year;
+  const birthdayHasPassed =
+    today.getMonth() > month - 1 ||
+    (today.getMonth() === month - 1 && today.getDate() >= day);
+
+  if (!birthdayHasPassed) age -= 1;
+
+  return age >= 18;
+}
+
+export function validateRegisterForm(
+  formData: RegisterFormData,
+): ValidationResult {
+  const errors: Record<string, string> = {};
+
+  if (!validateUsername(formData.username)) {
+    errors.username =
+      "Numele de utilizator trebuie să aibă între 3 și 20 de caractere și poate conține doar litere, cifre și underscore (_).";
+  }
+
+  if (!validateEmail(formData.email)) {
+    errors.email = "Introdu o adresă de email validă.";
+  }
+
+  if (!validateBirthDate(formData.birthDate)) {
+    errors.birthDate =
+      "Introdu data în formatul ZZ/LL/AAAA. Trebuie să ai cel puțin 18 ani.";
+  }
+
+  if (!validatePassword(formData.password)) {
+    errors.password = "Parola trebuie să conțină cel puțin 8 caractere.";
+  }
+
+  if (formData.password !== formData.confirmPassword) {
+    errors.confirmPassword = "Parolele nu se potrivesc.";
+  }
+
+  if (!formData.gdprConsent) {
+    errors.gdprConsent = "Trebuie să accepți termenii și politica GDPR.";
+  }
+
+  return {
+    isValid: Object.keys(errors).length === 0,
+    errors,
+  };
+}
+
+export function validateLoginForm(data: LoginFormData): ValidationResult {
+  const errors: Record<string, string> = {};
+
+  if (!validateEmail(data.email)) {
+    errors.email = "Introdu o adresă de email validă.";
+  }
+
+  if (!validatePassword(data.password)) {
+    errors.password = "Parola trebuie să conțină cel puțin 8 caractere.";
+  }
+
+  return {
+    isValid: Object.keys(errors).length === 0,
+    errors,
+  };
+}
+
+export function getFirstValidationError(
+  errors: Record<string, string>,
+): string {
+  return Object.values(errors)[0] ?? "Verifică datele introduse.";
+}

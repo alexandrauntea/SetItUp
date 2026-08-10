@@ -1,14 +1,21 @@
 import { AppButton } from "@/components/AppButton";
 import { AppInput } from "@/components/AppInput";
 import { FormError } from "@/components/FormError";
+import {
+  ProfilePhotoPicker,
+  type SelectedProfilePhoto,
+} from "@/components/ProfilePhotoPicker";
 import { ScreenBackground } from "@/components/ScreenBackground";
 import { COLORS } from "@/constants/colors";
+import { useAuth } from "@/contexts/AuthContext";
 import { useProfile } from "@/contexts/ProfileContext";
 import {
   GENDER_OPTIONS,
   INTEREST_OPTIONS,
 } from "@/constants/profileOptions";
 import { useRouter } from "expo-router";
+import { uploadProfilePhoto } from "@/services/profileImageService";
+import { getFirebaseErrorMessage } from "@/utils/firebaseErrors";
 import { useState } from "react";
 import {
   Alert,
@@ -24,16 +31,20 @@ import { SafeAreaView } from "react-native-safe-area-context";
 
 export default function EditProfileScreen() {
   const router = useRouter();
+  const { user } = useAuth();
   const { profile, updateProfile } = useProfile();
 
-  const [firstName, setFirstName] = useState(profile.firstName);
-  const [lastName, setLastName] = useState(profile.lastName);
-  const [description, setDescription] = useState(profile.description);
-  const [occupation, setOccupation] = useState(profile.occupation);
-  const [gender, setGender] = useState(profile.gender);
-  const [interests, setInterests] = useState<string[]>(profile.interests);
-  const [isPrivate, setIsPrivate] = useState(profile.isPrivate);
+  const [firstName, setFirstName] = useState(profile?.firstName ?? "");
+  const [lastName, setLastName] = useState(profile?.lastName ?? "");
+  const [description, setDescription] = useState(profile?.description ?? "");
+  const [occupation, setOccupation] = useState(profile?.occupation ?? "");
+  const [gender, setGender] = useState(profile?.gender ?? "other");
+  const [interests, setInterests] = useState<string[]>(profile?.interests ?? []);
+  const [isPrivate, setIsPrivate] = useState(profile?.isPrivate ?? false);
+  const [selectedPhoto, setSelectedPhoto] =
+    useState<SelectedProfilePhoto | null>(null);
   const [formError, setFormError] = useState("");
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   function toggleInterest(interest: string) {
     setInterests((currentInterests) => {
@@ -45,7 +56,7 @@ export default function EditProfileScreen() {
     });
   }
 
-  function handleSave() {
+  async function handleSave() {
     if (!firstName.trim()) {
       setFormError("Scrie prenumele tău.");
       return;
@@ -78,22 +89,49 @@ export default function EditProfileScreen() {
 
     setFormError("");
 
-    updateProfile({
-      firstName: firstName.trim(),
-      lastName: lastName.trim(),
-      description: description.trim(),
-      occupation: occupation.trim(),
-      gender,
-      interests,
-      isPrivate,
-    });
+    setIsSubmitting(true);
 
-    Alert.alert("SetItUp", "Profilul a fost actualizat.", [
-      {
-        text: "OK",
-        onPress: () => router.back(),
-      },
-    ]);
+    try {
+      if (!user) {
+        throw new Error("AUTH_REQUIRED");
+      }
+
+      const photoUrl = selectedPhoto
+        ? await uploadProfilePhoto(
+            user.uid,
+            selectedPhoto.uri,
+            selectedPhoto.mimeType,
+          )
+        : profile?.photoUrl;
+
+      await updateProfile({
+        firstName: firstName.trim(),
+        lastName: lastName.trim(),
+        description: description.trim(),
+        occupation: occupation.trim(),
+        gender,
+        interests,
+        isPrivate,
+        ...(photoUrl ? { photoUrl } : {}),
+      });
+
+      Alert.alert("SetItUp", "Profilul a fost actualizat.", [
+        {
+          text: "OK",
+          onPress: () => router.replace("/profile/view"),
+        },
+      ]);
+    } catch (error) {
+      console.error("Profilul nu a putut fi actualizat:", error);
+      setFormError(
+        getFirebaseErrorMessage(
+          error,
+          "Fotografia sau modificările nu au putut fi salvate.",
+        ),
+      );
+    } finally {
+      setIsSubmitting(false);
+    }
   }
 
   return (
@@ -115,6 +153,13 @@ export default function EditProfileScreen() {
               </View>
 
               <View style={styles.form}>
+                <ProfilePhotoPicker
+                  initials={`${firstName.charAt(0)}${lastName.charAt(0)}`.toUpperCase()}
+                  photoUri={selectedPhoto?.uri ?? profile?.photoUrl}
+                  onPhotoSelected={setSelectedPhoto}
+                  disabled={isSubmitting}
+                />
+
                 <AppInput
                   label="Prenume"
                   placeholder="De exemplu: Andrei"
@@ -144,12 +189,12 @@ export default function EditProfileScreen() {
 
                   <View style={styles.optionsRow}>
                     {GENDER_OPTIONS.map((option) => {
-                      const isSelected = gender === option;
+                      const isSelected = gender === option.value;
 
                       return (
                         <Pressable
-                          key={option}
-                          onPress={() => setGender(option)}
+                          key={option.value}
+                          onPress={() => setGender(option.value)}
                           style={[
                             styles.genderOption,
                             isSelected && styles.optionSelected,
@@ -161,7 +206,7 @@ export default function EditProfileScreen() {
                               isSelected && styles.optionTextSelected,
                             ]}
                           >
-                            {option}
+                            {option.label}
                           </Text>
                         </Pressable>
                       );
@@ -267,11 +312,15 @@ export default function EditProfileScreen() {
 
                 <FormError message={formError} />
 
-                <AppButton title="Salvează" onPress={handleSave} />
+                <AppButton
+                  title="Salvează"
+                  onPress={handleSave}
+                  loading={isSubmitting}
+                />
                 <AppButton
                   title="Anulează"
                   variant="outline"
-                  onPress={() => router.back()}
+                  onPress={() => router.replace("/profile/view")}
                 />
               </View>
             </View>
