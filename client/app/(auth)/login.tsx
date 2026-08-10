@@ -4,25 +4,47 @@ import { BrandLogo } from "@/components/BrandLogo";
 import { FormError } from "@/components/FormError";
 import { ScreenBackground } from "@/components/ScreenBackground";
 import { COLORS } from "@/constants/colors";
+import { loginUser } from "@/services/authService";
+import { getFirebaseErrorMessage } from "@/utils/firebaseErrors";
+import {
+  getFirstValidationError,
+  validateLoginForm,
+} from "@/utils/validation";
 import { useState } from "react";
 import { StyleSheet, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { Link, useRouter } from "expo-router";
+import { Link } from "expo-router";
 
 export default function LoginScreen() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [formError, setFormError] = useState("");
-  const router = useRouter();
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
-  function handleStart() {
-    if (!email.trim() || !password) {
-      setFormError("Completeaza campurile.");
+  async function handleStart() {
+    const validation = validateLoginForm({ email, password });
+
+    if (!validation.isValid) {
+      setFormError(getFirstValidationError(validation.errors));
       return;
     }
 
     setFormError("");
-    router.replace("/profile/view");
+    setIsSubmitting(true);
+
+    try {
+      await loginUser(email.trim(), password);
+    } catch (error) {
+      console.error("Autentificarea a eșuat:", error);
+      setFormError(
+        getFirebaseErrorMessage(
+          error,
+          "Contul nu a putut fi autentificat. Încearcă din nou.",
+        ),
+      );
+    } finally {
+      setIsSubmitting(false);
+    }
   }
 
   return (
@@ -52,7 +74,11 @@ export default function LoginScreen() {
 
           <FormError message={formError} />
 
-          <AppButton title="Intră în cont" onPress={handleStart} />
+          <AppButton
+            title="Intră în cont"
+            onPress={handleStart}
+            loading={isSubmitting}
+          />
 
           <Link href="/register" style={styles.link}>
             Nu ai cont? Creează unul
