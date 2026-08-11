@@ -2,6 +2,7 @@ import { doc, getDoc } from "firebase/firestore";
 
 import type { FriendRequest, PublicProfile } from "@/types/social";
 import {
+  getPublicProfileByUid,
   normalizeSearchUsername,
   searchUserByUsername,
 } from "../userSearchService";
@@ -71,6 +72,24 @@ describe("Serviciul de căutare a utilizatorilor", () => {
 
   test("nu interoghează Firestore pentru o căutare goală", async () => {
     await expect(searchUserByUsername("current-uid", "   ")).resolves.toBeNull();
+    expect(mockedGetDoc).not.toHaveBeenCalled();
+  });
+
+  test("încarcă un profil public direct după uid", async () => {
+    mockedGetDoc.mockResolvedValueOnce(existingSnapshot(publicProfile));
+
+    await expect(getPublicProfileByUid("target-uid")).resolves.toEqual(
+      publicProfile,
+    );
+    expect(mockedDoc).toHaveBeenCalledWith(
+      expect.anything(),
+      "publicProfiles",
+      "target-uid",
+    );
+  });
+
+  test("nu interoghează Firestore când uid-ul este gol", async () => {
+    await expect(getPublicProfileByUid("   ")).resolves.toBeNull();
     expect(mockedGetDoc).not.toHaveBeenCalled();
   });
 

@@ -1,27 +1,24 @@
 import { AppButton } from "@/components/AppButton";
 import { AppInput } from "@/components/AppInput";
 import { ScreenBackground } from "@/components/ScreenBackground";
+import { UserSearchCard } from "@/components/social/UserSearchCard";
 import { COLORS } from "@/constants/colors";
 import { useAuth } from "@/contexts/AuthContext";
 import { useProfile } from "@/contexts/ProfileContext";
 import { sendFriendRequest } from "@/services/social/friendRequestSendService";
 import { searchUserByUsername } from "@/services/social/userSearchService";
-import type { RelationshipState, UserSearchResult } from "@/types/social";
+import type { UserSearchResult } from "@/types/social";
+import { useRouter } from "expo-router";
 import { useState } from "react";
 import {
   Keyboard,
+  Pressable,
   SafeAreaView,
   ScrollView,
   StyleSheet,
   Text,
   View,
 } from "react-native";
-
-const relationshipLabels: Record<Exclude<RelationshipState, "none">, string> = {
-  "request-sent": "Cerere trimisă",
-  "request-received": "Ți-a trimis o cerere",
-  friends: "Sunteți prieteni",
-};
 
 function getSendErrorMessage(error: unknown): string {
   if (error instanceof Error) {
@@ -38,6 +35,7 @@ function getSendErrorMessage(error: unknown): string {
 }
 
 export default function FriendSearchScreen() {
+  const router = useRouter();
   const { user } = useAuth();
   const { profile } = useProfile();
   const [username, setUsername] = useState("");
@@ -45,6 +43,14 @@ export default function FriendSearchScreen() {
   const [message, setMessage] = useState("");
   const [isSearching, setIsSearching] = useState(false);
   const [isSending, setIsSending] = useState(false);
+
+  function handleBack() {
+    if (router.canGoBack()) {
+      router.back();
+    } else {
+      router.replace("/profile/view");
+    }
+  }
 
   async function handleSearch() {
     if (!user) return;
@@ -99,10 +105,6 @@ export default function FriendSearchScreen() {
     }
   }
 
-  const displayName = result?.profile
-    ? `${result.profile.firstName} ${result.profile.lastName}`
-    : `@${result?.username ?? ""}`;
-
   return (
     <ScreenBackground>
       <SafeAreaView style={styles.safeArea}>
@@ -136,38 +138,34 @@ export default function FriendSearchScreen() {
             />
 
             {result ? (
-              <View style={styles.resultCard}>
-                <View style={styles.avatar}>
-                  <Text style={styles.avatarText}>
-                    {result.username.slice(0, 2).toUpperCase()}
-                  </Text>
-                </View>
-                <View style={styles.identity}>
-                  <Text style={styles.name}>{displayName}</Text>
-                  {result.profile ? (
-                    <Text style={styles.username}>@{result.username}</Text>
-                  ) : (
-                    <Text style={styles.username}>Profil privat</Text>
-                  )}
-                </View>
-
-                {result.relationshipState === "none" ? (
-                  <AppButton
-                    title="Trimite cerere"
-                    onPress={() => void handleSendRequest()}
-                    loading={isSending}
-                  />
-                ) : (
-                  <View style={styles.relationshipBadge}>
-                    <Text style={styles.relationshipText}>
-                      {relationshipLabels[result.relationshipState]}
-                    </Text>
-                  </View>
-                )}
-              </View>
+              <UserSearchCard
+                result={result}
+                isSending={isSending}
+                onSendRequest={() => void handleSendRequest()}
+                onOpenProfile={() =>
+                  router.push({
+                    pathname: "/users/[uid]",
+                    params: { uid: result.uid },
+                  })
+                }
+              />
             ) : null}
 
             {message ? <Text style={styles.message}>{message}</Text> : null}
+
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel="Înapoi"
+              hitSlop={8}
+              onPress={handleBack}
+              style={({ pressed }) => [
+                styles.backButton,
+                pressed && styles.backButtonPressed,
+              ]}
+            >
+              <Text style={styles.backArrow}>‹</Text>
+              <Text style={styles.backText}>Înapoi</Text>
+            </Pressable>
           </View>
         </ScrollView>
       </SafeAreaView>
@@ -200,43 +198,36 @@ const styles = StyleSheet.create({
     fontSize: 16,
     lineHeight: 23,
   },
-  resultCard: {
-    alignItems: "center",
-    gap: 14,
-    padding: 18,
-    borderRadius: 18,
-    backgroundColor: COLORS.canvas,
-    borderWidth: 1,
-    borderColor: COLORS.border,
-  },
-  avatar: {
-    width: 68,
-    height: 68,
-    alignItems: "center",
-    justifyContent: "center",
-    borderRadius: 34,
-    backgroundColor: COLORS.primarySoft,
-  },
-  avatarText: { color: COLORS.primary, fontSize: 22, fontWeight: "800" },
-  identity: { alignItems: "center", gap: 3 },
-  name: { color: COLORS.text, fontSize: 20, fontWeight: "700" },
-  username: { color: COLORS.textSecondary, fontSize: 15 },
-  relationshipBadge: {
-    width: "100%",
-    padding: 14,
-    borderRadius: 14,
-    backgroundColor: COLORS.primarySoft,
-  },
-  relationshipText: {
-    color: COLORS.primary,
-    textAlign: "center",
-    fontSize: 15,
-    fontWeight: "700",
-  },
   message: {
     color: COLORS.textSecondary,
     textAlign: "center",
     fontSize: 14,
     lineHeight: 20,
+  },
+  backButton: {
+    minHeight: 44,
+    alignSelf: "center",
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 6,
+    marginTop: 2,
+    paddingHorizontal: 18,
+    borderRadius: 22,
+    backgroundColor: COLORS.primarySoft,
+  },
+  backButtonPressed: {
+    opacity: 0.7,
+  },
+  backArrow: {
+    color: COLORS.primary,
+    fontSize: 24,
+    lineHeight: 24,
+    fontWeight: "600",
+  },
+  backText: {
+    color: COLORS.primary,
+    fontSize: 15,
+    fontWeight: "700",
   },
 });

@@ -63,6 +63,10 @@ export default function ProfileScreen() {
     router.push("/profile/edit");
   }
 
+  function handleFindFriends() {
+    router.push("/friends/search");
+  }
+
   async function handleLogout() {
     try {
       await logoutUser();
@@ -193,6 +197,11 @@ export default function ProfileScreen() {
           </View>
 
           <View style={styles.actions}>
+            <AppButton
+              title="Caută prieteni"
+              onPress={handleFindFriends}
+              variant="outline"
+            />
             <AppButton title="Editează profilul" onPress={handleEditProfile} />
             <AppButton
               title="Deconectare"

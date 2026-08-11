@@ -67,6 +67,16 @@ async function getVisibleProfile(
   }
 }
 
+export async function getPublicProfileByUid(
+  targetUid: string,
+): Promise<PublicProfile | null> {
+  if (!targetUid.trim()) {
+    return null;
+  }
+
+  return getVisibleProfile(targetUid);
+}
+
 export async function searchUserByUsername(
   currentUid: string,
   username: string,
