@@ -43,9 +43,10 @@ Din terminalul Expo se poate deschide aplicația pe iOS, Android sau web.
 npm test -- --runInBand
 npx tsc --noEmit
 npm run lint
+npm run test:firestore-rules
 ```
 
-Aceste verificări testează logica locală, dar nu demonstrează că regulile și indexurile sunt publicate în Firebase. Fluxurile sociale trebuie testate și manual cu cel puțin două conturi.
+Ultima comandă pornește automat un Firestore Emulator local și testează regulile fără să atingă proiectul Firebase real. Necesită Java; Java 21 sau mai nou este recomandat pentru versiunile viitoare Firebase CLI. Verificările locale nu demonstrează că regulile și indexurile sunt publicate în Firebase, deci fluxurile sociale trebuie testate și manual cu cel puțin două conturi.
 
 ## 4. Arhitectura pe scurt
 
@@ -371,7 +372,14 @@ au nevoie de indexuri Firestore. Dacă un index lipsește, consola aplicației a
 
 ## 15. Testare
 
-Testele automate folosesc Firebase simulat și verifică logica fără să modifice baza reală. Ele trebuie să acopere:
+Testele Jest obișnuite folosesc Firebase simulat și verifică logica fără să modifice baza reală. Testele din `client/firestore-emulator` folosesc pachetul oficial `@firebase/rules-unit-testing` și regulile reale din `database/firestore.rules` într-un proiect local `demo-setitup`.
+
+```bash
+cd client
+npm run test:firestore-rules
+```
+
+Comanda pornește emulatorul, rulează testele și îl oprește automat. Testele trebuie să acopere:
 
 - rezultate normale;
 - input invalid;
