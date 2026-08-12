@@ -4,6 +4,7 @@ import {
   useCallback,
   useContext,
   useEffect,
+  useRef,
   useState,
 } from "react";
 
@@ -44,11 +45,13 @@ export function ProfileProvider({ children }: ProfileProviderProps) {
   const [profileStatus, setProfileStatus] = useState<ProfileStatus>("idle");
   const [loadedProfileUid, setLoadedProfileUid] = useState<string | null>(null);
   const [profileError, setProfileError] = useState("");
+  const profileRequestId = useRef(0);
   const isProfileLoading =
     profileStatus === "loading" ||
     Boolean(user && loadedProfileUid !== user.uid);
 
   const refreshProfile = useCallback(async (uid?: string) => {
+    const requestId = ++profileRequestId.current;
     const profileUid = uid ?? user?.uid;
 
     if (!profileUid) {
@@ -59,15 +62,25 @@ export function ProfileProvider({ children }: ProfileProviderProps) {
       return;
     }
 
+    setProfile(null);
     setProfileStatus("loading");
     setProfileError("");
 
     try {
       const savedProfile = await getUserProfile(profileUid);
+
+      if (requestId !== profileRequestId.current) {
+        return;
+      }
+
       setProfile(savedProfile);
       setLoadedProfileUid(profileUid);
       setProfileStatus(savedProfile ? "ready" : "missing");
     } catch (error) {
+      if (requestId !== profileRequestId.current) {
+        return;
+      }
+
       console.error("Profilul nu a putut fi încărcat:", error);
       setProfile(null);
       setLoadedProfileUid(profileUid);
