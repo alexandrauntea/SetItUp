@@ -170,6 +170,38 @@ describe("Serviciul de profil", () => {
         "user-123",
       );
     });
+
+    test("respinge un document Firestore cu structură invalidă", async () => {
+      mockedGetDoc.mockResolvedValue({
+        exists: () => true,
+        data: () => ({
+          uid: "user-123",
+          username: "andrei_21",
+          interests: "Tehnologie",
+        }),
+      } as never);
+
+      await expect(getUserProfile("user-123")).rejects.toThrow(
+        "PROFILE_INVALID",
+      );
+    });
+
+    test("respinge un document care aparține altui utilizator", async () => {
+      mockedGetDoc.mockResolvedValue({
+        exists: () => true,
+        data: () => ({
+          ...input,
+          uid: "user-456",
+          username: "andrei_21",
+          createdAt: "2026-08-01T10:00:00.000Z",
+          updatedAt: "2026-08-01T10:00:00.000Z",
+        }),
+      } as never);
+
+      await expect(getUserProfile("user-123")).rejects.toThrow(
+        "PROFILE_INVALID",
+      );
+    });
   });
 
   describe("updateUserProfile", () => {
@@ -227,6 +259,27 @@ describe("Serviciul de profil", () => {
       await expect(
         updateUserProfile("user-123", { occupation: "Developer" }),
       ).rejects.toThrow("PROFILE_NOT_FOUND");
+      expect(transaction.update).not.toHaveBeenCalled();
+      expect(transaction.set).not.toHaveBeenCalled();
+    });
+
+    test("nu actualizează un document Firestore invalid", async () => {
+      const transaction = {
+        get: jest.fn().mockResolvedValue({
+          exists: () => true,
+          data: () => ({ uid: "user-123", username: "andrei_21" }),
+        }),
+        update: jest.fn(),
+        set: jest.fn(),
+      };
+
+      mockedRunTransaction.mockImplementation(async (_database, callback) =>
+        callback(transaction as never),
+      );
+
+      await expect(
+        updateUserProfile("user-123", { occupation: "Developer" }),
+      ).rejects.toThrow("PROFILE_INVALID");
       expect(transaction.update).not.toHaveBeenCalled();
       expect(transaction.set).not.toHaveBeenCalled();
     });

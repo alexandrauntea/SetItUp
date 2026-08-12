@@ -22,6 +22,45 @@ const PUBLIC_PROFILES_COLLECTION = "publicProfiles";
 
 export { normalizeUsername } from "@/utils/profileData";
 
+function isUserProfile(value: unknown, expectedUid: string): value is UserProfile {
+  if (!value || typeof value !== "object") {
+    return false;
+  }
+
+  const profile = value as Record<string, unknown>;
+  const stringFields = [
+    "username",
+    "email",
+    "birthDate",
+    "firstName",
+    "lastName",
+    "occupation",
+    "description",
+    "gdprAcceptedAt",
+    "createdAt",
+    "updatedAt",
+  ];
+
+  return (
+    profile.uid === expectedUid &&
+    stringFields.every((field) => typeof profile[field] === "string") &&
+    ["female", "male", "other"].includes(profile.gender as string) &&
+    Array.isArray(profile.interests) &&
+    profile.interests.every((interest) => typeof interest === "string") &&
+    typeof profile.isPrivate === "boolean" &&
+    typeof profile.profileCompleted === "boolean" &&
+    (profile.photoUrl === undefined || typeof profile.photoUrl === "string")
+  );
+}
+
+function requireUserProfile(value: unknown, expectedUid: string): UserProfile {
+  if (!isUserProfile(value, expectedUid)) {
+    throw new Error("PROFILE_INVALID");
+  }
+
+  return value;
+}
+
 export async function isUsernameAvailable(username: string): Promise<boolean> {
   const normalized = normalizeUsername(username);
   const usernameRef = doc(db, USERNAMES_COLLECTION, normalized);
@@ -99,7 +138,7 @@ export async function getUserProfile(uid: string): Promise<UserProfile | null> {
     return null;
   }
 
-  return snapshot.data() as UserProfile;
+  return requireUserProfile(snapshot.data(), uid);
 }
 
 export async function updateUserProfile(
@@ -116,9 +155,10 @@ export async function updateUserProfile(
       throw new Error("PROFILE_NOT_FOUND");
     }
 
+    const savedProfile = requireUserProfile(profileSnapshot.data(), uid);
     const updatedAt = new Date().toISOString();
     const updatedProfile: UserProfile = {
-      ...(profileSnapshot.data() as UserProfile),
+      ...savedProfile,
       ...updates,
       updatedAt,
     };
