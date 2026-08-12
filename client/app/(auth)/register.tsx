@@ -1,6 +1,5 @@
 import { AppButton } from "@/components/AppButton";
 import { AppInput } from "@/components/AppInput";
-import { BrandLogo } from "@/components/BrandLogo";
 import { FormError } from "@/components/FormError";
 import { ScreenBackground } from "@/components/ScreenBackground";
 import { AppCheckbox } from "@/components/AppCheckbox";
@@ -119,8 +118,6 @@ export default function RegisterScreen() {
           showsVerticalScrollIndicator={false}
         >
           <View style={styles.form}>
-            <BrandLogo size={56} />
-
             <Text style={styles.title}>Creează-ți contul</Text>
 
             <AppInput
