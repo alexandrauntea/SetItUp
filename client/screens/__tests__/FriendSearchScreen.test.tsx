@@ -50,6 +50,14 @@ const searchResult: UserSearchResult = {
   relationshipState: "none",
 };
 
+async function searchFor(username = "anca_21") {
+  await fireEvent.changeText(
+    screen.getByPlaceholderText("De exemplu: anca_21"),
+    username,
+  );
+  await fireEvent.press(screen.getByText("Caută"));
+}
+
 describe("Ecranul de căutare a prietenilor", () => {
   beforeEach(() => {
     jest.clearAllMocks();
@@ -79,8 +87,7 @@ describe("Ecranul de căutare a prietenilor", () => {
     mockedFindUserByUsername.mockResolvedValueOnce(searchResult);
     await render(<FriendSearchScreen />);
 
-    await fireEvent.changeText(screen.getByPlaceholderText("De exemplu: anca_21"), " Anca_21 ");
-    await fireEvent.press(screen.getByText("Caută"));
+    await searchFor(" Anca_21 ");
 
     await waitFor(() => {
       expect(mockedFindUserByUsername).toHaveBeenCalledWith(" Anca_21 ", "current-user");
@@ -93,10 +100,38 @@ describe("Ecranul de căutare a prietenilor", () => {
     mockedFindUserByUsername.mockResolvedValueOnce(null);
     await render(<FriendSearchScreen />);
 
-    await fireEvent.changeText(screen.getByPlaceholderText("De exemplu: anca_21"), "nimeni");
-    await fireEvent.press(screen.getByText("Caută"));
+    await searchFor("nimeni");
 
     expect(await screen.findByText("Nu am găsit niciun utilizator cu acest username.")).toBeTruthy();
+  });
+
+  test("afișează mesajul dedicat când utilizatorul se caută pe sine", async () => {
+    mockedFindUserByUsername.mockRejectedValueOnce(
+      new Error("CANNOT_SEARCH_SELF"),
+    );
+    await render(<FriendSearchScreen />);
+
+    await searchFor("andrei");
+
+    expect(await screen.findByText("Acesta este contul tău.")).toBeTruthy();
+    expect(screen.queryByText("Trimite cerere")).toBeNull();
+  });
+
+  test("afișează eroare și elimină rezultatul anterior când o căutare eșuează", async () => {
+    mockedFindUserByUsername
+      .mockResolvedValueOnce(searchResult)
+      .mockRejectedValueOnce(new Error("network-error"));
+    await render(<FriendSearchScreen />);
+
+    await searchFor();
+    expect(await screen.findByText("@anca_21")).toBeTruthy();
+
+    await searchFor("alt_user");
+
+    expect(
+      await screen.findByText("Căutarea nu a reușit. Încearcă din nou."),
+    ).toBeTruthy();
+    expect(screen.queryByText("@anca_21")).toBeNull();
   });
 
   test("trimite cererea către rezultatul găsit", async () => {
@@ -104,8 +139,7 @@ describe("Ecranul de căutare a prietenilor", () => {
     mockedSendFriendRequest.mockResolvedValueOnce({} as never);
     await render(<FriendSearchScreen />);
 
-    await fireEvent.changeText(screen.getByPlaceholderText("De exemplu: anca_21"), "anca_21");
-    await fireEvent.press(screen.getByText("Caută"));
+    await searchFor();
     await fireEvent.press(await screen.findByText("Trimite cerere"));
 
     await waitFor(() => {
@@ -119,4 +153,27 @@ describe("Ecranul de căutare a prietenilor", () => {
       expect(screen.getByText("Cerere trimisă")).toBeTruthy();
     });
   });
+
+  test.each([
+    [
+      "FRIEND_REQUEST_ALREADY_EXISTS",
+      "Există deja o cerere între voi.",
+    ],
+    ["ALREADY_FRIENDS", "Sunteți deja prieteni."],
+    ["permission-denied", "Cererea nu a putut fi trimisă. Încearcă din nou."],
+  ])(
+    "afișează mesajul potrivit când trimiterea eșuează cu %s",
+    async (errorCode, expectedMessage) => {
+      mockedFindUserByUsername.mockResolvedValueOnce(searchResult);
+      mockedSendFriendRequest.mockRejectedValueOnce(new Error(errorCode));
+      await render(<FriendSearchScreen />);
+
+      await searchFor();
+      await fireEvent.press(await screen.findByText("Trimite cerere"));
+
+      expect(await screen.findByText(expectedMessage)).toBeTruthy();
+      expect(screen.getByText("Trimite cerere")).toBeTruthy();
+      expect(screen.queryByText("Cerere trimisă")).toBeNull();
+    },
+  );
 });
