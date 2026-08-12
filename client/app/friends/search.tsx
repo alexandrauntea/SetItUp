@@ -42,7 +42,6 @@ export default function FriendSearchScreen() {
   const [username, setUsername] = useState("");
   const [result, setResult] = useState<UserSearchResult | null>(null);
   const [message, setMessage] = useState("");
-  const [hasSearched, setHasSearched] = useState(false);
   const [isSearching, setIsSearching] = useState(false);
   const [isSending, setIsSending] = useState(false);
 
@@ -58,7 +57,6 @@ export default function FriendSearchScreen() {
     if (!user) return;
 
     Keyboard.dismiss();
-    setHasSearched(true);
     setMessage("");
     setResult(null);
     setIsSearching(true);
@@ -132,10 +130,6 @@ export default function FriendSearchScreen() {
               <Text style={styles.title}>Caută prieteni</Text>
             </View>
 
-            <Text style={styles.description}>
-              Găsește persoane și trimite-le o cerere de prietenie.
-            </Text>
-
             <View style={styles.searchRow}>
               <View style={styles.searchInputContainer}>
                 <Ionicons
@@ -180,22 +174,6 @@ export default function FriendSearchScreen() {
               </Pressable>
             </View>
 
-            {!hasSearched ? (
-              <View style={styles.emptyState}>
-                <View style={styles.emptyIcon}>
-                  <Ionicons name="person-add-outline" size={34} color={COLORS.primary} />
-                </View>
-                <Text style={styles.emptyTitle}>Descoperă persoane</Text>
-                <Text style={styles.emptyDescription}>
-                  Introdu username-ul exact pentru a găsi persoana pe care o
-                  cauți.
-                </Text>
-                <Text style={styles.privacyText}>
-                  Profilurile private își păstrează detaliile ascunse.
-                </Text>
-              </View>
-            ) : null}
-
             {result ? (
               <View style={styles.resultsSection}>
                 <Text style={styles.sectionTitle}>Rezultate</Text>
@@ -237,11 +215,6 @@ const styles = StyleSheet.create({
   },
   header: { flexDirection: "row", alignItems: "center", gap: 12 },
   title: { color: COLORS.text, fontSize: 27, fontWeight: "800" },
-  description: {
-    color: COLORS.textSecondary,
-    fontSize: 15,
-    lineHeight: 21,
-  },
   searchRow: { flexDirection: "row", alignItems: "center", gap: 10 },
   searchInputContainer: {
     minHeight: 50,
@@ -277,31 +250,6 @@ const styles = StyleSheet.create({
     lineHeight: 20,
     backgroundColor: COLORS.surface,
   },
-  emptyState: {
-    alignItems: "center",
-    gap: 9,
-    paddingHorizontal: 28,
-    paddingVertical: 52,
-    marginTop: 20,
-    borderTopWidth: 1,
-    borderTopColor: COLORS.surface,
-  },
-  emptyIcon: {
-    width: 58,
-    height: 58,
-    alignItems: "center",
-    justifyContent: "center",
-    borderRadius: 29,
-    backgroundColor: COLORS.primarySoft,
-  },
-  emptyTitle: { color: COLORS.text, fontSize: 18, fontWeight: "800" },
-  emptyDescription: {
-    color: COLORS.textSecondary,
-    textAlign: "center",
-    fontSize: 14,
-    lineHeight: 20,
-  },
-  privacyText: { color: COLORS.textSecondary, fontSize: 12, marginTop: 3 },
   backButton: {
     width: 42,
     height: 42,

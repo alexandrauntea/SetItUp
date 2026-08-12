@@ -68,18 +68,12 @@ describe("Ecranul de căutare a prietenilor", () => {
     mockCanGoBack.mockReturnValue(true);
   });
 
-  test("afișează instrucțiunile înainte de prima căutare", async () => {
+  test("afișează o interfață de căutare fără instrucțiuni redundante", async () => {
     await render(<FriendSearchScreen />);
 
-    expect(screen.getByText("Descoperă persoane")).toBeTruthy();
-    expect(
-      screen.getByText(
-        "Introdu username-ul exact pentru a găsi persoana pe care o cauți.",
-      ),
-    ).toBeTruthy();
-    expect(
-      screen.getByText("Profilurile private își păstrează detaliile ascunse."),
-    ).toBeTruthy();
+    expect(screen.getByText("Caută prieteni")).toBeTruthy();
+    expect(screen.getByPlaceholderText("Caută după username")).toBeTruthy();
+    expect(screen.queryByText("Descoperă persoane")).toBeNull();
   });
 
   test("revine la ecranul anterior când există istoric", async () => {
@@ -111,7 +105,6 @@ describe("Ecranul de căutare a prietenilor", () => {
       expect(mockedFindUserByUsername).toHaveBeenCalledWith(" Anca_21 ", "current-user");
       expect(screen.getByText("@anca_21")).toBeTruthy();
       expect(screen.getByText("Profil privat")).toBeTruthy();
-      expect(screen.queryByText("Descoperă persoane")).toBeNull();
     });
   });
 
