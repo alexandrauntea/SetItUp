@@ -57,6 +57,14 @@ describe("Trimiterea unei cereri de prietenie", () => {
     expect(mockedRunTransaction).not.toHaveBeenCalled();
   });
 
+  test("respinge datele obligatorii goale", async () => {
+    await expect(
+      sendFriendRequest({ ...input, receiverUsername: "   " }),
+    ).rejects.toThrow("INVALID_FRIEND_REQUEST_INPUT");
+
+    expect(mockedRunTransaction).not.toHaveBeenCalled();
+  });
+
   test("creează o cerere pending cu un identificator comun perechii", async () => {
     const transaction = prepareTransaction();
 

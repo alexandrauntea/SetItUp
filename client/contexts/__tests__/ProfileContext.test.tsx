@@ -1,5 +1,11 @@
 import type { User } from "firebase/auth";
-import { fireEvent, render, screen, waitFor } from "@testing-library/react-native";
+import {
+  act,
+  fireEvent,
+  render,
+  screen,
+  waitFor,
+} from "@testing-library/react-native";
 import { Pressable, Text } from "react-native";
 
 import { useAuth } from "@/contexts/AuthContext";
@@ -159,5 +165,47 @@ describe("ProfileContext", () => {
       expect(screen.getByText("idle|done|none|no-error")).toBeTruthy();
     });
     expect(mockedGetUserProfile).not.toHaveBeenCalled();
+  });
+
+  test("înlocuiește profilul când utilizatorul autentificat se schimbă", async () => {
+    let currentUser = { uid: "user-123" } as User;
+    const secondProfile = {
+      ...profile,
+      uid: "user-456",
+      username: "maria",
+      email: "maria@email.com",
+    };
+
+    mockedUseAuth.mockImplementation(() => ({
+      user: currentUser,
+      isLoading: false,
+      isAuthenticated: true,
+    }));
+    mockedGetUserProfile
+      .mockResolvedValueOnce(profile)
+      .mockResolvedValueOnce(secondProfile);
+
+    const view = await render(
+      <ProfileProvider>
+        <ProfileStateProbe />
+      </ProfileProvider>,
+    );
+
+    await screen.findByText("ready|done|andrei|no-error");
+
+    currentUser = { uid: "user-456" } as User;
+    await act(async () => {
+      view.rerender(
+        <ProfileProvider>
+          <ProfileStateProbe />
+        </ProfileProvider>,
+      );
+    });
+
+    await waitFor(() => {
+      expect(screen.getByText("ready|done|maria|no-error")).toBeTruthy();
+    });
+    expect(mockedGetUserProfile).toHaveBeenNthCalledWith(1, "user-123");
+    expect(mockedGetUserProfile).toHaveBeenNthCalledWith(2, "user-456");
   });
 });

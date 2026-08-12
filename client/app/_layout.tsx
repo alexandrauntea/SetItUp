@@ -12,6 +12,7 @@ import { AppButton } from "@/components/AppButton";
 import { ScreenBackground } from "@/components/ScreenBackground";
 import { COLORS } from "@/constants/colors";
 import { logoutUser } from "@/services/authService";
+import { AppBottomNav } from "@/components/AppBottomNav";
 
 function RootLayoutNav() {
   const { user, isLoading } = useAuth();
@@ -119,7 +120,9 @@ function RootLayoutNav() {
         <Stack.Screen name="profile/create" options={{ headerShown: false }} />
         <Stack.Screen name="profile/recover" options={{ headerShown: false }} />
         <Stack.Screen name="friends" options={{ headerShown: false }} />
+        <Stack.Screen name="users/[uid]" options={{ headerShown: false }} />
       </Stack>
+      <AppBottomNav />
       <StatusBar style="auto" />
     </>
   );

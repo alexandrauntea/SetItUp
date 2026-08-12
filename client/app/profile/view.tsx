@@ -16,22 +16,7 @@ import {
   View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-
-function calculateAge(birthDate: string) {
-  const [day, month, year] = birthDate.split("/").map(Number);
-
-  if (!day || !month || !year) return 0;
-
-  const today = new Date();
-  let age = today.getFullYear() - year;
-  const birthdayHasPassed =
-    today.getMonth() + 1 > month ||
-    (today.getMonth() + 1 === month && today.getDate() >= day);
-
-  if (!birthdayHasPassed) age -= 1;
-
-  return age;
-}
+import { calculateAgeFromBirthDate } from "@/utils/profileData";
 
 export default function ProfileScreen() {
   const router = useRouter();
@@ -54,7 +39,7 @@ export default function ProfileScreen() {
 
   const fullName = `${profile.firstName} ${profile.lastName}`.trim();
   const initials = `${profile.firstName.charAt(0)}${profile.lastName.charAt(0)}`;
-  const age = calculateAge(profile.birthDate);
+  const age = calculateAgeFromBirthDate(profile.birthDate);
   const genderLabel =
     GENDER_OPTIONS.find((option) => option.value === profile.gender)?.label ??
     profile.gender;
@@ -220,7 +205,7 @@ const styles = StyleSheet.create({
   container: {
     flexGrow: 1,
     paddingTop: 16,
-    paddingBottom: 40,
+    paddingBottom: 120,
     paddingHorizontal: 20,
     backgroundColor: "transparent",
   },

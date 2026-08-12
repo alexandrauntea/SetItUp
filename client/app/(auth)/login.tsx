@@ -1,6 +1,5 @@
 import { AppButton } from "@/components/AppButton";
 import { AppInput } from "@/components/AppInput";
-import { BrandLogo } from "@/components/BrandLogo";
 import { FormError } from "@/components/FormError";
 import { ScreenBackground } from "@/components/ScreenBackground";
 import { COLORS } from "@/constants/colors";
@@ -51,8 +50,6 @@ export default function LoginScreen() {
     <ScreenBackground>
       <SafeAreaView style={styles.container}>
         <View style={styles.form}>
-          <BrandLogo />
-
           <Text style={styles.title}>Bine ai revenit</Text>
 
           <AppInput

@@ -2,8 +2,9 @@ import { doc, getDoc } from "firebase/firestore";
 
 import type { FriendRequest, PublicProfile } from "@/types/social";
 import {
+  getPublicProfileByUid,
   normalizeSearchUsername,
-  searchUserByUsername,
+  findUserByUsername,
 } from "../userSearchService";
 
 jest.mock("firebase/firestore", () => ({
@@ -70,7 +71,25 @@ describe("Serviciul de căutare a utilizatorilor", () => {
   });
 
   test("nu interoghează Firestore pentru o căutare goală", async () => {
-    await expect(searchUserByUsername("current-uid", "   ")).resolves.toBeNull();
+    await expect(findUserByUsername("   ", "current-uid")).resolves.toBeNull();
+    expect(mockedGetDoc).not.toHaveBeenCalled();
+  });
+
+  test("încarcă un profil public direct după uid", async () => {
+    mockedGetDoc.mockResolvedValueOnce(existingSnapshot(publicProfile));
+
+    await expect(getPublicProfileByUid("target-uid")).resolves.toEqual(
+      publicProfile,
+    );
+    expect(mockedDoc).toHaveBeenCalledWith(
+      expect.anything(),
+      "publicProfiles",
+      "target-uid",
+    );
+  });
+
+  test("nu interoghează Firestore când uid-ul este gol", async () => {
+    await expect(getPublicProfileByUid("   ")).resolves.toBeNull();
     expect(mockedGetDoc).not.toHaveBeenCalled();
   });
 
@@ -78,7 +97,7 @@ describe("Serviciul de căutare a utilizatorilor", () => {
     mockedGetDoc.mockResolvedValueOnce(missingSnapshot());
 
     await expect(
-      searchUserByUsername("current-uid", "necunoscut"),
+      findUserByUsername("necunoscut", "current-uid"),
     ).resolves.toBeNull();
 
     expect(mockedDoc).toHaveBeenCalledWith(
@@ -88,13 +107,25 @@ describe("Serviciul de căutare a utilizatorilor", () => {
     );
   });
 
+  test("raportează profilul social lipsă în loc să îl considere privat", async () => {
+    mockedGetDoc
+      .mockResolvedValueOnce(existingSnapshot({ uid: "target-uid" }))
+      .mockResolvedValueOnce(missingSnapshot())
+      .mockResolvedValueOnce(missingSnapshot())
+      .mockResolvedValueOnce(missingSnapshot());
+
+    await expect(
+      findUserByUsername("anca_21", "current-uid"),
+    ).rejects.toThrow("PUBLIC_PROFILE_NOT_FOUND");
+  });
+
   test("oprește căutarea propriului cont", async () => {
     mockedGetDoc.mockResolvedValueOnce(
       existingSnapshot({ uid: "current-uid" }),
     );
 
     await expect(
-      searchUserByUsername("current-uid", "andrei"),
+      findUserByUsername("andrei", "current-uid"),
     ).rejects.toThrow("CANNOT_SEARCH_SELF");
 
     expect(mockedGetDoc).toHaveBeenCalledTimes(1);
@@ -107,7 +138,7 @@ describe("Serviciul de căutare a utilizatorilor", () => {
       .mockResolvedValueOnce(missingSnapshot());
 
     await expect(
-      searchUserByUsername("current-uid", " Anca_21 "),
+      findUserByUsername(" Anca_21 ", "current-uid"),
     ).resolves.toEqual({
       uid: "target-uid",
       username: "anca_21",
@@ -125,7 +156,7 @@ describe("Serviciul de căutare a utilizatorilor", () => {
       }))
       .mockResolvedValueOnce(missingSnapshot());
 
-    const result = await searchUserByUsername("current-uid", "anca_21");
+    const result = await findUserByUsername("anca_21", "current-uid");
 
     expect(result?.relationshipState).toBe("friends");
   });
@@ -148,7 +179,7 @@ describe("Serviciul de căutare a utilizatorilor", () => {
       .mockResolvedValueOnce(missingSnapshot())
       .mockResolvedValueOnce(existingSnapshot(request));
 
-    const result = await searchUserByUsername("current-uid", "anca_21");
+    const result = await findUserByUsername("anca_21", "current-uid");
 
     expect(result?.relationshipState).toBe("request-sent");
   });
@@ -171,7 +202,7 @@ describe("Serviciul de căutare a utilizatorilor", () => {
       .mockResolvedValueOnce(missingSnapshot())
       .mockResolvedValueOnce(existingSnapshot(request));
 
-    const result = await searchUserByUsername("current-uid", "anca_21");
+    const result = await findUserByUsername("anca_21", "current-uid");
 
     expect(result?.relationshipState).toBe("request-received");
   });
@@ -184,7 +215,7 @@ describe("Serviciul de căutare a utilizatorilor", () => {
       .mockResolvedValueOnce(missingSnapshot());
 
     await expect(
-      searchUserByUsername("current-uid", "anca_21"),
+      findUserByUsername("anca_21", "current-uid"),
     ).resolves.toEqual({
       uid: "target-uid",
       username: "anca_21",
@@ -192,5 +223,15 @@ describe("Serviciul de căutare a utilizatorilor", () => {
       profile: null,
       relationshipState: "none",
     });
+  });
+
+  test("transmite eroarea când profilul nu poate fi citit din cauza rețelei", async () => {
+    mockedGetDoc
+      .mockResolvedValueOnce(existingSnapshot({ uid: "target-uid" }))
+      .mockRejectedValueOnce({ code: "unavailable" });
+
+    await expect(
+      findUserByUsername("anca_21", "current-uid"),
+    ).rejects.toEqual({ code: "unavailable" });
   });
 });

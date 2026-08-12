@@ -2,8 +2,6 @@ import {
   doc,
   getDoc,
   runTransaction,
-  setDoc,
-  updateDoc,
 } from "firebase/firestore";
 
 import type { CreateUserProfileInput, UserProfile } from "@/types/profile";
@@ -19,8 +17,6 @@ jest.mock("firebase/firestore", () => ({
   doc: jest.fn(),
   getDoc: jest.fn(),
   runTransaction: jest.fn(),
-  setDoc: jest.fn(),
-  updateDoc: jest.fn(),
 }));
 
 jest.mock("../firebase", () => ({
@@ -30,8 +26,6 @@ jest.mock("../firebase", () => ({
 const mockedDoc = jest.mocked(doc);
 const mockedGetDoc = jest.mocked(getDoc);
 const mockedRunTransaction = jest.mocked(runTransaction);
-const mockedSetDoc = jest.mocked(setDoc);
-const mockedUpdateDoc = jest.mocked(updateDoc);
 
 const input: CreateUserProfileInput = {
   uid: "user-123",
@@ -55,7 +49,6 @@ describe("Serviciul de profil", () => {
     mockedDoc.mockImplementation((...args: unknown[]) =>
       args.slice(1).join("/") as never,
     );
-    mockedSetDoc.mockResolvedValue(undefined);
   });
 
   describe("normalizeUsername", () => {
@@ -122,7 +115,8 @@ describe("Serviciul de profil", () => {
         "users/user-123",
         result,
       );
-      expect(mockedSetDoc).toHaveBeenCalledWith(
+      expect(transaction.set).toHaveBeenNthCalledWith(
+        3,
         "publicProfiles/user-123",
         expect.objectContaining({
           uid: "user-123",
@@ -176,34 +170,73 @@ describe("Serviciul de profil", () => {
         "user-123",
       );
     });
-  });
 
-  describe("updateUserProfile", () => {
-    test("actualizează câmpurile și data ultimei modificări", async () => {
-      mockedUpdateDoc.mockResolvedValue(undefined);
+    test("respinge un document Firestore cu structură invalidă", async () => {
+      mockedGetDoc.mockResolvedValue({
+        exists: () => true,
+        data: () => ({
+          uid: "user-123",
+          username: "andrei_21",
+          interests: "Tehnologie",
+        }),
+      } as never);
+
+      await expect(getUserProfile("user-123")).rejects.toThrow(
+        "PROFILE_INVALID",
+      );
+    });
+
+    test("respinge un document care aparține altui utilizator", async () => {
       mockedGetDoc.mockResolvedValue({
         exists: () => true,
         data: () => ({
           ...input,
+          uid: "user-456",
           username: "andrei_21",
-          occupation: "Developer",
-          interests: ["Tehnologie", "Muzică"],
           createdAt: "2026-08-01T10:00:00.000Z",
-          updatedAt: "2026-08-10T10:00:00.000Z",
+          updatedAt: "2026-08-01T10:00:00.000Z",
         }),
       } as never);
+
+      await expect(getUserProfile("user-123")).rejects.toThrow(
+        "PROFILE_INVALID",
+      );
+    });
+  });
+
+  describe("updateUserProfile", () => {
+    test("actualizează câmpurile și data ultimei modificări", async () => {
+      const savedProfile = {
+        ...input,
+        username: "andrei_21",
+        createdAt: "2026-08-01T10:00:00.000Z",
+        updatedAt: "2026-08-01T10:00:00.000Z",
+      } satisfies UserProfile;
+      const transaction = {
+        get: jest.fn().mockResolvedValue({
+          exists: () => true,
+          data: () => savedProfile,
+        }),
+        update: jest.fn(),
+        set: jest.fn(),
+      };
+
+      mockedRunTransaction.mockImplementation(async (_database, callback) =>
+        callback(transaction as never),
+      );
 
       await updateUserProfile("user-123", {
         occupation: "Developer",
         interests: ["Tehnologie", "Muzică"],
       });
 
-      expect(mockedUpdateDoc).toHaveBeenCalledWith("users/user-123", {
+      expect(transaction.get).toHaveBeenCalledWith("users/user-123");
+      expect(transaction.update).toHaveBeenCalledWith("users/user-123", {
         occupation: "Developer",
         interests: ["Tehnologie", "Muzică"],
         updatedAt: expect.any(String),
       });
-      expect(mockedSetDoc).toHaveBeenCalledWith(
+      expect(transaction.set).toHaveBeenCalledWith(
         "publicProfiles/user-123",
         expect.objectContaining({
           occupation: "Developer",
@@ -212,9 +245,48 @@ describe("Serviciul de profil", () => {
       );
     });
 
+    test("oprește actualizarea dacă profilul privat lipsește", async () => {
+      const transaction = {
+        get: jest.fn().mockResolvedValue({ exists: () => false }),
+        update: jest.fn(),
+        set: jest.fn(),
+      };
+
+      mockedRunTransaction.mockImplementation(async (_database, callback) =>
+        callback(transaction as never),
+      );
+
+      await expect(
+        updateUserProfile("user-123", { occupation: "Developer" }),
+      ).rejects.toThrow("PROFILE_NOT_FOUND");
+      expect(transaction.update).not.toHaveBeenCalled();
+      expect(transaction.set).not.toHaveBeenCalled();
+    });
+
+    test("nu actualizează un document Firestore invalid", async () => {
+      const transaction = {
+        get: jest.fn().mockResolvedValue({
+          exists: () => true,
+          data: () => ({ uid: "user-123", username: "andrei_21" }),
+        }),
+        update: jest.fn(),
+        set: jest.fn(),
+      };
+
+      mockedRunTransaction.mockImplementation(async (_database, callback) =>
+        callback(transaction as never),
+      );
+
+      await expect(
+        updateUserProfile("user-123", { occupation: "Developer" }),
+      ).rejects.toThrow("PROFILE_INVALID");
+      expect(transaction.update).not.toHaveBeenCalled();
+      expect(transaction.set).not.toHaveBeenCalled();
+    });
+
     test("transmite mai departe eroarea Firestore", async () => {
       const firestoreError = new Error("permission-denied");
-      mockedUpdateDoc.mockRejectedValue(firestoreError);
+      mockedRunTransaction.mockRejectedValueOnce(firestoreError);
 
       await expect(
         updateUserProfile("user-123", { occupation: "Developer" }),
