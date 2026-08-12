@@ -61,9 +61,18 @@ async function getVisibleProfile(
     }
 
     return profileSnapshot.data() as PublicProfile;
-  } catch {
-    // Regulile Firestore nu permit citirea unui profil privat.
-    return null;
+  } catch (error) {
+    const code =
+      typeof error === "object" && error !== null && "code" in error
+        ? String(error.code)
+        : "";
+
+    if (code === "permission-denied" || code === "firestore/permission-denied") {
+      // Regulile Firestore nu permit citirea unui profil privat.
+      return null;
+    }
+
+    throw error;
   }
 }
 
@@ -77,9 +86,9 @@ export async function getPublicProfileByUid(
   return getVisibleProfile(targetUid);
 }
 
-export async function searchUserByUsername(
-  currentUid: string,
+export async function findUserByUsername(
   username: string,
+  currentUid: string,
 ): Promise<UserSearchResult | null> {
   const normalizedUsername = normalizeSearchUsername(username);
 

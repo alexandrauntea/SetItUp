@@ -1,6 +1,9 @@
-import { fireEvent, render, screen } from "@testing-library/react-native";
+import { fireEvent, render, screen, waitFor } from "@testing-library/react-native";
 
 import FriendSearchScreen from "@/app/friends/search";
+import { sendFriendRequest } from "@/services/social/friendRequestSendService";
+import { findUserByUsername } from "@/services/social/userSearchService";
+import type { UserSearchResult } from "@/types/social";
 
 const mockBack = jest.fn();
 const mockReplace = jest.fn();
@@ -33,8 +36,19 @@ jest.mock("@/services/social/friendRequestSendService", () => ({
 }));
 
 jest.mock("@/services/social/userSearchService", () => ({
-  searchUserByUsername: jest.fn(),
+  findUserByUsername: jest.fn(),
 }));
+
+const mockedFindUserByUsername = jest.mocked(findUserByUsername);
+const mockedSendFriendRequest = jest.mocked(sendFriendRequest);
+
+const searchResult: UserSearchResult = {
+  uid: "friend-uid",
+  username: "anca_21",
+  isPrivate: true,
+  profile: null,
+  relationshipState: "none",
+};
 
 describe("Ecranul de căutare a prietenilor", () => {
   beforeEach(() => {
@@ -51,7 +65,7 @@ describe("Ecranul de căutare a prietenilor", () => {
     expect(mockReplace).not.toHaveBeenCalled();
   });
 
-  test("revine la profil când pagina a fost deschisă direct", async () => {
+  test("revine la Friends când pagina a fost deschisă direct", async () => {
     mockCanGoBack.mockReturnValue(false);
     await render(<FriendSearchScreen />);
 
@@ -59,5 +73,50 @@ describe("Ecranul de căutare a prietenilor", () => {
 
     expect(mockBack).not.toHaveBeenCalled();
     expect(mockReplace).toHaveBeenCalledWith("/friends");
+  });
+
+  test("caută username-ul introdus și afișează rezultatul", async () => {
+    mockedFindUserByUsername.mockResolvedValueOnce(searchResult);
+    await render(<FriendSearchScreen />);
+
+    await fireEvent.changeText(screen.getByPlaceholderText("De exemplu: anca_21"), " Anca_21 ");
+    await fireEvent.press(screen.getByText("Caută"));
+
+    await waitFor(() => {
+      expect(mockedFindUserByUsername).toHaveBeenCalledWith(" Anca_21 ", "current-user");
+      expect(screen.getByText("@anca_21")).toBeTruthy();
+      expect(screen.getByText("Profil privat")).toBeTruthy();
+    });
+  });
+
+  test("afișează mesaj când username-ul nu există", async () => {
+    mockedFindUserByUsername.mockResolvedValueOnce(null);
+    await render(<FriendSearchScreen />);
+
+    await fireEvent.changeText(screen.getByPlaceholderText("De exemplu: anca_21"), "nimeni");
+    await fireEvent.press(screen.getByText("Caută"));
+
+    expect(await screen.findByText("Nu am găsit niciun utilizator cu acest username.")).toBeTruthy();
+  });
+
+  test("trimite cererea către rezultatul găsit", async () => {
+    mockedFindUserByUsername.mockResolvedValueOnce(searchResult);
+    mockedSendFriendRequest.mockResolvedValueOnce({} as never);
+    await render(<FriendSearchScreen />);
+
+    await fireEvent.changeText(screen.getByPlaceholderText("De exemplu: anca_21"), "anca_21");
+    await fireEvent.press(screen.getByText("Caută"));
+    await fireEvent.press(await screen.findByText("Trimite cerere"));
+
+    await waitFor(() => {
+      expect(mockedSendFriendRequest).toHaveBeenCalledWith({
+        senderId: "current-user",
+        senderUsername: "andrei",
+        receiverId: "friend-uid",
+        receiverUsername: "anca_21",
+      });
+      expect(screen.getByText("Cererea de prietenie a fost trimisă.")).toBeTruthy();
+      expect(screen.getByText("Cerere trimisă")).toBeTruthy();
+    });
   });
 });

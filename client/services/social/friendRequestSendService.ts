@@ -16,11 +16,20 @@ export type SendFriendRequestInput = {
 export async function sendFriendRequest(
   input: SendFriendRequestInput,
 ): Promise<FriendRequest> {
-  if (input.senderId === input.receiverId) {
+  const senderId = input.senderId.trim();
+  const receiverId = input.receiverId.trim();
+  const senderUsername = input.senderUsername.trim().toLowerCase();
+  const receiverUsername = input.receiverUsername.trim().toLowerCase();
+
+  if (!senderId || !receiverId || !senderUsername || !receiverUsername) {
+    throw new Error("INVALID_FRIEND_REQUEST_INPUT");
+  }
+
+  if (senderId === receiverId) {
     throw new Error("CANNOT_SEND_REQUEST_TO_SELF");
   }
 
-  const pairId = createPairId(input.senderId, input.receiverId);
+  const pairId = createPairId(senderId, receiverId);
   const friendshipRef = doc(db, FRIENDSHIPS_COLLECTION, pairId);
   const requestRef = doc(db, FRIEND_REQUESTS_COLLECTION, pairId);
 
@@ -39,11 +48,11 @@ export async function sendFriendRequest(
     const now = new Date().toISOString();
     const request: FriendRequest = {
       id: pairId,
-      senderId: input.senderId,
-      senderUsername: input.senderUsername.trim().toLowerCase(),
-      receiverId: input.receiverId,
-      receiverUsername: input.receiverUsername.trim().toLowerCase(),
-      memberIds: [input.senderId, input.receiverId],
+      senderId,
+      senderUsername,
+      receiverId,
+      receiverUsername,
+      memberIds: [senderId, receiverId],
       status: "pending",
       createdAt: now,
       updatedAt: now,

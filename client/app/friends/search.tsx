@@ -6,19 +6,19 @@ import { COLORS } from "@/constants/colors";
 import { useAuth } from "@/contexts/AuthContext";
 import { useProfile } from "@/contexts/ProfileContext";
 import { sendFriendRequest } from "@/services/social/friendRequestSendService";
-import { searchUserByUsername } from "@/services/social/userSearchService";
+import { findUserByUsername } from "@/services/social/userSearchService";
 import type { UserSearchResult } from "@/types/social";
 import { type Href, useRouter } from "expo-router";
 import { useState } from "react";
 import {
   Keyboard,
   Pressable,
-  SafeAreaView,
   ScrollView,
   StyleSheet,
   Text,
   View,
 } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
 
 function getSendErrorMessage(error: unknown): string {
   if (error instanceof Error) {
@@ -61,7 +61,7 @@ export default function FriendSearchScreen() {
     setIsSearching(true);
 
     try {
-      const foundUser = await searchUserByUsername(user.uid, username);
+      const foundUser = await findUserByUsername(username, user.uid);
       setResult(foundUser);
 
       if (!foundUser) {
@@ -206,15 +206,15 @@ const styles = StyleSheet.create({
     lineHeight: 20,
   },
   backButton: {
-    minHeight: 44,
-    alignSelf: "center",
+    minHeight: 36,
+    alignSelf: "flex-start",
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
-    gap: 6,
+    gap: 4,
     marginTop: 2,
-    paddingHorizontal: 18,
-    borderRadius: 22,
+    paddingHorizontal: 12,
+    borderRadius: 18,
     backgroundColor: COLORS.primarySoft,
   },
   backButtonPressed: {
@@ -222,13 +222,13 @@ const styles = StyleSheet.create({
   },
   backArrow: {
     color: COLORS.primary,
-    fontSize: 24,
-    lineHeight: 24,
+    fontSize: 20,
+    lineHeight: 20,
     fontWeight: "600",
   },
   backText: {
     color: COLORS.primary,
-    fontSize: 15,
+    fontSize: 13,
     fontWeight: "700",
   },
 });
