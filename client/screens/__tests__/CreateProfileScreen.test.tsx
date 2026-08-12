@@ -86,7 +86,7 @@ async function completeStepTwo() {
   );
   await fireEvent.press(screen.getByText("Tehnologie & cunoaștere"));
   await fireEvent.press(screen.getByText("Tehnologie"));
-  await fireEvent.press(screen.getByText("Muzică & ieșiri"));
+  await fireEvent.press(screen.getByText("Muzică & activități"));
   await fireEvent.press(screen.getByText("Muzică"));
   await fireEvent.press(screen.getByText("Continuă"));
 

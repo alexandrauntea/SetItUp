@@ -1,8 +1,21 @@
 import { fireEvent, render, screen } from "@testing-library/react-native";
 
 import { InterestSelector } from "@/components/InterestSelector";
+import {
+  INTEREST_CATEGORIES,
+  INTEREST_OPTIONS,
+} from "@/constants/profileOptions";
 
 describe("Selectorul de interese", () => {
+  test("păstrează categoriile echilibrate și fără interese duplicate", () => {
+    expect(
+      INTEREST_CATEGORIES.every(
+        (category) => category.interests.length >= 8 && category.interests.length <= 10,
+      ),
+    ).toBe(true);
+    expect(new Set(INTEREST_OPTIONS).size).toBe(INTEREST_OPTIONS.length);
+  });
+
   test("afișează inițial doar categoriile", async () => {
     await render(
       <InterestSelector
@@ -30,7 +43,7 @@ describe("Selectorul de interese", () => {
     await fireEvent.press(screen.getByText("Alergare"));
     expect(onToggleInterest).toHaveBeenCalledWith("Alergare");
 
-    await fireEvent.press(screen.getByText("Muzică & ieșiri"));
+    await fireEvent.press(screen.getByText("Muzică & activități"));
     expect(screen.queryByText("Alergare")).toBeNull();
     expect(screen.getByText("Concerte")).toBeTruthy();
   });
