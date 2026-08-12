@@ -1,6 +1,7 @@
 import { AppButton } from "@/components/AppButton";
 import { AppInput } from "@/components/AppInput";
 import { FormError } from "@/components/FormError";
+import { InterestSelector } from "@/components/InterestSelector";
 import {
   ProfilePhotoPicker,
   type SelectedProfilePhoto,
@@ -9,10 +10,7 @@ import { ScreenBackground } from "@/components/ScreenBackground";
 import { COLORS } from "@/constants/colors";
 import { useAuth } from "@/contexts/AuthContext";
 import { useProfile } from "@/contexts/ProfileContext";
-import {
-  GENDER_OPTIONS,
-  INTEREST_OPTIONS,
-} from "@/constants/profileOptions";
+import { GENDER_OPTIONS } from "@/constants/profileOptions";
 import { useRouter } from "expo-router";
 import { uploadProfilePhoto } from "@/services/profileImageService";
 import { getFirebaseErrorMessage } from "@/utils/firebaseErrors";
@@ -227,34 +225,11 @@ export default function EditProfileScreen() {
                   style={styles.descriptionInput}
                 />
 
-                <View style={styles.optionSection}>
-                  <Text style={styles.label}>Interese</Text>
-                  <View style={styles.optionsRow}>
-                    {INTEREST_OPTIONS.map((interest) => {
-                      const isSelected = interests.includes(interest);
-
-                      return (
-                        <Pressable
-                          key={interest}
-                          onPress={() => toggleInterest(interest)}
-                          style={[
-                            styles.interestOption,
-                            isSelected && styles.optionSelected,
-                          ]}
-                        >
-                          <Text
-                            style={[
-                              styles.optionText,
-                              isSelected && styles.optionTextSelected,
-                            ]}
-                          >
-                            {interest}
-                          </Text>
-                        </Pressable>
-                      );
-                    })}
-                  </View>
-                </View>
+                <InterestSelector
+                  selectedInterests={interests}
+                  onToggleInterest={toggleInterest}
+                  disabled={isSubmitting}
+                />
 
                 <View style={styles.divider} />
 

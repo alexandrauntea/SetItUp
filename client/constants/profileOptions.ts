@@ -11,71 +11,61 @@ export const GENDER_OPTIONS: GenderOption[] = [
   { label: "Altul", value: "other" },
 ];
 
-export const INTEREST_OPTIONS = [
-  // Artă, media și activități creative
-  "Artă",
-  "Design",
-  "Fotografie",
-  "Modă",
-  "Scris",
-  "Teatru",
-  "Filme",
-  "Seriale",
-  "Documentare",
-  "Anime",
-  "Lectură",
-  "Podcasturi",
-  "Gaming",
-  "Jocuri de societate",
+export const INTEREST_CATEGORIES = [
+  {
+    id: "creative",
+    label: "Artă & divertisment",
+    interests: [
+      "Artă", "Design", "Fotografie", "Modă", "Scris", "Teatru",
+      "Filme", "Seriale", "Documentare", "Anime", "Lectură",
+      "Podcasturi", "Gaming", "Jocuri de societate",
+    ],
+  },
+  {
+    id: "music",
+    label: "Muzică & ieșiri",
+    interests: ["Muzică", "Concerte", "Festivaluri", "Dans"],
+  },
+  {
+    id: "travel",
+    label: "Călătorii & natură",
+    interests: ["Călătorii", "Natură", "Drumeții", "Camping", "Plajă"],
+  },
+  {
+    id: "sport",
+    label: "Sport & mișcare",
+    interests: [
+      "Sport", "Fitness", "Alergare", "Ciclism", "Înot", "Fotbal",
+      "Baschet", "Tenis", "Sporturi de iarnă", "Yoga",
+    ],
+  },
+  {
+    id: "food",
+    label: "Mâncare & băuturi",
+    interests: ["Gătit", "Restaurante", "Cafea", "Vin"],
+  },
+  {
+    id: "knowledge",
+    label: "Tehnologie & cunoaștere",
+    interests: [
+      "Tehnologie", "Știință", "Istorie", "Limbi străine", "Antreprenoriat",
+    ],
+  },
+  {
+    id: "pets",
+    label: "Animale & plante",
+    interests: ["Animale", "Câini", "Pisici", "Plante"],
+  },
+  {
+    id: "wellbeing",
+    label: "Wellness & valori",
+    interests: [
+      "Dezvoltare personală", "Meditație", "Wellness", "Ecologie",
+      "Voluntariat",
+    ],
+  },
+] as const;
 
-  // Muzică și ieșiri
-  "Muzică",
-  "Concerte",
-  "Festivaluri",
-  "Dans",
-
-  // Călătorii și activități în aer liber
-  "Călătorii",
-  "Natură",
-  "Drumeții",
-  "Camping",
-  "Plajă",
-
-  // Sport și mișcare
-  "Sport",
-  "Fitness",
-  "Alergare",
-  "Ciclism",
-  "Înot",
-  "Fotbal",
-  "Baschet",
-  "Tenis",
-  "Sporturi de iarnă",
-  "Yoga",
-
-  // Mâncare și băuturi
-  "Gătit",
-  "Restaurante",
-  "Cafea",
-  "Vin",
-
-  // Tehnologie, cunoaștere și carieră
-  "Tehnologie",
-  "Știință",
-  "Istorie",
-  "Limbi străine",
-  "Antreprenoriat",
-
-  // Animale și plante
-  "Animale",
-  "Câini",
-  "Pisici",
-  "Plante",
-
-  // Stare de bine și valori
-  "Dezvoltare personală",
-  "Meditație",
-  "Wellness",
-  "Ecologie",
-  "Voluntariat",
-];
+export const INTEREST_OPTIONS = INTEREST_CATEGORIES.flatMap(
+  (category) => category.interests,
+);
