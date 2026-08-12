@@ -8,6 +8,10 @@ import { useRouter, useSegments } from "expo-router";
 
 jest.mock("@/services/firebase", () => ({}));
 
+jest.mock("@/components/AppBottomNav", () => ({
+  AppBottomNav: () => null,
+}));
+
 jest.mock("@/services/authService", () => ({
   logoutUser: jest.fn(),
 }));

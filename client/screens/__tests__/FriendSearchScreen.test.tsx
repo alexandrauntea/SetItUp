@@ -58,6 +58,6 @@ describe("Ecranul de căutare a prietenilor", () => {
     fireEvent.press(screen.getByText("Înapoi"));
 
     expect(mockBack).not.toHaveBeenCalled();
-    expect(mockReplace).toHaveBeenCalledWith("/profile/view");
+    expect(mockReplace).toHaveBeenCalledWith("/friends");
   });
 });

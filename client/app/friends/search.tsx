@@ -8,7 +8,7 @@ import { useProfile } from "@/contexts/ProfileContext";
 import { sendFriendRequest } from "@/services/social/friendRequestSendService";
 import { searchUserByUsername } from "@/services/social/userSearchService";
 import type { UserSearchResult } from "@/types/social";
-import { useRouter } from "expo-router";
+import { type Href, useRouter } from "expo-router";
 import { useState } from "react";
 import {
   Keyboard,
@@ -48,7 +48,7 @@ export default function FriendSearchScreen() {
     if (router.canGoBack()) {
       router.back();
     } else {
-      router.replace("/profile/view");
+      router.replace("/friends" as Href);
     }
   }
 
@@ -179,6 +179,7 @@ const styles = StyleSheet.create({
     flexGrow: 1,
     justifyContent: "center",
     padding: 20,
+    paddingBottom: 120,
   },
   card: {
     width: "100%",
