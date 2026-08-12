@@ -121,7 +121,7 @@ describe("Ecranul de înregistrare", () => {
     });
   });
 
-  test("șterge contul Auth dacă profilul Firestore nu poate fi creat", async () => {
+  test("afișează eroarea și șterge contul Auth când username-ul este ocupat", async () => {
     const consoleSpy = jest.spyOn(console, "error").mockImplementation();
     mockedRegisterUser.mockResolvedValue({ uid: "user-123" } as never);
     mockedCreateUserProfile.mockRejectedValue(new Error("USERNAME_TAKEN"));
@@ -131,7 +131,15 @@ describe("Ecranul de înregistrare", () => {
     await fireEvent.press(screen.getByText("Creează contul"));
 
     await waitFor(() => {
+      expect(mockedCreateUserProfile).toHaveBeenCalledWith(
+        expect.objectContaining({
+          uid: "user-123",
+          username: "andrei_21",
+        }),
+      );
       expect(mockedDeleteAccount).toHaveBeenCalledTimes(1);
+      expect(mockedLogout).not.toHaveBeenCalled();
+      expect(refreshProfile).not.toHaveBeenCalled();
       expect(
         screen.getByText("Numele de utilizator este deja folosit."),
       ).toBeTruthy();
