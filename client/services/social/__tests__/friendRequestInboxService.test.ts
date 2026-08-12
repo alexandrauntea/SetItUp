@@ -3,7 +3,6 @@ import {
   collection,
   doc,
   getDocs,
-  orderBy,
   query,
   runTransaction,
   where,
@@ -31,7 +30,6 @@ jest.mock("firebase/firestore", () => ({
   collection: jest.fn(),
   doc: jest.fn(),
   getDocs: jest.fn(),
-  orderBy: jest.fn(),
   query: jest.fn(),
   runTransaction: jest.fn(),
   where: jest.fn(),
@@ -40,7 +38,6 @@ jest.mock("firebase/firestore", () => ({
 const mockedCollection = jest.mocked(collection);
 const mockedDoc = jest.mocked(doc);
 const mockedGetDocs = jest.mocked(getDocs);
-const mockedOrderBy = jest.mocked(orderBy);
 const mockedQuery = jest.mocked(query);
 const mockedRunTransaction = jest.mocked(runTransaction);
 const mockedWhere = jest.mocked(where);
@@ -103,44 +100,87 @@ beforeEach(() => {
   mockedWhere.mockImplementation(
     (field, operator, value) => ({ field, operator, value }) as never,
   );
-  mockedOrderBy.mockImplementation(
-    (field, direction) => ({ field, direction }) as never,
-  );
   mockedQuery.mockImplementation(
     (baseQuery, ...constraints) => ({ baseQuery, constraints }) as never,
   );
 });
 
 describe("friend request lists", () => {
-  it("returns incoming pending requests ordered from newest to oldest", async () => {
+  it("queries by membership and returns only incoming pending requests from newest to oldest", async () => {
+    const newerIncomingRequest: FriendRequest = {
+      ...pendingRequest,
+      id: "bob_carol",
+      senderId: "carol",
+      senderUsername: "carol_user",
+      memberIds: ["carol", "bob"],
+      createdAt: "2026-08-05T11:00:00.000Z",
+    };
+    const outgoingRequest: FriendRequest = {
+      ...pendingRequest,
+      id: "bob_dave",
+      senderId: "bob",
+      senderUsername: "bob_user",
+      receiverId: "dave",
+      receiverUsername: "dave_user",
+      memberIds: ["bob", "dave"],
+    };
+    const processedRequest = {
+      ...pendingRequest,
+      id: "bob_eve",
+      senderId: "eve",
+      senderUsername: "eve_user",
+      memberIds: ["eve", "bob"],
+      status: "accepted",
+    } as unknown as FriendRequest;
     mockedGetDocs.mockResolvedValue({
-      docs: [createRequestSnapshot()],
+      docs: [
+        createRequestSnapshot(pendingRequest),
+        createRequestSnapshot(outgoingRequest),
+        createRequestSnapshot(processedRequest),
+        createRequestSnapshot(newerIncomingRequest),
+      ],
     } as never);
 
     const result = await getIncomingFriendRequests("bob");
 
-    expect(result).toEqual([pendingRequest]);
+    expect(result).toEqual([newerIncomingRequest, pendingRequest]);
     expect(mockedCollection).toHaveBeenCalledWith(
       expect.anything(),
       "friendRequests",
     );
-    expect(mockedWhere).toHaveBeenCalledWith("receiverId", "==", "bob");
-    expect(mockedWhere).toHaveBeenCalledWith("status", "==", "pending");
-    expect(mockedOrderBy).toHaveBeenCalledWith("createdAt", "desc");
+    expect(mockedWhere).toHaveBeenCalledWith(
+      "memberIds",
+      "array-contains",
+      "bob",
+    );
     expect(mockedQuery).toHaveBeenCalledTimes(1);
   });
 
-  it("returns outgoing pending requests ordered from newest to oldest", async () => {
+  it("queries by membership and returns only outgoing pending requests", async () => {
+    const incomingRequest: FriendRequest = {
+      ...pendingRequest,
+      id: "alice_carol",
+      senderId: "carol",
+      senderUsername: "carol_user",
+      receiverId: "alice",
+      receiverUsername: "alice_user",
+      memberIds: ["carol", "alice"],
+    };
     mockedGetDocs.mockResolvedValue({
-      docs: [createRequestSnapshot()],
+      docs: [
+        createRequestSnapshot(incomingRequest),
+        createRequestSnapshot(pendingRequest),
+      ],
     } as never);
 
     const result = await getOutgoingFriendRequests("alice");
 
     expect(result).toEqual([pendingRequest]);
-    expect(mockedWhere).toHaveBeenCalledWith("senderId", "==", "alice");
-    expect(mockedWhere).toHaveBeenCalledWith("status", "==", "pending");
-    expect(mockedOrderBy).toHaveBeenCalledWith("createdAt", "desc");
+    expect(mockedWhere).toHaveBeenCalledWith(
+      "memberIds",
+      "array-contains",
+      "alice",
+    );
   });
 });
 

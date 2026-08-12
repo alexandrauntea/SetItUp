@@ -8,7 +8,6 @@ import {
   collection,
   doc,
   getDocs,
-  orderBy,
   query,
   runTransaction,
   where,
@@ -30,6 +29,23 @@ function mapFriendRequest(
     ...(snapshot.data() as Omit<FriendRequest, "id">),
     id: snapshot.id,
   };
+}
+
+async function getPendingFriendRequestsForMember(
+  uid: string,
+): Promise<FriendRequest[]> {
+  const requestsQuery = query(
+    collection(db, FRIEND_REQUESTS_COLLECTION),
+    where("memberIds", "array-contains", uid),
+  );
+  const snapshot = await getDocs(requestsQuery);
+
+  return snapshot.docs
+    .map(mapFriendRequest)
+    .filter((request) => request.status === "pending")
+    .sort((requestA, requestB) =>
+      requestB.createdAt.localeCompare(requestA.createdAt),
+    );
 }
 
 async function getPendingRequestInTransaction(
@@ -108,29 +124,17 @@ async function deletePendingRequestForRole(
 export async function getIncomingFriendRequests(
   uid: string,
 ): Promise<FriendRequest[]> {
-  const requestsQuery = query(
-    collection(db, FRIEND_REQUESTS_COLLECTION),
-    where("receiverId", "==", uid),
-    where("status", "==", "pending"),
-    orderBy("createdAt", "desc"),
-  );
-  const snapshot = await getDocs(requestsQuery);
+  const requests = await getPendingFriendRequestsForMember(uid);
 
-  return snapshot.docs.map(mapFriendRequest);
+  return requests.filter((request) => request.receiverId === uid);
 }
 
 export async function getOutgoingFriendRequests(
   uid: string,
 ): Promise<FriendRequest[]> {
-  const requestsQuery = query(
-    collection(db, FRIEND_REQUESTS_COLLECTION),
-    where("senderId", "==", uid),
-    where("status", "==", "pending"),
-    orderBy("createdAt", "desc"),
-  );
-  const snapshot = await getDocs(requestsQuery);
+  const requests = await getPendingFriendRequestsForMember(uid);
 
-  return snapshot.docs.map(mapFriendRequest);
+  return requests.filter((request) => request.senderId === uid);
 }
 
 export async function acceptFriendRequest(
