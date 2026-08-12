@@ -107,6 +107,18 @@ describe("Serviciul de căutare a utilizatorilor", () => {
     );
   });
 
+  test("raportează profilul social lipsă în loc să îl considere privat", async () => {
+    mockedGetDoc
+      .mockResolvedValueOnce(existingSnapshot({ uid: "target-uid" }))
+      .mockResolvedValueOnce(missingSnapshot())
+      .mockResolvedValueOnce(missingSnapshot())
+      .mockResolvedValueOnce(missingSnapshot());
+
+    await expect(
+      findUserByUsername("anca_21", "current-uid"),
+    ).rejects.toThrow("PUBLIC_PROFILE_NOT_FOUND");
+  });
+
   test("oprește căutarea propriului cont", async () => {
     mockedGetDoc.mockResolvedValueOnce(
       existingSnapshot({ uid: "current-uid" }),

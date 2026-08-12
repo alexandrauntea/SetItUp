@@ -3,10 +3,7 @@ export type RelationshipState = "none" | "request-sent" | "request-received" | "
 
 export interface UsernameDirectoryEntry {
   uid: string;
-  username: string;
-  isPrivate: boolean;
   createdAt: string;
-  updatedAt: string;
 }
 
 export interface PublicProfile {

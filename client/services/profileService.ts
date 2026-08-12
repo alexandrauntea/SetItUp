@@ -4,7 +4,15 @@ import type {
   UserProfile,
 } from "@/types/profile";
 import type { PublicProfile } from "@/types/social";
-import { doc, getDoc, runTransaction, setDoc, updateDoc } from "firebase/firestore";
+import {
+  doc,
+  getDoc,
+  runTransaction,
+} from "firebase/firestore";
+import {
+  calculateAgeFromBirthDate,
+  normalizeUsername,
+} from "@/utils/profileData";
 
 import { db } from "./firebase";
 
@@ -12,9 +20,7 @@ const USERS_COLLECTION = "users";
 const USERNAMES_COLLECTION = "usernames";
 const PUBLIC_PROFILES_COLLECTION = "publicProfiles";
 
-export function normalizeUsername(username: string): string {
-  return username.trim().toLowerCase();
-}
+export { normalizeUsername } from "@/utils/profileData";
 
 export async function isUsernameAvailable(username: string): Promise<boolean> {
   const normalized = normalizeUsername(username);
@@ -22,22 +28,6 @@ export async function isUsernameAvailable(username: string): Promise<boolean> {
   const snapshot = await getDoc(usernameRef);
 
   return !snapshot.exists();
-}
-
-function calculateAge(birthDate: string): number {
-  const [day, month, year] = birthDate.split("/").map(Number);
-
-  if (!day || !month || !year) return 0;
-
-  const today = new Date();
-  let age = today.getFullYear() - year;
-  const birthdayHasPassed =
-    today.getMonth() + 1 > month ||
-    (today.getMonth() + 1 === month && today.getDate() >= day);
-
-  if (!birthdayHasPassed) age -= 1;
-
-  return Math.max(age, 0);
 }
 
 function toPublicProfile(profile: UserProfile): PublicProfile {
@@ -50,7 +40,7 @@ function toPublicProfile(profile: UserProfile): PublicProfile {
     gender: profile.gender,
     description: profile.description,
     interests: profile.interests,
-    age: calculateAge(profile.birthDate),
+    age: calculateAgeFromBirthDate(profile.birthDate),
     isPrivate: profile.isPrivate,
     updatedAt: new Date().toISOString(),
   };
@@ -60,15 +50,6 @@ function toPublicProfile(profile: UserProfile): PublicProfile {
   }
 
   return publicProfile;
-}
-
-export async function syncProfileToSocial(
-  profile: UserProfile,
-): Promise<void> {
-  await setDoc(
-    doc(db, PUBLIC_PROFILES_COLLECTION, profile.uid),
-    toPublicProfile(profile),
-  );
 }
 
 export async function createUserProfile(
@@ -86,6 +67,11 @@ export async function createUserProfile(
 
   const profileRef = doc(db, USERS_COLLECTION, input.uid);
   const usernameRef = doc(db, USERNAMES_COLLECTION, normalizedUsername);
+  const publicProfileRef = doc(
+    db,
+    PUBLIC_PROFILES_COLLECTION,
+    input.uid,
+  );
 
   await runTransaction(db, async (transaction) => {
     const usernameSnapshot = await transaction.get(usernameRef);
@@ -99,9 +85,8 @@ export async function createUserProfile(
       createdAt: now,
     });
     transaction.set(profileRef, profile);
+    transaction.set(publicProfileRef, toPublicProfile(profile));
   });
-
-  await syncProfileToSocial(profile);
 
   return profile;
 }
@@ -122,13 +107,23 @@ export async function updateUserProfile(
   updates: UpdateUserProfileInput,
 ): Promise<void> {
   const profileRef = doc(db, USERS_COLLECTION, uid);
-  await updateDoc(profileRef, {
-    ...updates,
-    updatedAt: new Date().toISOString(),
-  });
+  const publicProfileRef = doc(db, PUBLIC_PROFILES_COLLECTION, uid);
 
-  const updatedProfile = await getUserProfile(uid);
-  if (updatedProfile) {
-    await syncProfileToSocial(updatedProfile);
-  }
+  await runTransaction(db, async (transaction) => {
+    const profileSnapshot = await transaction.get(profileRef);
+
+    if (!profileSnapshot.exists()) {
+      throw new Error("PROFILE_NOT_FOUND");
+    }
+
+    const updatedAt = new Date().toISOString();
+    const updatedProfile: UserProfile = {
+      ...(profileSnapshot.data() as UserProfile),
+      ...updates,
+      updatedAt,
+    };
+
+    transaction.update(profileRef, { ...updates, updatedAt });
+    transaction.set(publicProfileRef, toPublicProfile(updatedProfile));
+  });
 }

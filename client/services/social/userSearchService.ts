@@ -7,15 +7,14 @@ import type {
   UserSearchResult,
 } from "@/types/social";
 import { doc, getDoc } from "firebase/firestore";
+import { normalizeUsername } from "@/utils/profileData";
 
 const USERNAMES_COLLECTION = "usernames";
 const PUBLIC_PROFILES_COLLECTION = "publicProfiles";
 const FRIENDSHIPS_COLLECTION = "friendships";
 const FRIEND_REQUESTS_COLLECTION = "friendRequests";
 
-export function normalizeSearchUsername(username: string): string {
-  return username.trim().toLowerCase();
-}
+export const normalizeSearchUsername = normalizeUsername;
 
 async function getRelationshipState(
   currentUid: string,
@@ -50,6 +49,7 @@ async function getRelationshipState(
 
 async function getVisibleProfile(
   targetUid: string,
+  requireExistingProfile = false,
 ): Promise<PublicProfile | null> {
   const profileRef = doc(db, PUBLIC_PROFILES_COLLECTION, targetUid);
 
@@ -57,6 +57,10 @@ async function getVisibleProfile(
     const profileSnapshot = await getDoc(profileRef);
 
     if (!profileSnapshot.exists()) {
+      if (requireExistingProfile) {
+        throw new Error("PUBLIC_PROFILE_NOT_FOUND");
+      }
+
       return null;
     }
 
@@ -110,7 +114,7 @@ export async function findUserByUsername(
   }
 
   const [profile, relationshipState] = await Promise.all([
-    getVisibleProfile(targetUid),
+    getVisibleProfile(targetUid, true),
     getRelationshipState(currentUid, targetUid),
   ]);
 

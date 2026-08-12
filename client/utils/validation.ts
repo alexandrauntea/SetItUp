@@ -60,15 +60,7 @@ export function validateBirthDate(dateString: string): boolean {
 
   if (!isRealDate) return false;
 
-  const today = new Date();
-  let age = today.getFullYear() - year;
-  const birthdayHasPassed =
-    today.getMonth() > month - 1 ||
-    (today.getMonth() === month - 1 && today.getDate() >= day);
-
-  if (!birthdayHasPassed) age -= 1;
-
-  return age >= 18;
+  return calculateAgeFromBirthDate(dateString) >= 18;
 }
 
 export function validateRegisterForm(
@@ -130,3 +122,4 @@ export function getFirstValidationError(
 ): string {
   return Object.values(errors)[0] ?? "Verifică datele introduse.";
 }
+import { calculateAgeFromBirthDate } from "@/utils/profileData";
