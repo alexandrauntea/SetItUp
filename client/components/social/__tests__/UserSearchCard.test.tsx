@@ -63,6 +63,29 @@ describe("Cardul rezultatului de căutare", () => {
     expect(onSendRequest).toHaveBeenCalledTimes(1);
   });
 
+  test("dezactivează trimiterea cât timp cererea este în curs", async () => {
+    const onSendRequest = jest.fn();
+
+    await render(
+      <UserSearchCard
+        result={publicResult}
+        isSending
+        onSendRequest={onSendRequest}
+        onOpenProfile={jest.fn()}
+      />,
+    );
+
+    const sendButton = screen.getByRole("button", {
+      name: "Trimite cerere",
+      disabled: true,
+      busy: true,
+    });
+
+    fireEvent.press(sendButton);
+    expect(onSendRequest).not.toHaveBeenCalled();
+    expect(screen.queryByText("Trimite cerere")).toBeNull();
+  });
+
   test("nu expune datele unui profil privat", async () => {
     const privateResult: UserSearchResult = {
       ...publicResult,
