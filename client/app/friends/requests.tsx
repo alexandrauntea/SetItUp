@@ -32,11 +32,13 @@ type ProcessingRequest = {
 };
 
 function getRequestErrorMessage(error: unknown): string {
-  if (!(error instanceof Error)) {
-    return "A apărut o eroare. Încearcă din nou.";
-  }
+  const code =
+    typeof error === "object" && error !== null && "code" in error
+      ? String(error.code).replace("firestore/", "")
+      : "";
+  const message = error instanceof Error ? error.message : "";
 
-  switch (error.message) {
+  switch (message) {
     case "FRIEND_REQUEST_NOT_FOUND":
       return "Cererea nu mai există. Actualizează lista și încearcă din nou.";
     case "FRIEND_REQUEST_NOT_PENDING":
@@ -47,8 +49,17 @@ function getRequestErrorMessage(error: unknown): string {
       return "Numai expeditorul poate anula această cerere.";
     case "INVALID_FRIEND_REQUEST":
       return "Cererea conține date invalide și nu poate fi procesată.";
+  }
+
+  switch (code) {
+    case "permission-denied":
+      return "Firebase a refuzat accesul la cereri. Regulile Firestore trebuie actualizate.";
+    case "failed-precondition":
+      return "Interogarea Firestore necesită o configurare care nu este încă publicată.";
+    case "unavailable":
+      return "Serviciul Firestore nu este disponibil momentan. Verifică internetul și încearcă din nou.";
     default:
-      return "Nu am putut actualiza cererile. Verifică internetul și încearcă din nou.";
+      return "Nu am putut actualiza cererile. Încearcă din nou.";
   }
 }
 
@@ -82,6 +93,7 @@ export default function FriendRequestsScreen() {
       setIncomingRequests(incoming);
       setOutgoingRequests(outgoing);
     } catch (error) {
+      console.error("Nu am putut încărca cererile de prietenie:", error);
       setErrorMessage(getRequestErrorMessage(error));
     } finally {
       setIsLoading(false);

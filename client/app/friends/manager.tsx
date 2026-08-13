@@ -56,33 +56,43 @@ export default function ManagerScreen() {
     }
     setErrorMessage(null);
 
-    try {
-      const [managerRelResult, incomingResult, outgoingResult, friendsResult] =
-        await Promise.allSettled([
-          getManagerRelationship(uid),
-          getIncomingManagerRequests(uid),
-          getOutgoingManagerRequests(uid),
-          getFriends(uid),
-        ]);
+    const [managerRelResult, incomingResult, outgoingResult, friendsResult] =
+      await Promise.allSettled([
+        getManagerRelationship(uid),
+        getIncomingManagerRequests(uid),
+        getOutgoingManagerRequests(uid),
+        getFriends(uid),
+      ]);
 
-      if (managerRelResult.status === "fulfilled") {
-        setActiveManager(managerRelResult.value);
-      }
-      if (incomingResult.status === "fulfilled") {
-        setIncomingRequests(incomingResult.value);
-      }
-      if (outgoingResult.status === "fulfilled") {
-        setOutgoingRequests(outgoingResult.value);
-      }
-      if (friendsResult.status === "fulfilled") {
-        setFriends(friendsResult.value);
-      }
-    } catch (error: any) {
-      console.error("Error loading manager data:", error);
-    } finally {
-      setLoading(false);
-      setRefreshing(false);
+    if (managerRelResult.status === "fulfilled") {
+      setActiveManager(managerRelResult.value);
     }
+    if (incomingResult.status === "fulfilled") {
+      setIncomingRequests(incomingResult.value);
+    }
+    if (outgoingResult.status === "fulfilled") {
+      setOutgoingRequests(outgoingResult.value);
+    }
+    if (friendsResult.status === "fulfilled") {
+      setFriends(friendsResult.value);
+    }
+
+    const rejectedResult = [
+      managerRelResult,
+      incomingResult,
+      outgoingResult,
+      friendsResult,
+    ].find((result) => result.status === "rejected");
+
+    if (rejectedResult?.status === "rejected") {
+      console.error("Error loading manager data:", rejectedResult.reason);
+      setErrorMessage(
+        "Unele date nu au putut fi încărcate. Trage în jos pentru a reîncerca."
+      );
+    }
+
+    setLoading(false);
+    setRefreshing(false);
   }, [uid]);
 
   useEffect(() => {

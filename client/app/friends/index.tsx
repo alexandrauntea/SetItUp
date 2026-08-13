@@ -54,7 +54,8 @@ export default function FriendsScreen() {
     setErrorMessage("");
     try {
       setFriends(await getFriends(user.uid));
-    } catch {
+    } catch (error) {
+      console.error("Nu am putut încărca lista de prieteni:", error);
       setErrorMessage("Lista de prieteni nu a putut fi încărcată.");
     } finally {
       setIsLoading(false);

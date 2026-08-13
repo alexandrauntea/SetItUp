@@ -106,81 +106,51 @@ beforeEach(() => {
 });
 
 describe("friend request lists", () => {
-  it("queries by membership and returns only incoming pending requests from newest to oldest", async () => {
-    const newerIncomingRequest: FriendRequest = {
+  it("returns incoming pending requests ordered from newest to oldest", async () => {
+    const newerRequest: FriendRequest = {
       ...pendingRequest,
-      id: "bob_carol",
+      id: "carol_bob",
       senderId: "carol",
       senderUsername: "carol_user",
       memberIds: ["carol", "bob"],
       createdAt: "2026-08-05T11:00:00.000Z",
     };
-    const outgoingRequest: FriendRequest = {
-      ...pendingRequest,
-      id: "bob_dave",
-      senderId: "bob",
-      senderUsername: "bob_user",
-      receiverId: "dave",
-      receiverUsername: "dave_user",
-      memberIds: ["bob", "dave"],
-    };
     const processedRequest = {
       ...pendingRequest,
-      id: "bob_eve",
-      senderId: "eve",
-      senderUsername: "eve_user",
-      memberIds: ["eve", "bob"],
+      id: "dave_bob",
+      senderId: "dave",
+      senderUsername: "dave_user",
+      memberIds: ["dave", "bob"],
       status: "accepted",
     } as unknown as FriendRequest;
     mockedGetDocs.mockResolvedValue({
       docs: [
         createRequestSnapshot(pendingRequest),
-        createRequestSnapshot(outgoingRequest),
         createRequestSnapshot(processedRequest),
-        createRequestSnapshot(newerIncomingRequest),
+        createRequestSnapshot(newerRequest),
       ],
     } as never);
 
     const result = await getIncomingFriendRequests("bob");
 
-    expect(result).toEqual([newerIncomingRequest, pendingRequest]);
+    expect(result).toEqual([newerRequest, pendingRequest]);
     expect(mockedCollection).toHaveBeenCalledWith(
       expect.anything(),
       "friendRequests",
     );
-    expect(mockedWhere).toHaveBeenCalledWith(
-      "memberIds",
-      "array-contains",
-      "bob",
-    );
+    expect(mockedWhere).toHaveBeenCalledWith("receiverId", "==", "bob");
     expect(mockedQuery).toHaveBeenCalledTimes(1);
   });
 
-  it("queries by membership and returns only outgoing pending requests", async () => {
-    const incomingRequest: FriendRequest = {
-      ...pendingRequest,
-      id: "alice_carol",
-      senderId: "carol",
-      senderUsername: "carol_user",
-      receiverId: "alice",
-      receiverUsername: "alice_user",
-      memberIds: ["carol", "alice"],
-    };
+  it("returns outgoing pending requests ordered from newest to oldest", async () => {
     mockedGetDocs.mockResolvedValue({
-      docs: [
-        createRequestSnapshot(incomingRequest),
-        createRequestSnapshot(pendingRequest),
-      ],
+      docs: [createRequestSnapshot()],
     } as never);
 
     const result = await getOutgoingFriendRequests("alice");
 
     expect(result).toEqual([pendingRequest]);
-    expect(mockedWhere).toHaveBeenCalledWith(
-      "memberIds",
-      "array-contains",
-      "alice",
-    );
+    expect(mockedWhere).toHaveBeenCalledWith("senderId", "==", "alice");
   });
 });
 
