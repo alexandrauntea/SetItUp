@@ -13,11 +13,14 @@ import {
   sendManagerRequest,
 } from "@/services/social/managerService";
 import { Friendship, ManagerRelationship, ManagerRequest } from "@/types/social";
+import { requestConfirmation, showPlatformAlert } from "@/utils/platformAlert";
+import { Ionicons } from "@expo/vector-icons";
 import { LinearGradient } from "expo-linear-gradient";
+import { type Href, useRouter } from "expo-router";
 import React, { useCallback, useEffect, useState } from "react";
 import {
   ActivityIndicator,
-  Alert,
+  Pressable,
   RefreshControl,
   ScrollView,
   StyleSheet,
@@ -28,7 +31,16 @@ import {
 import { SafeAreaView } from "react-native-safe-area-context";
 
 export default function ManagerScreen() {
+  const router = useRouter();
   const { user } = useAuth();
+
+  function handleBack() {
+    if (router.canGoBack()) {
+      router.back();
+    } else {
+      router.replace("/friends" as Href);
+    }
+  }
   const uid = user?.uid;
 
   const [loading, setLoading] = useState(true);
@@ -121,7 +133,7 @@ export default function ManagerScreen() {
 
     try {
       await sendManagerRequest(uid, selectedFriend.uid);
-      Alert.alert(
+      showPlatformAlert(
         "Succes",
         `Cererea de manager a fost trimisă către @${selectedFriend.username}.`
       );
@@ -137,7 +149,7 @@ export default function ManagerScreen() {
       } else if (error.message === "NOT_FRIENDS") {
         msg = "Trebuie să fii prieten cu utilizatorul pentru a-l desemna manager.";
       }
-      Alert.alert("Eroare", msg);
+      showPlatformAlert("Eroare", msg);
     } finally {
       setActionLoadingId(null);
     }
@@ -149,11 +161,11 @@ export default function ManagerScreen() {
     setActionLoadingId(requestId);
     try {
       await acceptManagerRequest(requestId, uid);
-      Alert.alert("Succes", "Ai acceptat rolul de manager.");
+      showPlatformAlert("Succes", "Ai acceptat rolul de manager.");
       await loadData();
     } catch (error: any) {
       console.error("Error accepting manager request:", error);
-      Alert.alert("Eroare", "Nu s-a putut accepta cererea.");
+      showPlatformAlert("Eroare", "Nu s-a putut accepta cererea.");
     } finally {
       setActionLoadingId(null);
     }
@@ -167,58 +179,52 @@ export default function ManagerScreen() {
 
     const actionText = isCancel ? "anulezi" : "refuzi";
 
-    Alert.alert(
-      "Confirmare",
-      `Sigur dorești să ${actionText} această cerere de manager?`,
-      [
-        { text: "Nu", style: "cancel" },
-        {
-          text: "Da",
-          style: "destructive",
-          onPress: async () => {
-            setActionLoadingId(requestId);
-            try {
-              await declineManagerRequest(requestId, uid);
-              await loadData();
-            } catch (error: any) {
-              console.error("Error declining/canceling request:", error);
-              Alert.alert("Eroare", "A apărut o problemă la procesarea cererii.");
-            } finally {
-              setActionLoadingId(null);
-            }
-          },
-        },
-      ]
-    );
+    const confirmed = await requestConfirmation({
+      title: "Confirmare",
+      message: `Sigur dorești să ${actionText} această cerere de manager?`,
+      cancelText: "Nu",
+      confirmText: "Da",
+      destructive: true,
+    });
+
+    if (!confirmed) return;
+
+    setActionLoadingId(requestId);
+    try {
+      await declineManagerRequest(requestId, uid);
+      await loadData();
+    } catch (error: any) {
+      console.error("Error declining/canceling request:", error);
+      showPlatformAlert("Eroare", "A apărut o problemă la procesarea cererii.");
+    } finally {
+      setActionLoadingId(null);
+    }
   };
 
   const handleRemoveManager = async () => {
     if (!uid || !activeManager) return;
 
-    Alert.alert(
-      "Confirmare",
-      "Sigur dorești să elimini relația de manager?",
-      [
-        { text: "Nu", style: "cancel" },
-        {
-          text: "Da, elimină",
-          style: "destructive",
-          onPress: async () => {
-            setActionLoadingId("remove-manager");
-            try {
-              await removeManager(activeManager.ownerId, uid);
-              Alert.alert("Succes", "Relația de manager a fost eliminată.");
-              await loadData();
-            } catch (error: any) {
-              console.error("Error removing manager:", error);
-              Alert.alert("Eroare", "Nu s-a putut elimina managerul.");
-            } finally {
-              setActionLoadingId(null);
-            }
-          },
-        },
-      ]
-    );
+    const confirmed = await requestConfirmation({
+      title: "Confirmare",
+      message: "Sigur dorești să elimini relația de manager?",
+      cancelText: "Nu",
+      confirmText: "Da, elimină",
+      destructive: true,
+    });
+
+    if (!confirmed) return;
+
+    setActionLoadingId("remove-manager");
+    try {
+      await removeManager(activeManager.ownerId, uid);
+      showPlatformAlert("Succes", "Relația de manager a fost eliminată.");
+      await loadData();
+    } catch (error: any) {
+      console.error("Error removing manager:", error);
+      showPlatformAlert("Eroare", "Nu s-a putut elimina managerul.");
+    } finally {
+      setActionLoadingId(null);
+    }
   };
 
   if (loading) {
@@ -248,6 +254,19 @@ export default function ManagerScreen() {
           }
         >
           <View style={styles.content}>
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel="Înapoi"
+              hitSlop={8}
+              onPress={handleBack}
+              style={({ pressed }) => [
+                styles.backButton,
+                pressed && styles.backButtonPressed,
+              ]}
+            >
+              <Ionicons name="arrow-back" size={23} color={COLORS.text} />
+            </Pressable>
+
             <LinearGradient
               colors={[COLORS.primary, COLORS.primaryPressed]}
               start={{ x: 0, y: 0 }}
@@ -427,6 +446,17 @@ const styles = StyleSheet.create({
     maxWidth: 430,
     alignSelf: "center",
     gap: 18,
+  },
+  backButton: {
+    width: 42,
+    height: 42,
+    alignItems: "center",
+    justifyContent: "center",
+    borderRadius: 21,
+    backgroundColor: COLORS.background,
+  },
+  backButtonPressed: {
+    opacity: 0.7,
   },
   centerContainer: {
     flex: 1,
