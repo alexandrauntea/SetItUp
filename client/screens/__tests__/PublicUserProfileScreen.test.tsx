@@ -91,9 +91,9 @@ describe("Ecranul profilului public", () => {
 
   test("revine la ecranul anterior când există istoric", async () => {
     await render(<PublicUserProfileScreen />);
-    await waitFor(() => expect(screen.getByText("Profil")).toBeTruthy());
+    await waitFor(() => expect(screen.getByText("Înapoi")).toBeTruthy());
 
-    fireEvent.press(screen.getByRole("button", { name: "Înapoi" }));
+    fireEvent.press(screen.getByText("Înapoi"));
 
     expect(mockBack).toHaveBeenCalledTimes(1);
     expect(mockReplace).not.toHaveBeenCalled();
@@ -103,9 +103,9 @@ describe("Ecranul profilului public", () => {
     mockCanGoBack.mockReturnValue(false);
 
     await render(<PublicUserProfileScreen />);
-    await waitFor(() => expect(screen.getByText("Profil")).toBeTruthy());
+    await waitFor(() => expect(screen.getByText("Înapoi")).toBeTruthy());
 
-    fireEvent.press(screen.getByRole("button", { name: "Înapoi" }));
+    fireEvent.press(screen.getByText("Înapoi"));
 
     expect(mockReplace).toHaveBeenCalledWith("/friends/search");
   });
