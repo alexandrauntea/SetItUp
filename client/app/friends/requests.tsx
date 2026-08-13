@@ -10,11 +10,11 @@ import {
   getOutgoingFriendRequests,
 } from "@/services/social/friendRequestInboxService";
 import type { FriendRequest } from "@/types/social";
+import { requestConfirmation } from "@/utils/platformAlert";
 import { Ionicons } from "@expo/vector-icons";
 import { useCallback, useEffect, useState } from "react";
 import {
   ActivityIndicator,
-  Alert,
   Pressable,
   RefreshControl,
   ScrollView,
@@ -153,21 +153,18 @@ export default function FriendRequestsScreen() {
       : null;
   }
 
-  function confirmCancellation(requestId: string) {
-    Alert.alert(
-      "Anulezi cererea?",
-      "Cererea trimisă va fi ștearsă.",
-      [
-        { text: "Înapoi", style: "cancel" },
-        {
-          text: "Anulează cererea",
-          style: "destructive",
-          onPress: () => {
-            void processRequest(requestId, "cancel");
-          },
-        },
-      ],
-    );
+  async function confirmCancellation(requestId: string) {
+    const confirmed = await requestConfirmation({
+      title: "Anulezi cererea?",
+      message: "Cererea trimisă va fi ștearsă.",
+      cancelText: "Înapoi",
+      confirmText: "Anulează cererea",
+      destructive: true,
+    });
+
+    if (confirmed) {
+      await processRequest(requestId, "cancel");
+    }
   }
 
   if (isLoading) {
@@ -305,7 +302,9 @@ export default function FriendRequestsScreen() {
                     <FriendRequestCard
                       direction="outgoing"
                       key={request.id}
-                      onCancel={confirmCancellation}
+                      onCancel={(requestId) => {
+                        void confirmCancellation(requestId);
+                      }}
                       processingAction={getProcessingAction(request.id)}
                       request={request}
                     />
