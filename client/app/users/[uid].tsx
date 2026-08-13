@@ -15,12 +15,15 @@ import {
   ScrollView,
   StyleSheet,
   Text,
+  useWindowDimensions,
   View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
 export default function PublicUserProfileScreen() {
   const router = useRouter();
+  const { width } = useWindowDimensions();
+  const isCompact = width < 380;
   const params = useLocalSearchParams<{ uid?: string | string[] }>();
   const uid = Array.isArray(params.uid) ? params.uid[0] : params.uid;
   const [profile, setProfile] = useState<PublicProfile | null>(null);
@@ -97,7 +100,12 @@ export default function PublicUserProfileScreen() {
   return (
     <ScreenBackground>
       <SafeAreaView style={styles.safeArea}>
-        <ScrollView contentContainerStyle={styles.content}>
+        <ScrollView
+          contentContainerStyle={[
+            styles.content,
+            isCompact && styles.contentCompact,
+          ]}
+        >
           <View style={styles.navigationHeader}>
             <Pressable
               accessibilityRole="button"
@@ -116,7 +124,7 @@ export default function PublicUserProfileScreen() {
 
           <LinearGradient
             colors={[COLORS.primary, COLORS.primaryPressed]}
-            style={styles.header}
+            style={[styles.header, isCompact && styles.headerCompact]}
           >
             <View style={styles.avatar}>
               {profile.photoUrl ? (
@@ -140,7 +148,7 @@ export default function PublicUserProfileScreen() {
             <Text style={styles.body}>{profile.description || "Fără descriere."}</Text>
           </View>
 
-          <View style={styles.infoRow}>
+          <View style={[styles.infoRow, isCompact && styles.infoRowCompact]}>
             <View style={styles.infoCard}>
               <Ionicons name="briefcase-outline" size={22} color={COLORS.primary} />
               <Text style={styles.infoLabel}>Ocupație</Text>
@@ -185,6 +193,7 @@ const styles = StyleSheet.create({
     padding: 20,
     paddingBottom: 40,
   },
+  contentCompact: { paddingHorizontal: 14 },
   navigationHeader: {
     flexDirection: "row",
     alignItems: "center",
@@ -217,6 +226,7 @@ const styles = StyleSheet.create({
     lineHeight: 23,
   },
   header: { alignItems: "center", gap: 8, padding: 24, borderRadius: 24 },
+  headerCompact: { padding: 20, borderRadius: 20 },
   avatar: {
     width: 96,
     height: 96,
@@ -247,6 +257,7 @@ const styles = StyleSheet.create({
   sectionTitle: { color: COLORS.text, fontSize: 19, fontWeight: "700" },
   body: { color: COLORS.textSecondary, fontSize: 15, lineHeight: 23 },
   infoRow: { flexDirection: "row", gap: 12 },
+  infoRowCompact: { flexDirection: "column" },
   infoCard: {
     flex: 1,
     gap: 6,

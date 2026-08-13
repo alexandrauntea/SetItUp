@@ -9,6 +9,7 @@ import {
   showPlatformAlert,
 } from "@/utils/platformAlert";
 import { Ionicons } from "@expo/vector-icons";
+import { LinearGradient } from "expo-linear-gradient";
 import { type Href, useRouter } from "expo-router";
 import { useCallback, useEffect, useState } from "react";
 import {
@@ -18,6 +19,7 @@ import {
   ScrollView,
   StyleSheet,
   Text,
+  useWindowDimensions,
   View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
@@ -45,6 +47,8 @@ function Shortcut({ icon, label, onPress }: ShortcutProps) {
 
 export default function FriendsScreen() {
   const router = useRouter();
+  const { width } = useWindowDimensions();
+  const isCompact = width < 380;
   const { user } = useAuth();
   const [friends, setFriends] = useState<Friendship[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -110,7 +114,10 @@ export default function FriendsScreen() {
     <ScreenBackground>
       <SafeAreaView style={styles.safeArea}>
         <ScrollView
-          contentContainerStyle={styles.container}
+          contentContainerStyle={[
+            styles.container,
+            isCompact && styles.containerCompact,
+          ]}
           refreshControl={
             <RefreshControl
               refreshing={isRefreshing}
@@ -124,12 +131,17 @@ export default function FriendsScreen() {
           showsVerticalScrollIndicator={false}
         >
           <View style={styles.content}>
-            <View style={styles.heading}>
+            <LinearGradient
+              colors={[COLORS.primary, COLORS.primaryPressed]}
+              start={{ x: 0, y: 0 }}
+              end={{ x: 1, y: 1 }}
+              style={[styles.headerCard, isCompact && styles.headerCardCompact]}
+            >
               <Text style={styles.title}>Friends</Text>
               <Text style={styles.subtitle}>Caută persoane și gestionează relațiile tale.</Text>
-            </View>
+            </LinearGradient>
 
-            <View style={styles.shortcuts}>
+            <View style={[styles.shortcuts, isCompact && styles.shortcutsCompact]}>
               <Shortcut icon="search-outline" label="Caută" onPress={() => router.push("/friends/search")} />
               <Shortcut icon="mail-unread-outline" label="Cereri" onPress={() => router.push("/friends/requests" as Href)} />
               <Shortcut icon="shield-checkmark-outline" label="Manager" onPress={() => router.push("/friends/manager")} />
@@ -183,11 +195,27 @@ export default function FriendsScreen() {
 const styles = StyleSheet.create({
   safeArea: { flex: 1 },
   container: { padding: 20, paddingBottom: 120 },
+  containerCompact: { paddingHorizontal: 14 },
   content: { width: "100%", maxWidth: 430, alignSelf: "center", gap: 22 },
-  heading: { gap: 5 },
-  title: { color: COLORS.text, fontSize: 32, fontWeight: "800" },
-  subtitle: { color: COLORS.textSecondary, fontSize: 15, lineHeight: 21 },
+  headerCard: {
+    padding: 24,
+    borderRadius: 24,
+    shadowColor: COLORS.primaryPressed,
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.18,
+    shadowRadius: 16,
+    elevation: 4,
+  },
+  headerCardCompact: { padding: 18, borderRadius: 20 },
+  title: { color: COLORS.background, fontSize: 24, fontWeight: "bold" },
+  subtitle: {
+    color: "rgba(255, 255, 255, 0.85)",
+    fontSize: 14,
+    marginTop: 6,
+    lineHeight: 20,
+  },
   shortcuts: { flexDirection: "row", gap: 10 },
+  shortcutsCompact: { gap: 6 },
   shortcut: {
     flex: 1,
     minHeight: 94,
