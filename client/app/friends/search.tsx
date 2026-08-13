@@ -18,6 +18,7 @@ import {
   StyleSheet,
   Text,
   TextInput,
+  useWindowDimensions,
   View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
@@ -38,6 +39,8 @@ function getSendErrorMessage(error: unknown): string {
 
 export default function FriendSearchScreen() {
   const router = useRouter();
+  const { width } = useWindowDimensions();
+  const isCompact = width < 380;
   const { user } = useAuth();
   const { profile } = useProfile();
   const [username, setUsername] = useState("");
@@ -111,7 +114,10 @@ export default function FriendSearchScreen() {
     <ScreenBackground>
       <SafeAreaView style={styles.safeArea}>
         <ScrollView
-          contentContainerStyle={styles.content}
+          contentContainerStyle={[
+            styles.content,
+            isCompact && styles.contentCompact,
+          ]}
           keyboardShouldPersistTaps="handled"
         >
           <View style={styles.page}>
@@ -119,7 +125,7 @@ export default function FriendSearchScreen() {
               colors={[COLORS.primary, COLORS.primaryPressed]}
               start={{ x: 0, y: 0 }}
               end={{ x: 1, y: 1 }}
-              style={styles.headerCard}
+              style={[styles.headerCard, isCompact && styles.headerCardCompact]}
             >
               <Pressable
                 accessibilityRole="button"
@@ -133,7 +139,9 @@ export default function FriendSearchScreen() {
               >
                 <Ionicons name="arrow-back" size={23} color={COLORS.primary} />
               </Pressable>
-              <Text style={styles.title}>Caută prieteni</Text>
+              <Text style={[styles.title, isCompact && styles.titleCompact]}>
+                Caută prieteni
+              </Text>
             </LinearGradient>
 
             <View style={styles.searchRow}>
@@ -225,10 +233,11 @@ const styles = StyleSheet.create({
     paddingTop: 18,
     paddingBottom: 120,
   },
+  contentCompact: { paddingHorizontal: 14 },
   page: {
     flex: 1,
     width: "100%",
-    maxWidth: 560,
+    maxWidth: 430,
     alignSelf: "center",
     gap: 16,
   },
@@ -245,7 +254,14 @@ const styles = StyleSheet.create({
     shadowRadius: 16,
     elevation: 4,
   },
+  headerCardCompact: {
+    gap: 10,
+    paddingHorizontal: 14,
+    paddingVertical: 14,
+    borderRadius: 18,
+  },
   title: { color: COLORS.background, fontSize: 24, fontWeight: "bold" },
+  titleCompact: { fontSize: 21 },
   searchRow: { flexDirection: "row", alignItems: "center", gap: 10 },
   searchInputContainer: {
     minHeight: 50,
