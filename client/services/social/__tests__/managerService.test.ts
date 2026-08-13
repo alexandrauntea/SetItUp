@@ -85,15 +85,17 @@ describe("managerService", () => {
 
     it("should create manager request when valid", async () => {
       mockAreFriends.mockResolvedValueOnce(true);
+      // existing relationship -> null
       mockGetDoc.mockResolvedValueOnce({ exists: () => false });
+      // existing request -> null
       mockGetDoc.mockResolvedValueOnce({ exists: () => false });
+      // friendship doc -> memberIds and memberUsernames
       mockGetDoc.mockResolvedValueOnce({
         exists: () => true,
-        data: () => ({ username: "owner_user" }),
-      });
-      mockGetDoc.mockResolvedValueOnce({
-        exists: () => true,
-        data: () => ({ username: "manager_user" }),
+        data: () => ({
+          memberIds: ["ownerA", "managerB"],
+          memberUsernames: ["owner_user", "manager_user"],
+        }),
       });
 
       await sendManagerRequest("ownerA", "managerB");
