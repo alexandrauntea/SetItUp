@@ -5,6 +5,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { getFriends, removeFriend } from "@/services/social/friendshipService";
 import type { Friendship } from "@/types/social";
 import { Ionicons } from "@expo/vector-icons";
+import { LinearGradient } from "expo-linear-gradient";
 import { type Href, useRouter } from "expo-router";
 import { useCallback, useEffect, useState } from "react";
 import {
@@ -121,10 +122,15 @@ export default function FriendsScreen() {
           showsVerticalScrollIndicator={false}
         >
           <View style={styles.content}>
-            <View style={styles.heading}>
+            <LinearGradient
+              colors={[COLORS.primary, COLORS.primaryPressed]}
+              start={{ x: 0, y: 0 }}
+              end={{ x: 1, y: 1 }}
+              style={styles.headerCard}
+            >
               <Text style={styles.title}>Friends</Text>
               <Text style={styles.subtitle}>Caută persoane și gestionează relațiile tale.</Text>
-            </View>
+            </LinearGradient>
 
             <View style={styles.shortcuts}>
               <Shortcut icon="search-outline" label="Caută" onPress={() => router.push("/friends/search")} />
@@ -179,9 +185,22 @@ const styles = StyleSheet.create({
   safeArea: { flex: 1 },
   container: { padding: 20, paddingBottom: 120 },
   content: { width: "100%", maxWidth: 430, alignSelf: "center", gap: 22 },
-  heading: { gap: 5 },
-  title: { color: COLORS.text, fontSize: 32, fontWeight: "800" },
-  subtitle: { color: COLORS.textSecondary, fontSize: 15, lineHeight: 21 },
+  headerCard: {
+    padding: 24,
+    borderRadius: 24,
+    shadowColor: COLORS.primaryPressed,
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.18,
+    shadowRadius: 16,
+    elevation: 4,
+  },
+  title: { color: COLORS.background, fontSize: 24, fontWeight: "bold" },
+  subtitle: {
+    color: "rgba(255, 255, 255, 0.85)",
+    fontSize: 14,
+    marginTop: 6,
+    lineHeight: 20,
+  },
   shortcuts: { flexDirection: "row", gap: 10 },
   shortcut: {
     flex: 1,

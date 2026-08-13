@@ -7,6 +7,7 @@ import { sendFriendRequest } from "@/services/social/friendRequestSendService";
 import { findUserByUsername } from "@/services/social/userSearchService";
 import type { UserSearchResult } from "@/types/social";
 import { Ionicons } from "@expo/vector-icons";
+import { LinearGradient } from "expo-linear-gradient";
 import { type Href, useRouter } from "expo-router";
 import { useState } from "react";
 import {
@@ -114,7 +115,12 @@ export default function FriendSearchScreen() {
           keyboardShouldPersistTaps="handled"
         >
           <View style={styles.page}>
-            <View style={styles.header}>
+            <LinearGradient
+              colors={[COLORS.primary, COLORS.primaryPressed]}
+              start={{ x: 0, y: 0 }}
+              end={{ x: 1, y: 1 }}
+              style={styles.headerCard}
+            >
               <Pressable
                 accessibilityRole="button"
                 accessibilityLabel="Înapoi"
@@ -125,10 +131,10 @@ export default function FriendSearchScreen() {
                   pressed && styles.backButtonPressed,
                 ]}
               >
-                <Ionicons name="arrow-back" size={23} color={COLORS.text} />
+                <Ionicons name="arrow-back" size={23} color={COLORS.primary} />
               </Pressable>
               <Text style={styles.title}>Caută prieteni</Text>
-            </View>
+            </LinearGradient>
 
             <View style={styles.searchRow}>
               <View style={styles.searchInputContainer}>
@@ -213,8 +219,19 @@ const styles = StyleSheet.create({
     alignSelf: "center",
     gap: 16,
   },
-  header: { flexDirection: "row", alignItems: "center", gap: 12 },
-  title: { color: COLORS.text, fontSize: 27, fontWeight: "800" },
+  headerCard: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 12,
+    padding: 24,
+    borderRadius: 24,
+    shadowColor: COLORS.primaryPressed,
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.18,
+    shadowRadius: 16,
+    elevation: 4,
+  },
+  title: { color: COLORS.background, fontSize: 24, fontWeight: "bold" },
   searchRow: { flexDirection: "row", alignItems: "center", gap: 10 },
   searchInputContainer: {
     minHeight: 50,
@@ -234,10 +251,10 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     paddingHorizontal: 16,
     borderRadius: 15,
-    backgroundColor: COLORS.primary,
+    backgroundColor: COLORS.text,
   },
   searchButtonDisabled: { opacity: 0.45 },
-  searchButtonPressed: { backgroundColor: COLORS.primaryPressed },
+  searchButtonPressed: { backgroundColor: COLORS.textSecondary },
   searchButtonText: { color: COLORS.background, fontSize: 15, fontWeight: "700" },
   resultsSection: { gap: 12, marginTop: 6 },
   sectionTitle: { color: COLORS.text, fontSize: 18, fontWeight: "800" },
