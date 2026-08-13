@@ -13,9 +13,7 @@ import {
   sendManagerRequest,
 } from "@/services/social/managerService";
 import { Friendship, ManagerRelationship, ManagerRequest } from "@/types/social";
-import { Ionicons } from "@expo/vector-icons";
 import { LinearGradient } from "expo-linear-gradient";
-import { useRouter } from "expo-router";
 import React, { useCallback, useEffect, useState } from "react";
 import {
   ActivityIndicator,
@@ -30,7 +28,6 @@ import {
 import { SafeAreaView } from "react-native-safe-area-context";
 
 export default function ManagerScreen() {
-  const router = useRouter();
   const { user } = useAuth();
   const uid = user?.uid;
 
@@ -59,39 +56,40 @@ export default function ManagerScreen() {
     }
     setErrorMessage(null);
 
-    let managerRel: ManagerRelationship | null = null;
-    let incoming: ManagerRequest[] = [];
-    let outgoing: ManagerRequest[] = [];
-    let friendList: Friendship[] = [];
+    const [managerRelResult, incomingResult, outgoingResult, friendsResult] =
+      await Promise.allSettled([
+        getManagerRelationship(uid),
+        getIncomingManagerRequests(uid),
+        getOutgoingManagerRequests(uid),
+        getFriends(uid),
+      ]);
 
-    try {
-      managerRel = await getManagerRelationship(uid);
-    } catch (e) {
-      console.warn("Could not fetch manager relationship:", e);
+    if (managerRelResult.status === "fulfilled") {
+      setActiveManager(managerRelResult.value);
+    }
+    if (incomingResult.status === "fulfilled") {
+      setIncomingRequests(incomingResult.value);
+    }
+    if (outgoingResult.status === "fulfilled") {
+      setOutgoingRequests(outgoingResult.value);
+    }
+    if (friendsResult.status === "fulfilled") {
+      setFriends(friendsResult.value);
     }
 
-    try {
-      incoming = await getIncomingManagerRequests(uid);
-    } catch (e) {
-      console.warn("Could not fetch incoming manager requests:", e);
-    }
+    const rejectedResult = [
+      managerRelResult,
+      incomingResult,
+      outgoingResult,
+      friendsResult,
+    ].find((result) => result.status === "rejected");
 
-    try {
-      outgoing = await getOutgoingManagerRequests(uid);
-    } catch (e) {
-      console.warn("Could not fetch outgoing manager requests:", e);
+    if (rejectedResult?.status === "rejected") {
+      console.error("Error loading manager data:", rejectedResult.reason);
+      setErrorMessage(
+        "Unele date nu au putut fi încărcate. Trage în jos pentru a reîncerca."
+      );
     }
-
-    try {
-      friendList = await getFriends(uid);
-    } catch (e) {
-      console.warn("Could not fetch friends:", e);
-    }
-
-    setActiveManager(managerRel);
-    setIncomingRequests(incoming);
-    setOutgoingRequests(outgoing);
-    setFriends(friendList);
 
     setLoading(false);
     setRefreshing(false);
@@ -256,16 +254,6 @@ export default function ManagerScreen() {
               end={{ x: 1, y: 1 }}
               style={styles.headerCard}
             >
-              <TouchableOpacity
-                style={styles.backIconButton}
-                onPress={() => router.back()}
-                activeOpacity={0.7}
-                accessibilityLabel="Înapoi"
-                accessibilityRole="button"
-              >
-                <Ionicons name="arrow-back" size={24} color={COLORS.background} />
-              </TouchableOpacity>
-
               <Text style={styles.title}>Gestionare Manager</Text>
               <Text style={styles.subtitle}>
                 Setează un prieten drept manager pentru a-i oferi acces la profilul și activitatea ta.
@@ -431,7 +419,7 @@ const styles = StyleSheet.create({
   },
   contentContainer: {
     paddingTop: 16,
-    paddingBottom: 40,
+    paddingBottom: 120,
     paddingHorizontal: 20,
   },
   content: {
@@ -458,15 +446,6 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.18,
     shadowRadius: 16,
     elevation: 4,
-  },
-  backIconButton: {
-    width: 38,
-    height: 38,
-    borderRadius: 19,
-    backgroundColor: "rgba(255, 255, 255, 0.2)",
-    alignItems: "center",
-    justifyContent: "center",
-    marginBottom: 12,
   },
   title: {
     color: COLORS.background,

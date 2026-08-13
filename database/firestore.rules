@@ -194,7 +194,12 @@ service cloud.firestore {
         && (!exists(
           /databases/$(database)/documents/friendRequests/$(requestId)
         ) || isMember(resource.data));
-      allow list: if isMember(resource.data);
+      // Interogările inboxului filtrează explicit după senderId sau receiverId.
+      // Firestore verifică interogările după rezultatele lor posibile, deci
+      // regula trebuie să folosească aceleași câmpuri ca query-urile clientului.
+      allow list: if isSignedIn()
+        && (request.auth.uid == resource.data.senderId
+          || request.auth.uid == resource.data.receiverId);
 
       allow create: if isMember(request.resource.data)
         && request.resource.data.senderId == request.auth.uid
@@ -216,14 +221,29 @@ service cloud.firestore {
         && (!exists(
           /databases/$(database)/documents/friendships/$(friendshipId)
         ) || isMember(resource.data));
-      allow list: if isMember(resource.data);
+      // Lista de prieteni folosește `memberIds array-contains uid`.
+      // Regula trebuie să exprime direct aceeași condiție pentru ca
+      // Firestore să poată valida interogarea înainte de a o executa.
+      allow list: if isSignedIn()
+        && request.auth.uid in resource.data.memberIds;
       allow create: if isMember(request.resource.data);
       allow update: if false;
       allow delete: if isMember(resource.data);
     }
 
     match /managerRequests/{requestId} {
-      allow get, list: if isMember(resource.data);
+      // Documentul exact este verificat înainte de creare. Dacă încă nu
+      // există, nu conține date care ar putea fi expuse.
+      allow get: if isSignedIn()
+        && (!exists(
+          /databases/$(database)/documents/managerRequests/$(requestId)
+        ) || isMember(resource.data));
+      // Ecranul filtrează explicit după ownerId sau managerId. Interogările
+      // folosite la ștergerea unei prietenii filtrează după memberIds.
+      allow list: if isSignedIn()
+        && (request.auth.uid == resource.data.ownerId
+          || request.auth.uid == resource.data.managerId
+          || request.auth.uid in resource.data.memberIds);
 
       allow create: if isMember(request.resource.data)
         && request.resource.data.ownerId == request.auth.uid
@@ -240,7 +260,13 @@ service cloud.firestore {
     }
 
     match /managerRelationships/{relationshipId} {
-      allow get, list: if isMember(resource.data);
+      // Acceptarea unei propuneri verifică mai întâi că relația nu există.
+      allow get: if isSignedIn()
+        && (!exists(
+          /databases/$(database)/documents/managerRelationships/$(relationshipId)
+        ) || isMember(resource.data));
+      allow list: if isSignedIn()
+        && request.auth.uid in resource.data.memberIds;
       allow create: if isMember(request.resource.data);
       allow update: if false;
       allow delete: if isMember(resource.data);

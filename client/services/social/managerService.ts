@@ -1,7 +1,7 @@
 import { db } from "@/services/firebase";
 import { areFriends } from "@/services/social/friendshipService";
-import { createManagerRequestId, createPairId } from "@/services/social/socialIds";
-import { Friendship, ManagerRelationship, ManagerRequest } from "@/types/social";
+import { createManagerRequestId } from "@/services/social/socialIds";
+import { ManagerRelationship, ManagerRequest } from "@/types/social";
 import {
   collection,
   deleteDoc,
@@ -16,7 +16,25 @@ import {
 
 const MANAGER_REQUESTS_COLLECTION = "managerRequests";
 const MANAGER_RELATIONSHIPS_COLLECTION = "managerRelationships";
-const FRIENDSHIPS_COLLECTION = "friendships";
+
+async function getUsernameForUid(uid: string): Promise<string> {
+  try {
+    const publicRef = doc(db, "publicProfiles", uid);
+    const publicSnap = await getDoc(publicRef);
+    if (publicSnap.exists() && publicSnap.data()?.username) {
+      return publicSnap.data().username as string;
+    }
+
+    const userRef = doc(db, "users", uid);
+    const userSnap = await getDoc(userRef);
+    if (userSnap.exists() && userSnap.data()?.username) {
+      return userSnap.data().username as string;
+    }
+  } catch (error) {
+    console.error("Error fetching username for uid:", uid, error);
+  }
+  return "Utilizator";
+}
 
 export async function sendManagerRequest(
   ownerId: string,
@@ -43,26 +61,8 @@ export async function sendManagerRequest(
     throw new Error("REQUEST_ALREADY_EXISTS");
   }
 
-  // Get usernames directly from friendship document where they are stored
-  const pairId = createPairId(ownerId, managerId);
-  const friendshipRef = doc(db, FRIENDSHIPS_COLLECTION, pairId);
-  const friendshipSnap = await getDoc(friendshipRef);
-
-  let ownerUsername = "Utilizator";
-  let managerUsername = "Utilizator";
-
-  if (friendshipSnap.exists()) {
-    const friendshipData = friendshipSnap.data() as Friendship;
-    const ownerIndex = friendshipData.memberIds.indexOf(ownerId);
-    const managerIndex = friendshipData.memberIds.indexOf(managerId);
-
-    if (ownerIndex !== -1 && friendshipData.memberUsernames?.[ownerIndex]) {
-      ownerUsername = friendshipData.memberUsernames[ownerIndex];
-    }
-    if (managerIndex !== -1 && friendshipData.memberUsernames?.[managerIndex]) {
-      managerUsername = friendshipData.memberUsernames[managerIndex];
-    }
-  }
+  const ownerUsername = await getUsernameForUid(ownerId);
+  const managerUsername = await getUsernameForUid(managerId);
 
   const now = new Date().toISOString();
   const managerRequestData: ManagerRequest = {
@@ -83,47 +83,41 @@ export async function sendManagerRequest(
 export async function getIncomingManagerRequests(
   uid: string
 ): Promise<ManagerRequest[]> {
-  try {
-    const requestsRef = collection(db, MANAGER_REQUESTS_COLLECTION);
-    const q = query(
-      requestsRef,
-      where("memberIds", "array-contains", uid)
-    );
+  const requestsRef = collection(db, MANAGER_REQUESTS_COLLECTION);
+  const requestsQuery = query(
+    requestsRef,
+    where("managerId", "==", uid)
+  );
 
-    const snapshot = await getDocs(q);
-    return snapshot.docs
-      .map((docSnap) => ({
-        id: docSnap.id,
-        ...docSnap.data(),
-      }) as ManagerRequest)
-      .filter((req) => req.managerId === uid && req.status === "pending");
-  } catch (error) {
-    console.warn("Firestore info (getIncomingManagerRequests):", error);
-    return [];
-  }
+  const snapshot = await getDocs(requestsQuery);
+  const requests = snapshot.docs.map((docSnap) => ({
+    id: docSnap.id,
+    ...docSnap.data(),
+  })) as ManagerRequest[];
+
+  return requests
+    .filter((request) => request.status === "pending")
+    .sort((a, b) => b.createdAt.localeCompare(a.createdAt));
 }
 
 export async function getOutgoingManagerRequests(
   uid: string
 ): Promise<ManagerRequest[]> {
-  try {
-    const requestsRef = collection(db, MANAGER_REQUESTS_COLLECTION);
-    const q = query(
-      requestsRef,
-      where("memberIds", "array-contains", uid)
-    );
+  const requestsRef = collection(db, MANAGER_REQUESTS_COLLECTION);
+  const requestsQuery = query(
+    requestsRef,
+    where("ownerId", "==", uid)
+  );
 
-    const snapshot = await getDocs(q);
-    return snapshot.docs
-      .map((docSnap) => ({
-        id: docSnap.id,
-        ...docSnap.data(),
-      }) as ManagerRequest)
-      .filter((req) => req.ownerId === uid && req.status === "pending");
-  } catch (error) {
-    console.warn("Firestore info (getOutgoingManagerRequests):", error);
-    return [];
-  }
+  const snapshot = await getDocs(requestsQuery);
+  const requests = snapshot.docs.map((docSnap) => ({
+    id: docSnap.id,
+    ...docSnap.data(),
+  })) as ManagerRequest[];
+
+  return requests
+    .filter((request) => request.status === "pending")
+    .sort((a, b) => b.createdAt.localeCompare(a.createdAt));
 }
 
 export async function acceptManagerRequest(
@@ -196,21 +190,16 @@ export async function declineManagerRequest(
 export async function getManagerRelationship(
   ownerId: string
 ): Promise<ManagerRelationship | null> {
-  try {
-    const relRef = doc(db, MANAGER_RELATIONSHIPS_COLLECTION, ownerId);
-    const relSnap = await getDoc(relRef);
+  const relRef = doc(db, MANAGER_RELATIONSHIPS_COLLECTION, ownerId);
+  const relSnap = await getDoc(relRef);
 
-    if (!relSnap.exists()) {
-      return null;
-    }
-
-    return {
-      ...relSnap.data(),
-    } as ManagerRelationship;
-  } catch (error) {
-    console.warn("Firestore info (getManagerRelationship):", error);
+  if (!relSnap.exists()) {
     return null;
   }
+
+  return {
+    ...relSnap.data(),
+  } as ManagerRelationship;
 }
 
 export async function isManagerForUser(

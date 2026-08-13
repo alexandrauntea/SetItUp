@@ -4,12 +4,15 @@ import { COLORS } from "@/constants/colors";
 import { useAuth } from "@/contexts/AuthContext";
 import { getFriends, removeFriend } from "@/services/social/friendshipService";
 import type { Friendship } from "@/types/social";
+import {
+  requestConfirmation,
+  showPlatformAlert,
+} from "@/utils/platformAlert";
 import { Ionicons } from "@expo/vector-icons";
 import { type Href, useRouter } from "expo-router";
 import { useCallback, useEffect, useState } from "react";
 import {
   ActivityIndicator,
-  Alert,
   Pressable,
   RefreshControl,
   ScrollView,
@@ -54,7 +57,8 @@ export default function FriendsScreen() {
     setErrorMessage("");
     try {
       setFriends(await getFriends(user.uid));
-    } catch {
+    } catch (error) {
+      console.error("Nu am putut încărca lista de prieteni:", error);
       setErrorMessage("Lista de prieteni nu a putut fi încărcată.");
     } finally {
       setIsLoading(false);
@@ -75,31 +79,31 @@ export default function FriendsScreen() {
     };
   }
 
-  function confirmRemove(friendship: Friendship) {
+  async function confirmRemove(friendship: Friendship) {
     if (!user) return;
     const friend = getFriend(friendship);
-    Alert.alert(
-      "Remove friend?",
-      `@${friend.username} va fi eliminat din lista ta. Orice relație de manager dintre voi va fi eliminată.`,
-      [
-        { text: "Anulează", style: "cancel" },
-        {
-          text: "Elimină",
-          style: "destructive",
-          onPress: async () => {
-            setRemovingUid(friend.uid);
-            try {
-              await removeFriend(user.uid, friend.uid);
-              setFriends((current) => current.filter((item) => item.id !== friendship.id));
-            } catch {
-              Alert.alert("Eroare", "Prietenul nu a putut fi eliminat.");
-            } finally {
-              setRemovingUid(null);
-            }
-          },
-        },
-      ],
-    );
+    const confirmed = await requestConfirmation({
+      title: "Elimini prietenul?",
+      message: `@${friend.username} va fi eliminat din lista ta. Orice relație de manager dintre voi va fi eliminată.`,
+      cancelText: "Anulează",
+      confirmText: "Elimină",
+      destructive: true,
+    });
+
+    if (!confirmed) return;
+
+    setRemovingUid(friend.uid);
+    try {
+      await removeFriend(user.uid, friend.uid);
+      setFriends((current) =>
+        current.filter((item) => item.id !== friendship.id),
+      );
+    } catch (error) {
+      console.error("Prietenul nu a putut fi eliminat:", error);
+      showPlatformAlert("Eroare", "Prietenul nu a putut fi eliminat.");
+    } finally {
+      setRemovingUid(null);
+    }
   }
 
   return (
@@ -161,7 +165,9 @@ export default function FriendsScreen() {
                       username={friend.username}
                       isRemoving={removingUid === friend.uid}
                       onOpenProfile={() => router.push({ pathname: "/users/[uid]", params: { uid: friend.uid } })}
-                      onRemove={() => confirmRemove(friendship)}
+                      onRemove={() => {
+                        void confirmRemove(friendship);
+                      }}
                     />
                   );
                 })}
