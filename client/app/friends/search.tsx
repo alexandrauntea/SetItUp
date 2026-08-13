@@ -173,7 +173,7 @@ export default function FriendSearchScreen() {
                 ]}
               >
                 {isSearching ? (
-                  <ActivityIndicator size="small" color={COLORS.background} />
+                  <ActivityIndicator size="small" color={COLORS.primary} />
                 ) : (
                   <Text style={styles.searchButtonText}>Caută</Text>
                 )}
@@ -198,6 +198,18 @@ export default function FriendSearchScreen() {
             ) : null}
 
             {message ? <Text style={styles.message}>{message}</Text> : null}
+
+            {!result && !isSearching ? (
+              <View style={styles.emptyIllustration} pointerEvents="none">
+                <View style={styles.emptyIllustrationBanner}>
+                  <Ionicons
+                    name="people-outline"
+                    size={112}
+                    color={COLORS.primary}
+                  />
+                </View>
+              </View>
+            ) : null}
           </View>
         </ScrollView>
       </SafeAreaView>
@@ -214,6 +226,7 @@ const styles = StyleSheet.create({
     paddingBottom: 120,
   },
   page: {
+    flex: 1,
     width: "100%",
     maxWidth: 560,
     alignSelf: "center",
@@ -223,8 +236,9 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     gap: 12,
-    padding: 24,
-    borderRadius: 24,
+    paddingHorizontal: 20,
+    paddingVertical: 16,
+    borderRadius: 20,
     shadowColor: COLORS.primaryPressed,
     shadowOffset: { width: 0, height: 8 },
     shadowOpacity: 0.18,
@@ -251,11 +265,29 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     paddingHorizontal: 16,
     borderRadius: 15,
-    backgroundColor: COLORS.text,
+    borderWidth: 1,
+    borderColor: COLORS.primary,
+    backgroundColor: COLORS.background,
   },
   searchButtonDisabled: { opacity: 0.45 },
-  searchButtonPressed: { backgroundColor: COLORS.textSecondary },
-  searchButtonText: { color: COLORS.background, fontSize: 15, fontWeight: "700" },
+  searchButtonPressed: { backgroundColor: COLORS.primarySoft },
+  searchButtonText: { color: COLORS.primary, fontSize: 15, fontWeight: "700" },
+  emptyIllustration: {
+    flex: 1,
+    minHeight: 300,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  emptyIllustrationBanner: {
+    width: 190,
+    height: 190,
+    alignItems: "center",
+    justifyContent: "center",
+    borderWidth: 1,
+    borderColor: COLORS.border,
+    borderRadius: 95,
+    backgroundColor: COLORS.surface,
+  },
   resultsSection: { gap: 12, marginTop: 6 },
   sectionTitle: { color: COLORS.text, fontSize: 18, fontWeight: "800" },
   message: {
