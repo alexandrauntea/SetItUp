@@ -1,7 +1,6 @@
 import { AppButton } from "@/components/AppButton";
 import { AppInput } from "@/components/AppInput";
 import { FormError } from "@/components/FormError";
-import { InterestSelector } from "@/components/InterestSelector";
 import {
   ProfilePhotoPicker,
   type SelectedProfilePhoto,
@@ -10,7 +9,7 @@ import { ScreenBackground } from "@/components/ScreenBackground";
 import { COLORS } from "@/constants/colors";
 import { useAuth } from "@/contexts/AuthContext";
 import { useProfile } from "@/contexts/ProfileContext";
-import { GENDER_OPTIONS } from "@/constants/profileOptions";
+import { GENDER_OPTIONS, INTEREST_OPTIONS } from "@/constants/profileOptions";
 import { uploadProfilePhoto } from "@/services/profileImageService";
 import type { Gender } from "@/types/profile";
 import { getFirebaseErrorMessage } from "@/utils/firebaseErrors";
@@ -263,11 +262,35 @@ export default function CreateProfileScreen() {
                       style={styles.descriptionInput}
                     />
 
-                    <InterestSelector
-                      selectedInterests={interests}
-                      onToggleInterest={toggleInterest}
-                      disabled={isSubmitting}
-                    />
+                    <View style={styles.interestsSection}>
+                      <Text style={styles.label}>Interese</Text>
+
+                      <View style={styles.interestOptions}>
+                        {INTEREST_OPTIONS.map((interest) => {
+                          const isSelected = interests.includes(interest);
+
+                          return (
+                            <Pressable
+                              key={interest}
+                              onPress={() => toggleInterest(interest)}
+                              style={[
+                                styles.interestOption,
+                                isSelected && styles.interestOptionSelected,
+                              ]}
+                            >
+                              <Text
+                                style={[
+                                  styles.interestText,
+                                  isSelected && styles.interestTextSelected,
+                                ]}
+                              >
+                                {interest}
+                              </Text>
+                            </Pressable>
+                          );
+                        })}
+                      </View>
+                    </View>
                   </>
                 ) : (
                   <>

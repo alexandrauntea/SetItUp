@@ -1,3 +1,5 @@
+import { AppButton } from "@/components/AppButton";
+import { AppInput } from "@/components/AppInput";
 import { ScreenBackground } from "@/components/ScreenBackground";
 import { UserSearchCard } from "@/components/social/UserSearchCard";
 import { COLORS } from "@/constants/colors";
@@ -6,17 +8,14 @@ import { useProfile } from "@/contexts/ProfileContext";
 import { sendFriendRequest } from "@/services/social/friendRequestSendService";
 import { findUserByUsername } from "@/services/social/userSearchService";
 import type { UserSearchResult } from "@/types/social";
-import { Ionicons } from "@expo/vector-icons";
 import { type Href, useRouter } from "expo-router";
 import { useState } from "react";
 import {
-  ActivityIndicator,
   Keyboard,
   Pressable,
   ScrollView,
   StyleSheet,
   Text,
-  TextInput,
   View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
@@ -113,85 +112,60 @@ export default function FriendSearchScreen() {
           contentContainerStyle={styles.content}
           keyboardShouldPersistTaps="handled"
         >
-          <View style={styles.page}>
-            <View style={styles.header}>
-              <Pressable
-                accessibilityRole="button"
-                accessibilityLabel="Înapoi"
-                hitSlop={8}
-                onPress={handleBack}
-                style={({ pressed }) => [
-                  styles.backButton,
-                  pressed && styles.backButtonPressed,
-                ]}
-              >
-                <Ionicons name="arrow-back" size={23} color={COLORS.text} />
-              </Pressable>
+          <View style={styles.card}>
+            <View style={styles.heading}>
               <Text style={styles.title}>Caută prieteni</Text>
+              <Text style={styles.description}>
+                Scrie username-ul exact al persoanei pe care o cauți.
+              </Text>
             </View>
 
-            <View style={styles.searchRow}>
-              <View style={styles.searchInputContainer}>
-                <Ionicons
-                  name="search"
-                  size={20}
-                  color={COLORS.textSecondary}
-                />
-                <TextInput
-                  accessibilityLabel="Username"
-                  value={username}
-                  onChangeText={setUsername}
-                  placeholder="Caută după username"
-                  placeholderTextColor={COLORS.textSecondary}
-                  autoCapitalize="none"
-                  autoCorrect={false}
-                  returnKeyType="search"
-                  onSubmitEditing={() => void handleSearch()}
-                  style={styles.searchInput}
-                />
-              </View>
-              <Pressable
-                accessibilityRole="button"
-                accessibilityLabel="Caută"
-                accessibilityState={{
-                  disabled: !username.trim() || isSearching,
-                  busy: isSearching,
-                }}
-                disabled={!username.trim() || isSearching}
-                onPress={() => void handleSearch()}
-                style={({ pressed }) => [
-                  styles.searchButton,
-                  (!username.trim() || isSearching) &&
-                    styles.searchButtonDisabled,
-                  pressed && styles.searchButtonPressed,
-                ]}
-              >
-                {isSearching ? (
-                  <ActivityIndicator size="small" color={COLORS.background} />
-                ) : (
-                  <Text style={styles.searchButtonText}>Caută</Text>
-                )}
-              </Pressable>
-            </View>
+            <AppInput
+              label="Username"
+              value={username}
+              onChangeText={setUsername}
+              placeholder="De exemplu: anca_21"
+              autoCapitalize="none"
+              autoCorrect={false}
+              returnKeyType="search"
+              onSubmitEditing={() => void handleSearch()}
+            />
+            <AppButton
+              title="Caută"
+              onPress={() => void handleSearch()}
+              loading={isSearching}
+              disabled={!username.trim()}
+            />
 
             {result ? (
-              <View style={styles.resultsSection}>
-                <Text style={styles.sectionTitle}>Rezultate</Text>
-                <UserSearchCard
-                  result={result}
-                  isSending={isSending}
-                  onSendRequest={() => void handleSendRequest()}
-                  onOpenProfile={() =>
-                    router.push({
-                      pathname: "/users/[uid]",
-                      params: { uid: result.uid },
-                    })
-                  }
-                />
-              </View>
+              <UserSearchCard
+                result={result}
+                isSending={isSending}
+                onSendRequest={() => void handleSendRequest()}
+                onOpenProfile={() =>
+                  router.push({
+                    pathname: "/users/[uid]",
+                    params: { uid: result.uid },
+                  })
+                }
+              />
             ) : null}
 
             {message ? <Text style={styles.message}>{message}</Text> : null}
+
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel="Înapoi"
+              hitSlop={8}
+              onPress={handleBack}
+              style={({ pressed }) => [
+                styles.backButton,
+                pressed && styles.backButtonPressed,
+              ]}
+            >
+              <Text style={styles.backArrow}>‹</Text>
+              <Text style={styles.backText}>Înapoi</Text>
+            </Pressable>
           </View>
         </ScrollView>
       </SafeAreaView>
@@ -203,62 +177,58 @@ const styles = StyleSheet.create({
   safeArea: { flex: 1 },
   content: {
     flexGrow: 1,
-    paddingHorizontal: 20,
-    paddingTop: 18,
+    justifyContent: "center",
+    padding: 20,
     paddingBottom: 120,
   },
-  page: {
+  card: {
     width: "100%",
-    maxWidth: 560,
+    maxWidth: 420,
     alignSelf: "center",
-    gap: 16,
+    gap: 18,
+    padding: 24,
+    borderRadius: 24,
+    backgroundColor: COLORS.background,
+    borderWidth: 1,
+    borderColor: COLORS.surface,
   },
-  header: { flexDirection: "row", alignItems: "center", gap: 12 },
-  title: { color: COLORS.text, fontSize: 27, fontWeight: "800" },
-  searchRow: { flexDirection: "row", alignItems: "center", gap: 10 },
-  searchInputContainer: {
-    minHeight: 50,
-    flex: 1,
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 10,
-    paddingHorizontal: 15,
-    borderRadius: 15,
-    backgroundColor: COLORS.surface,
+  heading: { gap: 6 },
+  title: { color: COLORS.text, fontSize: 30, fontWeight: "800" },
+  description: {
+    color: COLORS.textSecondary,
+    fontSize: 16,
+    lineHeight: 23,
   },
-  searchInput: { flex: 1, color: COLORS.text, fontSize: 16, paddingVertical: 0 },
-  searchButton: {
-    minWidth: 82,
-    minHeight: 50,
-    alignItems: "center",
-    justifyContent: "center",
-    paddingHorizontal: 16,
-    borderRadius: 15,
-    backgroundColor: COLORS.primary,
-  },
-  searchButtonDisabled: { opacity: 0.45 },
-  searchButtonPressed: { backgroundColor: COLORS.primaryPressed },
-  searchButtonText: { color: COLORS.background, fontSize: 15, fontWeight: "700" },
-  resultsSection: { gap: 12, marginTop: 6 },
-  sectionTitle: { color: COLORS.text, fontSize: 18, fontWeight: "800" },
   message: {
-    padding: 16,
-    borderRadius: 14,
     color: COLORS.textSecondary,
     textAlign: "center",
     fontSize: 14,
     lineHeight: 20,
-    backgroundColor: COLORS.surface,
   },
   backButton: {
-    width: 42,
-    height: 42,
+    minHeight: 36,
+    alignSelf: "flex-start",
+    flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
-    borderRadius: 21,
-    backgroundColor: COLORS.background,
+    gap: 4,
+    marginTop: 2,
+    paddingHorizontal: 12,
+    borderRadius: 18,
+    backgroundColor: COLORS.primarySoft,
   },
   backButtonPressed: {
     opacity: 0.7,
+  },
+  backArrow: {
+    color: COLORS.primary,
+    fontSize: 20,
+    lineHeight: 20,
+    fontWeight: "600",
+  },
+  backText: {
+    color: COLORS.primary,
+    fontSize: 13,
+    fontWeight: "700",
   },
 });

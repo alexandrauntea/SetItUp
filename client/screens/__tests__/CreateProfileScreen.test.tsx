@@ -84,9 +84,7 @@ async function completeStepTwo() {
     screen.getByPlaceholderText("Scrie câteva cuvinte"),
     "  Îmi place să cunosc oameni noi.  ",
   );
-  await fireEvent.press(screen.getByText("Tehnologie & cunoaștere"));
   await fireEvent.press(screen.getByText("Tehnologie"));
-  await fireEvent.press(screen.getByText("Muzică & activități"));
   await fireEvent.press(screen.getByText("Muzică"));
   await fireEvent.press(screen.getByText("Continuă"));
 

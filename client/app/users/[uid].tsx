@@ -11,7 +11,6 @@ import { useLocalSearchParams, useRouter } from "expo-router";
 import { useEffect, useState } from "react";
 import {
   ActivityIndicator,
-  Pressable,
   ScrollView,
   StyleSheet,
   Text,
@@ -98,21 +97,7 @@ export default function PublicUserProfileScreen() {
     <ScreenBackground>
       <SafeAreaView style={styles.safeArea}>
         <ScrollView contentContainerStyle={styles.content}>
-          <View style={styles.navigationHeader}>
-            <Pressable
-              accessibilityRole="button"
-              accessibilityLabel="Înapoi"
-              hitSlop={8}
-              onPress={handleBack}
-              style={({ pressed }) => [
-                styles.backButton,
-                pressed && styles.backButtonPressed,
-              ]}
-            >
-              <Ionicons name="arrow-back" size={23} color={COLORS.text} />
-            </Pressable>
-            <Text style={styles.navigationTitle}>Profil</Text>
-          </View>
+          <AppButton title="Înapoi" variant="outline" onPress={handleBack} />
 
           <LinearGradient
             colors={[COLORS.primary, COLORS.primaryPressed]}
@@ -185,21 +170,6 @@ const styles = StyleSheet.create({
     padding: 20,
     paddingBottom: 40,
   },
-  navigationHeader: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 12,
-  },
-  backButton: {
-    width: 42,
-    height: 42,
-    alignItems: "center",
-    justifyContent: "center",
-    borderRadius: 21,
-    backgroundColor: COLORS.background,
-  },
-  backButtonPressed: { opacity: 0.65 },
-  navigationTitle: { color: COLORS.text, fontSize: 27, fontWeight: "800" },
   messageCard: {
     width: "100%",
     maxWidth: 420,
