@@ -16,6 +16,29 @@ service cloud.firestore {
         && request.auth.uid in data.memberIds;
     }
 
+    function isPairId(pairId, uidA, uidB) {
+      return pairId == uidA + '_' + uidB
+        || pairId == uidB + '_' + uidA;
+    }
+
+    function hasValidMembers(data, uidA, uidB) {
+      return uidA is string
+        && uidB is string
+        && uidA != uidB
+        && data.memberIds is list
+        && data.memberIds.size() == 2
+        && uidA in data.memberIds
+        && uidB in data.memberIds;
+    }
+
+    function friendshipExists(uidA, uidB) {
+      return exists(
+          /databases/$(database)/documents/friendships/$(uidA + '_' + uidB)
+        ) || exists(
+          /databases/$(database)/documents/friendships/$(uidB + '_' + uidA)
+        );
+    }
+
     function hasValidProfileFields() {
       return request.resource.data.keys().hasOnly([
           'uid',
@@ -202,8 +225,57 @@ service cloud.firestore {
           || request.auth.uid == resource.data.receiverId);
 
       allow create: if isMember(request.resource.data)
+        && request.resource.data.keys().hasOnly([
+          'id',
+          'senderId',
+          'senderUsername',
+          'receiverId',
+          'receiverUsername',
+          'memberIds',
+          'status',
+          'createdAt',
+          'updatedAt'
+        ])
+        && request.resource.data.keys().hasAll([
+          'id',
+          'senderId',
+          'senderUsername',
+          'receiverId',
+          'receiverUsername',
+          'memberIds',
+          'status',
+          'createdAt',
+          'updatedAt'
+        ])
+        && request.resource.data.id == requestId
+        && isPairId(
+          requestId,
+          request.resource.data.senderId,
+          request.resource.data.receiverId
+        )
+        && hasValidMembers(
+          request.resource.data,
+          request.resource.data.senderId,
+          request.resource.data.receiverId
+        )
         && request.resource.data.senderId == request.auth.uid
-        && request.resource.data.status == 'pending';
+        && request.resource.data.senderUsername is string
+        && request.resource.data.senderUsername.matches('^[a-z0-9_]{3,20}$')
+        && request.resource.data.receiverUsername is string
+        && request.resource.data.receiverUsername.matches('^[a-z0-9_]{3,20}$')
+        && get(
+          /databases/$(database)/documents/usernames/$(request.resource.data.senderUsername)
+        ).data.uid == request.resource.data.senderId
+        && get(
+          /databases/$(database)/documents/usernames/$(request.resource.data.receiverUsername)
+        ).data.uid == request.resource.data.receiverId
+        && request.resource.data.status == 'pending'
+        && request.resource.data.createdAt is string
+        && request.resource.data.updatedAt is string
+        && !friendshipExists(
+          request.resource.data.senderId,
+          request.resource.data.receiverId
+        );
 
       allow update: if isMember(resource.data)
         && request.auth.uid == resource.data.receiverId
@@ -226,7 +298,73 @@ service cloud.firestore {
       // Firestore să poată valida interogarea înainte de a o executa.
       allow list: if isSignedIn()
         && request.auth.uid in resource.data.memberIds;
-      allow create: if isMember(request.resource.data);
+      allow create: if isMember(request.resource.data)
+        && request.resource.data.keys().hasOnly([
+          'id',
+          'memberIds',
+          'memberUsernames',
+          'createdAt'
+        ])
+        && request.resource.data.keys().hasAll([
+          'id',
+          'memberIds',
+          'memberUsernames',
+          'createdAt'
+        ])
+        && request.resource.data.id == friendshipId
+        && request.resource.data.memberIds is list
+        && request.resource.data.memberIds.size() == 2
+        && request.resource.data.memberIds[0] is string
+        && request.resource.data.memberIds[1] is string
+        && request.resource.data.memberIds[0] != request.resource.data.memberIds[1]
+        && isPairId(
+          friendshipId,
+          request.resource.data.memberIds[0],
+          request.resource.data.memberIds[1]
+        )
+        && request.resource.data.memberUsernames is list
+        && request.resource.data.memberUsernames.size() == 2
+        && request.resource.data.memberUsernames[0] is string
+        && request.resource.data.memberUsernames[1] is string
+        && request.resource.data.createdAt is string
+        && exists(
+          /databases/$(database)/documents/friendRequests/$(friendshipId)
+        )
+        && get(
+          /databases/$(database)/documents/friendRequests/$(friendshipId)
+        ).data.receiverId == request.auth.uid
+        && (
+          (
+            request.resource.data.memberIds[0] == get(
+              /databases/$(database)/documents/friendRequests/$(friendshipId)
+            ).data.senderId
+            && request.resource.data.memberUsernames[0] == get(
+              /databases/$(database)/documents/friendRequests/$(friendshipId)
+            ).data.senderUsername
+            && request.resource.data.memberIds[1] == get(
+              /databases/$(database)/documents/friendRequests/$(friendshipId)
+            ).data.receiverId
+            && request.resource.data.memberUsernames[1] == get(
+              /databases/$(database)/documents/friendRequests/$(friendshipId)
+            ).data.receiverUsername
+          ) || (
+            request.resource.data.memberIds[1] == get(
+              /databases/$(database)/documents/friendRequests/$(friendshipId)
+            ).data.senderId
+            && request.resource.data.memberUsernames[1] == get(
+              /databases/$(database)/documents/friendRequests/$(friendshipId)
+            ).data.senderUsername
+            && request.resource.data.memberIds[0] == get(
+              /databases/$(database)/documents/friendRequests/$(friendshipId)
+            ).data.receiverId
+            && request.resource.data.memberUsernames[0] == get(
+              /databases/$(database)/documents/friendRequests/$(friendshipId)
+            ).data.receiverUsername
+          )
+        )
+        && !existsAfter(
+          /databases/$(database)/documents/friendRequests/$(friendshipId)
+        );
       allow update: if false;
       allow delete: if isMember(resource.data);
     }
@@ -246,8 +384,51 @@ service cloud.firestore {
           || request.auth.uid in resource.data.memberIds);
 
       allow create: if isMember(request.resource.data)
+        && request.resource.data.keys().hasOnly([
+          'id',
+          'ownerId',
+          'ownerUsername',
+          'managerId',
+          'managerUsername',
+          'memberIds',
+          'status',
+          'createdAt',
+          'updatedAt'
+        ])
+        && request.resource.data.keys().hasAll([
+          'id',
+          'ownerId',
+          'ownerUsername',
+          'managerId',
+          'managerUsername',
+          'memberIds',
+          'status',
+          'createdAt',
+          'updatedAt'
+        ])
+        && request.resource.data.id == requestId
+        && requestId == request.resource.data.ownerId
+          + '_' + request.resource.data.managerId
+        && hasValidMembers(
+          request.resource.data,
+          request.resource.data.ownerId,
+          request.resource.data.managerId
+        )
         && request.resource.data.ownerId == request.auth.uid
-        && request.resource.data.status == 'pending';
+        && request.resource.data.ownerUsername is string
+        && request.resource.data.ownerUsername.matches('^[a-z0-9_]{3,20}$')
+        && request.resource.data.managerUsername is string
+        && request.resource.data.managerUsername.matches('^[a-z0-9_]{3,20}$')
+        && request.resource.data.status == 'pending'
+        && request.resource.data.createdAt is string
+        && request.resource.data.updatedAt is string
+        && friendshipExists(
+          request.resource.data.ownerId,
+          request.resource.data.managerId
+        )
+        && !exists(
+          /databases/$(database)/documents/managerRelationships/$(request.resource.data.ownerId)
+        );
 
       allow update: if isMember(resource.data)
         && request.auth.uid == resource.data.managerId
@@ -266,8 +447,54 @@ service cloud.firestore {
           /databases/$(database)/documents/managerRelationships/$(relationshipId)
         ) || isMember(resource.data));
       allow list: if isSignedIn()
-        && request.auth.uid in resource.data.memberIds;
-      allow create: if isMember(request.resource.data);
+        && (request.auth.uid == resource.data.ownerId
+          || request.auth.uid == resource.data.managerId
+          || request.auth.uid in resource.data.memberIds);
+      allow create: if isMember(request.resource.data)
+        && request.resource.data.keys().hasOnly([
+          'ownerId',
+          'ownerUsername',
+          'managerId',
+          'managerUsername',
+          'memberIds',
+          'createdAt'
+        ])
+        && request.resource.data.keys().hasAll([
+          'ownerId',
+          'ownerUsername',
+          'managerId',
+          'managerUsername',
+          'memberIds',
+          'createdAt'
+        ])
+        && relationshipId == request.resource.data.ownerId
+        && request.resource.data.managerId == request.auth.uid
+        && hasValidMembers(
+          request.resource.data,
+          request.resource.data.ownerId,
+          request.resource.data.managerId
+        )
+        && request.resource.data.ownerUsername is string
+        && request.resource.data.ownerUsername.matches('^[a-z0-9_]{3,20}$')
+        && request.resource.data.managerUsername is string
+        && request.resource.data.managerUsername.matches('^[a-z0-9_]{3,20}$')
+        && request.resource.data.createdAt is string
+        && friendshipExists(
+          request.resource.data.ownerId,
+          request.resource.data.managerId
+        )
+        && exists(
+          /databases/$(database)/documents/managerRequests/$(request.resource.data.ownerId + '_' + request.resource.data.managerId)
+        )
+        && get(
+          /databases/$(database)/documents/managerRequests/$(request.resource.data.ownerId + '_' + request.resource.data.managerId)
+        ).data.ownerUsername == request.resource.data.ownerUsername
+        && get(
+          /databases/$(database)/documents/managerRequests/$(request.resource.data.ownerId + '_' + request.resource.data.managerId)
+        ).data.managerUsername == request.resource.data.managerUsername
+        && !existsAfter(
+          /databases/$(database)/documents/managerRequests/$(request.resource.data.ownerId + '_' + request.resource.data.managerId)
+        );
       allow update: if false;
       allow delete: if isMember(resource.data);
     }

@@ -8,10 +8,12 @@ const {
 } = require("@firebase/rules-unit-testing");
 const {
   collection,
+  deleteDoc,
   doc,
   getDoc,
   getDocs,
   query,
+  runTransaction,
   setDoc,
   updateDoc,
   where,
@@ -230,6 +232,14 @@ describe("Regulile profilului", () => {
 
 describe("Regulile cererii de prietenie", () => {
   test("senderul autentificat poate crea cererea în care este participant", async () => {
+    await seedDocument("usernames", "alice", {
+      uid: ALICE_UID,
+      createdAt: "2026-08-12T10:00:00.000Z",
+    });
+    await seedDocument("usernames", "bob", {
+      uid: BOB_UID,
+      createdAt: "2026-08-12T10:00:00.000Z",
+    });
     const alice = testEnv.authenticatedContext(ALICE_UID);
     const request = friendRequest();
 
@@ -257,6 +267,18 @@ describe("Regulile cererii de prietenie", () => {
     await assertFails(
       setDoc(
         doc(anonymous.firestore(), "friendRequests", request.id),
+        request,
+      ),
+    );
+  });
+
+  test("o cerere cu ID sau structură falsificată este refuzată", async () => {
+    const alice = testEnv.authenticatedContext(ALICE_UID);
+    const request = { ...friendRequest(), injectedRole: "admin" };
+
+    await assertFails(
+      setDoc(
+        doc(alice.firestore(), "friendRequests", "id-falsificat"),
         request,
       ),
     );
@@ -321,9 +343,60 @@ describe("Regulile cererii de prietenie", () => {
 
     await assertFails(getDocs(otherUsersQuery));
   });
+
+  test("participanții pot șterge cererea, dar un utilizator străin nu", async () => {
+    const request = friendRequest();
+    await seedDocument("friendRequests", request.id, request);
+    const outsider = testEnv.authenticatedContext(OUTSIDER_UID);
+
+    await assertFails(
+      deleteDoc(doc(outsider.firestore(), "friendRequests", request.id)),
+    );
+
+    const bob = testEnv.authenticatedContext(BOB_UID);
+    await assertSucceeds(
+      deleteDoc(doc(bob.firestore(), "friendRequests", request.id)),
+    );
+  });
 });
 
 describe("Regulile listei de prieteni", () => {
+  test("receiverul acceptă atomic cererea și creează prietenia", async () => {
+    const request = friendRequest();
+    await seedDocument("friendRequests", request.id, request);
+    const bob = testEnv.authenticatedContext(BOB_UID);
+    const firestore = bob.firestore();
+    const requestRef = doc(firestore, "friendRequests", request.id);
+    const friendshipRef = doc(firestore, "friendships", request.id);
+
+    await assertSucceeds(
+      runTransaction(firestore, async (transaction) => {
+        const requestSnapshot = await transaction.get(requestRef);
+
+        expect(requestSnapshot.exists()).toBe(true);
+
+        transaction.set(friendshipRef, friendship());
+        transaction.delete(requestRef);
+      }),
+    );
+
+    expect((await getDoc(requestRef)).exists()).toBe(false);
+    expect((await getDoc(friendshipRef)).exists()).toBe(true);
+  });
+
+  test("un participant nu poate crea direct o prietenie", async () => {
+    const request = friendRequest();
+    await seedDocument("friendRequests", request.id, request);
+    const bob = testEnv.authenticatedContext(BOB_UID);
+
+    await assertFails(
+      setDoc(
+        doc(bob.firestore(), "friendships", request.id),
+        friendship(),
+      ),
+    );
+  });
+
   test("un participant poate lista prieteniile care îl conțin", async () => {
     const data = friendship();
     await seedDocument("friendships", data.id, data);
@@ -350,9 +423,107 @@ describe("Regulile listei de prieteni", () => {
 
     await assertFails(getDocs(otherUserFriendsQuery));
   });
+
+  test("numai participanții pot elimina prietenia", async () => {
+    const data = friendship();
+    await seedDocument("friendships", data.id, data);
+    const outsider = testEnv.authenticatedContext(OUTSIDER_UID);
+
+    await assertFails(
+      deleteDoc(doc(outsider.firestore(), "friendships", data.id)),
+    );
+
+    const alice = testEnv.authenticatedContext(ALICE_UID);
+    await assertSucceeds(
+      deleteDoc(doc(alice.firestore(), "friendships", data.id)),
+    );
+  });
 });
 
 describe("Regulile managerului", () => {
+  test("managerul acceptă atomic cererea și creează relația", async () => {
+    const data = managerRequest();
+    await seedDocument("managerRequests", data.id, data);
+    await seedDocument("friendships", friendship().id, friendship());
+    const bob = testEnv.authenticatedContext(BOB_UID);
+    const firestore = bob.firestore();
+    const requestRef = doc(firestore, "managerRequests", data.id);
+    const relationshipRef = doc(
+      firestore,
+      "managerRelationships",
+      data.ownerId,
+    );
+
+    await assertSucceeds(
+      runTransaction(firestore, async (transaction) => {
+        const requestSnapshot = await transaction.get(requestRef);
+        const relationshipSnapshot = await transaction.get(relationshipRef);
+
+        expect(requestSnapshot.exists()).toBe(true);
+        expect(relationshipSnapshot.exists()).toBe(false);
+
+        transaction.set(relationshipRef, managerRelationship());
+        transaction.delete(requestRef);
+      }),
+    );
+
+    expect((await getDoc(requestRef)).exists()).toBe(false);
+    expect((await getDoc(relationshipRef)).exists()).toBe(true);
+  });
+
+  test("ownerul nu poate crea direct relația de manager", async () => {
+    const data = managerRequest();
+    await seedDocument("managerRequests", data.id, data);
+    await seedDocument("friendships", friendship().id, friendship());
+    const alice = testEnv.authenticatedContext(ALICE_UID);
+
+    await assertFails(
+      setDoc(
+        doc(alice.firestore(), "managerRelationships", ALICE_UID),
+        managerRelationship(),
+      ),
+    );
+  });
+
+  test("managerul nu poate crea relația fără să consume cererea", async () => {
+    const data = managerRequest();
+    await seedDocument("managerRequests", data.id, data);
+    await seedDocument("friendships", friendship().id, friendship());
+    const bob = testEnv.authenticatedContext(BOB_UID);
+
+    await assertFails(
+      setDoc(
+        doc(bob.firestore(), "managerRelationships", ALICE_UID),
+        managerRelationship(),
+      ),
+    );
+  });
+
+  test("ownerul nu poate propune ca manager o persoană care nu este prieten", async () => {
+    const data = managerRequest();
+    const alice = testEnv.authenticatedContext(ALICE_UID);
+
+    await assertFails(
+      setDoc(
+        doc(alice.firestore(), "managerRequests", data.id),
+        data,
+      ),
+    );
+  });
+
+  test("o propunere de manager cu structură falsificată este refuzată", async () => {
+    const data = { ...managerRequest(), extraPermission: true };
+    await seedDocument("friendships", friendship().id, friendship());
+    const alice = testEnv.authenticatedContext(ALICE_UID);
+
+    await assertFails(
+      setDoc(
+        doc(alice.firestore(), "managerRequests", data.id),
+        data,
+      ),
+    );
+  });
+
   test("managerul poate lista cererile primite", async () => {
     const data = managerRequest();
     await seedDocument("managerRequests", data.id, data);
@@ -416,5 +587,57 @@ describe("Regulile managerului", () => {
     const snapshot = await assertSucceeds(getDocs(relationshipsQuery));
 
     expect(snapshot.docs).toHaveLength(1);
+  });
+
+  test("managerul poate lista profilurile pe care le gestionează", async () => {
+    await seedDocument(
+      "managerRelationships",
+      ALICE_UID,
+      managerRelationship(),
+    );
+    const bob = testEnv.authenticatedContext(BOB_UID);
+    const managedProfilesQuery = query(
+      collection(bob.firestore(), "managerRelationships"),
+      where("managerId", "==", BOB_UID),
+    );
+
+    const snapshot = await assertSucceeds(getDocs(managedProfilesQuery));
+
+    expect(snapshot.docs).toHaveLength(1);
+  });
+
+  test("un utilizator nu poate lista profilurile gestionate de altcineva", async () => {
+    await seedDocument(
+      "managerRelationships",
+      ALICE_UID,
+      managerRelationship(),
+    );
+    const outsider = testEnv.authenticatedContext(OUTSIDER_UID);
+    const managedProfilesQuery = query(
+      collection(outsider.firestore(), "managerRelationships"),
+      where("managerId", "==", BOB_UID),
+    );
+
+    await assertFails(getDocs(managedProfilesQuery));
+  });
+
+  test("numai ownerul sau managerul pot elimina relația", async () => {
+    await seedDocument(
+      "managerRelationships",
+      ALICE_UID,
+      managerRelationship(),
+    );
+    const outsider = testEnv.authenticatedContext(OUTSIDER_UID);
+
+    await assertFails(
+      deleteDoc(
+        doc(outsider.firestore(), "managerRelationships", ALICE_UID),
+      ),
+    );
+
+    const bob = testEnv.authenticatedContext(BOB_UID);
+    await assertSucceeds(
+      deleteDoc(doc(bob.firestore(), "managerRelationships", ALICE_UID)),
+    );
   });
 });

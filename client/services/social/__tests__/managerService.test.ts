@@ -4,6 +4,7 @@ import {
   acceptManagerRequest,
   declineManagerRequest,
   getIncomingManagerRequests,
+  getManagedProfiles,
   getManagerRelationship,
   getOutgoingManagerRequests,
   isManagerForUser,
@@ -192,19 +193,29 @@ describe("managerService", () => {
 
   describe("acceptManagerRequest", () => {
     it("should throw REQUEST_NOT_FOUND if request doc does not exist", async () => {
-      mockGetDoc.mockResolvedValueOnce({ exists: () => false });
+      mockRunTransaction.mockImplementationOnce(async (db: any, cb: any) => {
+        await cb({
+          get: jest.fn().mockResolvedValueOnce({ exists: () => false }),
+        });
+      });
+
       await expect(acceptManagerRequest("req123", "user1")).rejects.toThrow(
-        "REQUEST_NOT_FOUND"
+      "REQUEST_NOT_FOUND"
       );
     });
 
     it("should throw UNAUTHORIZED if currentUid is not managerId", async () => {
-      mockGetDoc.mockResolvedValueOnce({
-        exists: () => true,
-        data: () => ({
-          ownerId: "owner1",
-          managerId: "mgr1",
-        }),
+      mockRunTransaction.mockImplementationOnce(async (db: any, cb: any) => {
+        await cb({
+          get: jest.fn().mockResolvedValueOnce({
+            exists: () => true,
+            data: () => ({
+              ownerId: "owner1",
+              managerId: "mgr1",
+              status: "pending",
+            }),
+          }),
+        });
       });
 
       await expect(
@@ -212,31 +223,53 @@ describe("managerService", () => {
       ).rejects.toThrow("UNAUTHORIZED");
     });
 
-    it("should run transaction to accept request when authorized", async () => {
-      mockGetDoc.mockResolvedValueOnce({
-        exists: () => true,
-        data: () => ({
-          ownerId: "owner1",
-          ownerUsername: "owner1_name",
-          managerId: "mgr1",
-          managerUsername: "mgr1_name",
-          status: "pending",
-        }),
+    it("should reject a request that is no longer pending", async () => {
+      mockRunTransaction.mockImplementationOnce(async (db: any, cb: any) => {
+        await cb({
+          get: jest.fn().mockResolvedValueOnce({
+            exists: () => true,
+            data: () => ({
+              ownerId: "owner1",
+              managerId: "mgr1",
+              status: "accepted",
+            }),
+          }),
+        });
       });
 
+      await expect(
+        acceptManagerRequest("owner1_mgr1", "mgr1"),
+      ).rejects.toThrow("REQUEST_NOT_PENDING");
+    });
+
+    it("should run transaction to accept request when authorized", async () => {
       mockRunTransaction.mockImplementationOnce(async (db: any, cb: any) => {
         const transactionMock = {
-          get: jest.fn().mockResolvedValue({ exists: () => false }),
+          get: jest
+            .fn()
+            .mockResolvedValueOnce({
+              exists: () => true,
+              data: () => ({
+                ownerId: "owner1",
+                ownerUsername: "owner1_name",
+                managerId: "mgr1",
+                managerUsername: "mgr1_name",
+                status: "pending",
+              }),
+            })
+            .mockResolvedValueOnce({ exists: () => false }),
           set: jest.fn(),
           delete: jest.fn(),
         };
         await cb(transactionMock);
+        expect(transactionMock.get).toHaveBeenCalledTimes(2);
         expect(transactionMock.set).toHaveBeenCalled();
         expect(transactionMock.delete).toHaveBeenCalled();
       });
 
       await acceptManagerRequest("owner1_mgr1", "mgr1");
       expect(mockRunTransaction).toHaveBeenCalled();
+      expect(mockGetDoc).not.toHaveBeenCalled();
     });
   });
 
@@ -302,6 +335,49 @@ describe("managerService", () => {
 
       await expect(getManagerRelationship("owner1")).rejects.toThrow(
         "permission-denied"
+      );
+    });
+  });
+
+  describe("getManagedProfiles", () => {
+    it("fetches and sorts profiles managed by the current user", async () => {
+      mockGetDocs.mockResolvedValueOnce({
+        docs: [
+          {
+            data: () => ({
+              ownerId: "older-owner",
+              ownerUsername: "older_owner",
+              managerId: "manager1",
+              managerUsername: "manager_user",
+              createdAt: "2026-08-12T10:00:00.000Z",
+            }),
+          },
+          {
+            data: () => ({
+              ownerId: "newer-owner",
+              ownerUsername: "newer_owner",
+              managerId: "manager1",
+              managerUsername: "manager_user",
+              createdAt: "2026-08-13T10:00:00.000Z",
+            }),
+          },
+        ],
+      });
+
+      const relationships = await getManagedProfiles("manager1");
+
+      expect(mockWhere).toHaveBeenCalledWith("managerId", "==", "manager1");
+      expect(relationships.map((relationship) => relationship.ownerId)).toEqual([
+        "newer-owner",
+        "older-owner",
+      ]);
+    });
+
+    it("propagates Firestore errors", async () => {
+      mockGetDocs.mockRejectedValueOnce(new Error("permission-denied"));
+
+      await expect(getManagedProfiles("manager1")).rejects.toThrow(
+        "permission-denied",
       );
     });
   });

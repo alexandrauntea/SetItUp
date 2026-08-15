@@ -1,7 +1,14 @@
 import { db } from "@/services/firebase";
 import { areFriends } from "@/services/social/friendshipService";
-import { createManagerRequestId } from "@/services/social/socialIds";
-import { ManagerRelationship, ManagerRequest } from "@/types/social";
+import {
+  createManagerRequestId,
+  createPairId,
+} from "@/services/social/socialIds";
+import type {
+  Friendship,
+  ManagerRelationship,
+  ManagerRequest,
+} from "@/types/social";
 import {
   collection,
   deleteDoc,
@@ -16,24 +23,39 @@ import {
 
 const MANAGER_REQUESTS_COLLECTION = "managerRequests";
 const MANAGER_RELATIONSHIPS_COLLECTION = "managerRelationships";
+const FRIENDSHIPS_COLLECTION = "friendships";
 
-async function getUsernameForUid(uid: string): Promise<string> {
-  try {
-    const publicRef = doc(db, "publicProfiles", uid);
-    const publicSnap = await getDoc(publicRef);
-    if (publicSnap.exists() && publicSnap.data()?.username) {
-      return publicSnap.data().username as string;
-    }
+async function getFriendUsernames(
+  ownerId: string,
+  managerId: string,
+): Promise<{ ownerUsername: string; managerUsername: string }> {
+  const friendshipRef = doc(
+    db,
+    FRIENDSHIPS_COLLECTION,
+    createPairId(ownerId, managerId),
+  );
+  const friendshipSnapshot = await getDoc(friendshipRef);
 
-    const userRef = doc(db, "users", uid);
-    const userSnap = await getDoc(userRef);
-    if (userSnap.exists() && userSnap.data()?.username) {
-      return userSnap.data().username as string;
-    }
-  } catch (error) {
-    console.error("Error fetching username for uid:", uid, error);
+  if (!friendshipSnapshot.exists()) {
+    throw new Error("NOT_FRIENDS");
   }
-  return "Utilizator";
+
+  const friendship = friendshipSnapshot.data() as Friendship;
+  const ownerIndex = friendship.memberIds.indexOf(ownerId);
+  const managerIndex = friendship.memberIds.indexOf(managerId);
+  const ownerUsername = friendship.memberUsernames[ownerIndex];
+  const managerUsername = friendship.memberUsernames[managerIndex];
+
+  if (
+    ownerIndex === -1 ||
+    managerIndex === -1 ||
+    !ownerUsername?.trim() ||
+    !managerUsername?.trim()
+  ) {
+    throw new Error("INVALID_FRIENDSHIP_DATA");
+  }
+
+  return { ownerUsername, managerUsername };
 }
 
 export async function sendManagerRequest(
@@ -61,8 +83,10 @@ export async function sendManagerRequest(
     throw new Error("REQUEST_ALREADY_EXISTS");
   }
 
-  const ownerUsername = await getUsernameForUid(ownerId);
-  const managerUsername = await getUsernameForUid(managerId);
+  const { ownerUsername, managerUsername } = await getFriendUsernames(
+    ownerId,
+    managerId,
+  );
 
   const now = new Date().toISOString();
   const managerRequestData: ManagerRequest = {
@@ -125,26 +149,31 @@ export async function acceptManagerRequest(
   currentUid: string
 ): Promise<void> {
   const requestRef = doc(db, MANAGER_REQUESTS_COLLECTION, requestId);
-  const requestSnap = await getDoc(requestRef);
-
-  if (!requestSnap.exists()) {
-    throw new Error("REQUEST_NOT_FOUND");
-  }
-
-  const requestData = requestSnap.data() as ManagerRequest;
-
-  if (requestData.managerId !== currentUid) {
-    throw new Error("UNAUTHORIZED");
-  }
-
-  const relationshipRef = doc(
-    db,
-    MANAGER_RELATIONSHIPS_COLLECTION,
-    requestData.ownerId
-  );
 
   await runTransaction(db, async (transaction) => {
+    const requestSnapshot = await transaction.get(requestRef);
+
+    if (!requestSnapshot.exists()) {
+      throw new Error("REQUEST_NOT_FOUND");
+    }
+
+    const requestData = requestSnapshot.data() as ManagerRequest;
+
+    if (requestData.status !== "pending") {
+      throw new Error("REQUEST_NOT_PENDING");
+    }
+
+    if (requestData.managerId !== currentUid) {
+      throw new Error("UNAUTHORIZED");
+    }
+
+    const relationshipRef = doc(
+      db,
+      MANAGER_RELATIONSHIPS_COLLECTION,
+      requestData.ownerId,
+    );
     const relSnap = await transaction.get(relationshipRef);
+
     if (relSnap.exists()) {
       throw new Error("ALREADY_HAS_MANAGER");
     }
@@ -200,6 +229,23 @@ export async function getManagerRelationship(
   return {
     ...relSnap.data(),
   } as ManagerRelationship;
+}
+
+export async function getManagedProfiles(
+  managerId: string,
+): Promise<ManagerRelationship[]> {
+  const relationshipsRef = collection(db, MANAGER_RELATIONSHIPS_COLLECTION);
+  const relationshipsQuery = query(
+    relationshipsRef,
+    where("managerId", "==", managerId),
+  );
+  const snapshot = await getDocs(relationshipsQuery);
+
+  return snapshot.docs
+    .map((documentSnapshot) => documentSnapshot.data() as ManagerRelationship)
+    .sort((relationshipA, relationshipB) =>
+      relationshipB.createdAt.localeCompare(relationshipA.createdAt),
+    );
 }
 
 export async function isManagerForUser(

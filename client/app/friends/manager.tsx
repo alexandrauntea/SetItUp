@@ -7,6 +7,7 @@ import {
   acceptManagerRequest,
   declineManagerRequest,
   getIncomingManagerRequests,
+  getManagedProfiles,
   getManagerRelationship,
   getOutgoingManagerRequests,
   removeManager,
@@ -50,6 +51,9 @@ export default function ManagerScreen() {
   const [activeManager, setActiveManager] = useState<ManagerRelationship | null>(
     null
   );
+  const [managedProfiles, setManagedProfiles] = useState<ManagerRelationship[]>(
+    [],
+  );
   const [incomingRequests, setIncomingRequests] = useState<ManagerRequest[]>([]);
   const [outgoingRequests, setOutgoingRequests] = useState<ManagerRequest[]>([]);
   const [friends, setFriends] = useState<Friendship[]>([]);
@@ -68,9 +72,16 @@ export default function ManagerScreen() {
     }
     setErrorMessage(null);
 
-    const [managerRelResult, incomingResult, outgoingResult, friendsResult] =
+    const [
+      managerRelResult,
+      managedProfilesResult,
+      incomingResult,
+      outgoingResult,
+      friendsResult,
+    ] =
       await Promise.allSettled([
         getManagerRelationship(uid),
+        getManagedProfiles(uid),
         getIncomingManagerRequests(uid),
         getOutgoingManagerRequests(uid),
         getFriends(uid),
@@ -78,6 +89,9 @@ export default function ManagerScreen() {
 
     if (managerRelResult.status === "fulfilled") {
       setActiveManager(managerRelResult.value);
+    }
+    if (managedProfilesResult.status === "fulfilled") {
+      setManagedProfiles(managedProfilesResult.value);
     }
     if (incomingResult.status === "fulfilled") {
       setIncomingRequests(incomingResult.value);
@@ -91,6 +105,7 @@ export default function ManagerScreen() {
 
     const rejectedResult = [
       managerRelResult,
+      managedProfilesResult,
       incomingResult,
       outgoingResult,
       friendsResult,
@@ -201,8 +216,8 @@ export default function ManagerScreen() {
     }
   };
 
-  const handleRemoveManager = async () => {
-    if (!uid || !activeManager) return;
+  const handleRemoveManager = async (relationship: ManagerRelationship) => {
+    if (!uid) return;
 
     const confirmed = await requestConfirmation({
       title: "Confirmare",
@@ -214,9 +229,10 @@ export default function ManagerScreen() {
 
     if (!confirmed) return;
 
-    setActionLoadingId("remove-manager");
+    const loadingId = `remove-manager-${relationship.ownerId}`;
+    setActionLoadingId(loadingId);
     try {
-      await removeManager(activeManager.ownerId, uid);
+      await removeManager(relationship.ownerId, uid);
       showPlatformAlert("Succes", "Relația de manager a fost eliminată.");
       await loadData();
     } catch (error: any) {
@@ -292,8 +308,10 @@ export default function ManagerScreen() {
                 <ManagerCard
                   username={activeManager.managerUsername}
                   type="active_as_owner"
-                  onRemove={handleRemoveManager}
-                  loading={actionLoadingId === "remove-manager"}
+                  onRemove={() => handleRemoveManager(activeManager)}
+                  loading={
+                    actionLoadingId === `remove-manager-${activeManager.ownerId}`
+                  }
                 />
               ) : (
                 <View style={styles.emptyCard}>
@@ -301,6 +319,32 @@ export default function ManagerScreen() {
                     Nu ai niciun manager desemnat în acest moment.
                   </Text>
                 </View>
+              )}
+            </View>
+
+            <View style={styles.section}>
+              <Text style={styles.sectionTitle}>
+                Profiluri pentru care ești manager ({managedProfiles.length})
+              </Text>
+              {managedProfiles.length === 0 ? (
+                <View style={styles.emptyCard}>
+                  <Text style={styles.emptyText}>
+                    Nu ești manager pentru niciun profil în acest moment.
+                  </Text>
+                </View>
+              ) : (
+                managedProfiles.map((relationship) => (
+                  <ManagerCard
+                    key={relationship.ownerId}
+                    username={relationship.ownerUsername}
+                    type="active_as_manager"
+                    onRemove={() => handleRemoveManager(relationship)}
+                    loading={
+                      actionLoadingId ===
+                      `remove-manager-${relationship.ownerId}`
+                    }
+                  />
+                ))
               )}
             </View>
 
