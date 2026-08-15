@@ -13,7 +13,7 @@ Planul MVP este:
 3. feed, like/dislike și match;
 4. conversații, mesaje și block/unblock.
 
-În versiunea curentă sunt implementate autentificarea, profilul și majoritatea funcționalităților din Sprintul 2. Feedul și mesageria nu sunt încă implementate.
+În versiunea curentă sunt implementate autentificarea, profilul și funcționalitățile planificate pentru Sprintul 2. Închiderea sprintului mai necesită validarea manuală a fluxurilor sociale cu două conturi reale. Feedul și mesageria nu sunt încă implementate.
 
 ## 2. Tehnologii
 
@@ -317,9 +317,11 @@ Tranzacția înseamnă că ori reușesc ambele operații, ori nu se aplică nici
 1. ownerul alege un prieten;
 2. se creează `managerRequests/{ownerId}`;
 3. persoana propusă acceptă sau refuză;
-4. acceptarea creează `managerRelationships/{ownerId}`;
-5. `isManagerForUser(managerId, ownerId)` va controla accesul la feed și mesagerie în sprinturile următoare;
-6. oricare participant poate elimina relația.
+4. ID-ul cererii permite maximum o propunere activă pentru fiecare owner;
+5. acceptarea creează tranzacțional `managerRelationships/{ownerId}` și șterge cererea;
+6. managerul vede toate profilurile pe care le gestionează;
+7. `isManagerForUser(managerId, ownerId)` va controla accesul la feed și mesagerie în sprinturile următoare;
+8. oricare participant poate elimina relația.
 
 ## 12. Serviciile și funcțiile lor
 
@@ -441,18 +443,26 @@ Implementat:
 - căutare exactă și profil public;
 - trimitere, acceptare, refuz și anulare cereri;
 - listă și eliminare prieteni;
-- propunere, acceptare și eliminare manager;
-- navbar Profile/Friends.
+- o singură propunere activă de manager pentru fiecare profil;
+- acceptare tranzacțională și eliminare manager;
+- lista profilurilor pentru care utilizatorul este manager;
+- username-uri sociale disponibile și pentru profilurile private;
+- interfață socială în limba română și navbar Profil/Prieteni;
+- tratarea erorilor recuperabile fără ecranul roșu de dezvoltare.
+
+Verificat automat:
+
+- testele aplicației, verificarea TypeScript și lint trec;
+- regulile Firestore acoperă profilurile, prieteniile, cererile și relațiile de manager;
+- erorile serviciului manager sunt afișate explicit, nu transformate în liste goale;
+- regulile și indexurile au fost publicate cu succes în proiectul Firebase `setitup-84173` pe 15 august 2026.
 
 De verificat înainte de închiderea Sprintului 2:
 
-- regulile și indexurile sunt publicate;
-- inboxul funcționează cu două conturi reale;
-- acceptarea creează efectiv `friendships`;
-- fluxul manager funcționează după acceptarea prieteniei;
-- lista de prieteni și regulile Firestore au teste suficiente;
-- erorile serviciului manager nu sunt prezentate drept liste goale;
-- username-ul managerului este corect și pentru profil privat.
+- fluxul complet de prietenie funcționează cu două conturi reale;
+- după acceptare, prietenia apare pentru ambele conturi;
+- fluxul complet de manager funcționează după acceptarea prieteniei;
+- relația și lista profilurilor gestionate rămân corecte după închiderea și redeschiderea aplicației.
 
 Sprinturile următoare vor adăuga feedul, like/dislike, match, filtre, conversații, mesaje și block/unblock. Aceste funcții trebuie să folosească relația `managerRelationships/{ownerId}` pentru autorizarea managerului și să păstreze separarea dintre owner, manager și persoana din feed.
 
