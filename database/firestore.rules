@@ -429,6 +429,12 @@ service cloud.firestore {
         )
         && !exists(
           /databases/$(database)/documents/managerRelationships/$(request.resource.data.ownerId)
+        )
+        && !exists(
+          /databases/$(database)/documents/managerRoles/$(request.resource.data.ownerId)
+        )
+        && !exists(
+          /databases/$(database)/documents/managerRoles/$(request.resource.data.managerId)
         );
 
       allow update: if isMember(resource.data)
@@ -480,6 +486,18 @@ service cloud.firestore {
         && request.resource.data.managerUsername is string
         && request.resource.data.managerUsername.matches('^[a-z0-9_]{3,20}$')
         && request.resource.data.createdAt is string
+        && getAfter(
+          /databases/$(database)/documents/managerRoles/$(request.resource.data.ownerId)
+        ).data.role == 'owner'
+        && getAfter(
+          /databases/$(database)/documents/managerRoles/$(request.resource.data.ownerId)
+        ).data.counterpartId == request.resource.data.managerId
+        && getAfter(
+          /databases/$(database)/documents/managerRoles/$(request.resource.data.managerId)
+        ).data.role == 'manager'
+        && getAfter(
+          /databases/$(database)/documents/managerRoles/$(request.resource.data.managerId)
+        ).data.counterpartId == request.resource.data.ownerId
         && friendshipExists(
           request.resource.data.ownerId,
           request.resource.data.managerId
@@ -517,7 +535,69 @@ service cloud.firestore {
           )
         );
       allow update: if false;
-      allow delete: if isMember(resource.data);
+      allow delete: if isMember(resource.data)
+        && !existsAfter(
+          /databases/$(database)/documents/managerRoles/$(resource.data.ownerId)
+        )
+        && !existsAfter(
+          /databases/$(database)/documents/managerRoles/$(resource.data.managerId)
+        );
+    }
+
+    match /managerRoles/{uid} {
+      allow read: if isSignedIn() && request.auth.uid == uid;
+
+      allow create: if isSignedIn()
+        && request.resource.data.keys().hasOnly([
+          'uid',
+          'role',
+          'counterpartId',
+          'createdAt'
+        ])
+        && request.resource.data.keys().hasAll([
+          'uid',
+          'role',
+          'counterpartId',
+          'createdAt'
+        ])
+        && uid == request.resource.data.uid
+        && request.resource.data.createdAt is string
+        && (
+          (
+            request.resource.data.role == 'owner'
+            && request.auth.uid == request.resource.data.counterpartId
+            && getAfter(
+              /databases/$(database)/documents/managerRelationships/$(uid)
+            ).data.ownerId == uid
+            && getAfter(
+              /databases/$(database)/documents/managerRelationships/$(uid)
+            ).data.managerId == request.resource.data.counterpartId
+          )
+          || (
+            request.resource.data.role == 'manager'
+            && request.auth.uid == uid
+            && getAfter(
+              /databases/$(database)/documents/managerRelationships/$(request.resource.data.counterpartId)
+            ).data.ownerId == request.resource.data.counterpartId
+            && getAfter(
+              /databases/$(database)/documents/managerRelationships/$(request.resource.data.counterpartId)
+            ).data.managerId == uid
+          )
+        );
+
+      allow update: if false;
+
+      allow delete: if isSignedIn()
+        && (request.auth.uid == uid
+          || request.auth.uid == resource.data.counterpartId)
+        && (
+          (resource.data.role == 'owner' && !existsAfter(
+            /databases/$(database)/documents/managerRelationships/$(uid)
+          ))
+          || (resource.data.role == 'manager' && !existsAfter(
+            /databases/$(database)/documents/managerRelationships/$(resource.data.counterpartId)
+          ))
+        );
     }
   }
 }
