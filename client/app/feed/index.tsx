@@ -68,28 +68,6 @@ export default function FeedScreen() {
                   size={18}
                 />
               </Pressable>
-
-              <Pressable
-                accessibilityRole="button"
-                onPress={() => router.push("/matches")}
-                style={({ pressed }) => [
-                  styles.shortcut,
-                  pressed && styles.pressed,
-                ]}
-              >
-                <View style={styles.shortcutIcon}>
-                  <Ionicons color={COLORS.primary} name="heart-outline" size={23} />
-                </View>
-                <View style={styles.shortcutText}>
-                  <Text style={styles.shortcutLabel}>Match-uri</Text>
-                  <Text style={styles.shortcutDescription}>Vezi conexiunile</Text>
-                </View>
-                <Ionicons
-                  color={COLORS.textSecondary}
-                  name="chevron-forward"
-                  size={18}
-                />
-              </Pressable>
             </View>
 
             <View style={styles.sectionHeading}>
