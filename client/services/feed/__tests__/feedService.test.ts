@@ -1,0 +1,205 @@
+import type { FeedPreferences } from "@/types/feed";
+import type { PublicProfile } from "@/types/social";
+import { getFeed, matchesFeedPreferences } from "../feedService";
+
+jest.mock("@/services/firebase", () => ({ db: {} }));
+
+const mockGetDoc = jest.fn();
+const mockGetDocs = jest.fn();
+
+jest.mock("firebase/firestore", () => ({
+  collection: jest.fn((db: unknown, name: string) => `collection:${name}`),
+  doc: jest.fn((db: unknown, name: string, id: string) => `doc:${name}:${id}`),
+  getDoc: (...args: unknown[]) => mockGetDoc(...args),
+  getDocs: (...args: unknown[]) => mockGetDocs(...args),
+  where: jest.fn((field: string, operator: string, value: string) =>
+    `${field}:${operator}:${value}`,
+  ),
+  query: jest.fn((collectionReference: string, constraint: string) =>
+    `${collectionReference}|${constraint}`,
+  ),
+}));
+
+const preferences: FeedPreferences = {
+  ownerId: "owner",
+  minAge: 20,
+  maxAge: 35,
+  genders: ["female"],
+  interests: ["travel"],
+  updatedAt: "2026-08-15T10:00:00.000Z",
+};
+
+function profile(
+  uid: string,
+  overrides: Partial<PublicProfile> = {},
+): PublicProfile {
+  return {
+    uid,
+    username: uid,
+    firstName: uid,
+    lastName: "Test",
+    occupation: "Tester",
+    gender: "female",
+    description: "Profile",
+    interests: ["Travel"],
+    age: 25,
+    isPrivate: false,
+    updatedAt: "2026-08-15T10:00:00.000Z",
+    ...overrides,
+  };
+}
+
+function snapshot(data: unknown[]) {
+  return { docs: data.map((value) => ({ data: () => value })) };
+}
+
+describe("feedService", () => {
+  beforeEach(() => {
+    jest.clearAllMocks();
+  });
+
+  test("matches age, gender and at least one normalized interest", () => {
+    expect(matchesFeedPreferences(profile("candidate"), preferences)).toBe(true);
+    expect(matchesFeedPreferences(
+      profile("too-old", { age: 40 }),
+      preferences,
+    )).toBe(false);
+    expect(matchesFeedPreferences(
+      profile("other-interest", { interests: ["Music"] }),
+      preferences,
+    )).toBe(false);
+  });
+
+  test("only the active manager can request an owner's feed", async () => {
+    mockGetDoc.mockResolvedValueOnce({
+      exists: () => true,
+      data: () => ({ ownerId: "owner", managerId: "actual-manager" }),
+    });
+
+    await expect(getFeed({
+      ownerId: "owner",
+      actorId: "other-user",
+      preferences,
+    })).rejects.toThrow("FEED_MANAGER_ONLY");
+
+    expect(mockGetDocs).not.toHaveBeenCalled();
+  });
+
+  test("excludes ineligible profiles and keeps an 80/20 first page", async () => {
+    const preferred = Array.from({ length: 10 }, (_, index) =>
+      profile(`preferred-${index}`),
+    );
+    const random = Array.from({ length: 4 }, (_, index) =>
+      profile(`random-${index}`, { interests: ["Music"] }),
+    );
+    const excluded = [
+      profile("owner"),
+      profile("manager"),
+      profile("friend"),
+      profile("liked"),
+      profile("matched"),
+      profile("unmanaged"),
+      profile("same-manager"),
+      profile("private", { isPrivate: true }),
+    ];
+
+    mockGetDoc.mockImplementation(async (reference: string) => {
+      if (reference === "doc:managerRelationships:owner") {
+        return {
+          exists: () => true,
+          data: () => ({ ownerId: "owner", managerId: "manager" }),
+        };
+      }
+      if (reference === "doc:managerRelationships:unmanaged") {
+        return { exists: () => false };
+      }
+      const uid = reference.split(":").at(-1);
+      return {
+        exists: () => true,
+        data: () => ({
+          ownerId: uid,
+          managerId: uid === "same-manager" ? "manager" : `manager-${uid}`,
+        }),
+      };
+    });
+    mockGetDocs.mockImplementation(async (reference: string) => {
+      if (reference === "collection:publicProfiles") {
+        return snapshot([...preferred, ...random, ...excluded]);
+      }
+      if (reference === "collection:friendships|memberIds:array-contains:owner") {
+        return snapshot([{ memberIds: ["owner", "friend"] }]);
+      }
+      if (reference === "collection:reactions|ownerId:==:owner") {
+        return snapshot([{
+          ownerId: "owner",
+          targetId: "liked",
+          value: "like",
+        }]);
+      }
+      if (reference === "collection:matches|memberIds:array-contains:owner") {
+        return snapshot([{ memberIds: ["owner", "matched"] }]);
+      }
+      return snapshot([]);
+    });
+
+    const firstPage = await getFeed({
+      ownerId: "owner",
+      actorId: "manager",
+      preferences,
+      limit: 10,
+    });
+
+    expect(firstPage.profiles).toHaveLength(10);
+    expect(firstPage.profiles.filter((item) => item.matchesPreferences)).toHaveLength(8);
+    expect(firstPage.profiles.map((item) => item.uid)).not.toEqual(
+      expect.arrayContaining([
+        "owner",
+        "manager",
+        "friend",
+        "liked",
+        "matched",
+        "unmanaged",
+        "same-manager",
+        "private",
+      ]),
+    );
+    expect(firstPage.nextCursor).toMatch(/:10$/);
+
+    const secondPage = await getFeed({
+      ownerId: "owner",
+      actorId: "manager",
+      preferences,
+      limit: 10,
+      cursor: firstPage.nextCursor!,
+    });
+
+    expect(secondPage.profiles).toHaveLength(4);
+    expect(secondPage.nextCursor).toBeNull();
+    expect(new Set([
+      ...firstPage.profiles.map((item) => item.uid),
+      ...secondPage.profiles.map((item) => item.uid),
+    ])).toHaveProperty("size", 14);
+  });
+
+  test("rejects malformed cursors and unsafe page sizes", async () => {
+    await expect(getFeed({
+      ownerId: "owner",
+      actorId: "manager",
+      preferences,
+      limit: 0,
+    })).rejects.toThrow("INVALID_FEED_LIMIT");
+
+    mockGetDoc.mockResolvedValue({
+      exists: () => true,
+      data: () => ({ ownerId: "owner", managerId: "manager" }),
+    });
+    mockGetDocs.mockResolvedValue(snapshot([]));
+
+    await expect(getFeed({
+      ownerId: "owner",
+      actorId: "manager",
+      preferences,
+      cursor: "invalid",
+    })).rejects.toThrow("INVALID_FEED_CURSOR");
+  });
+});
