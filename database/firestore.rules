@@ -10,6 +10,23 @@ service cloud.firestore {
       return isSignedIn() && request.auth.uid == userId;
     }
 
+    function isActiveManager() {
+      return isSignedIn()
+        && exists(
+          /databases/$(database)/documents/managerRoles/$(request.auth.uid)
+        )
+        && get(
+          /databases/$(database)/documents/managerRoles/$(request.auth.uid)
+        ).data.role == 'manager';
+    }
+
+    function isActiveManagerFor(ownerId) {
+      return isActiveManager()
+        && get(
+          /databases/$(database)/documents/managerRoles/$(request.auth.uid)
+        ).data.counterpartId == ownerId;
+    }
+
     function isMember(data) {
       return isSignedIn()
         && data.memberIds is list
@@ -292,12 +309,12 @@ service cloud.firestore {
       allow get: if isSignedIn()
         && (!exists(
           /databases/$(database)/documents/friendships/$(friendshipId)
-        ) || isMember(resource.data));
+        ) || isMember(resource.data) || isActiveManager());
       // Lista de prieteni folosește `memberIds array-contains uid`.
       // Regula trebuie să exprime direct aceeași condiție pentru ca
       // Firestore să poată valida interogarea înainte de a o executa.
       allow list: if isSignedIn()
-        && request.auth.uid in resource.data.memberIds;
+        && (request.auth.uid in resource.data.memberIds || isActiveManager());
       allow create: if isMember(request.resource.data)
         && request.resource.data.keys().hasOnly([
           'id',
@@ -544,8 +561,24 @@ service cloud.firestore {
         );
     }
 
+    match /reactions/{reactionId} {
+      allow get, list: if isSignedIn()
+        && isActiveManagerFor(resource.data.ownerId);
+      allow create, update, delete: if false;
+    }
+
+    match /matches/{matchId} {
+      allow get, list: if isActiveManager()
+        && get(
+          /databases/$(database)/documents/managerRoles/$(request.auth.uid)
+        ).data.counterpartId in resource.data.memberIds;
+      allow create, update, delete: if false;
+    }
+
     match /managerRoles/{uid} {
-      allow read: if isSignedIn() && request.auth.uid == uid;
+      allow get: if isSignedIn()
+        && (request.auth.uid == uid || isActiveManager());
+      allow list: if false;
 
       allow create: if isSignedIn()
         && request.resource.data.keys().hasOnly([
