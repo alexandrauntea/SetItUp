@@ -83,7 +83,7 @@ export default function RecoverProfileScreen() {
       await refreshProfile(user.uid);
       router.replace("/profile/create");
     } catch (error) {
-      console.error("Profilul nu a putut fi recuperat:", error);
+      console.info("Profilul nu a putut fi recuperat:", error);
 
       if (error instanceof Error && error.message === "USERNAME_TAKEN") {
         setFormError("Numele de utilizator este deja folosit.");

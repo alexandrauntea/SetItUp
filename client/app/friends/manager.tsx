@@ -115,7 +115,7 @@ export default function ManagerScreen() {
     ].find((result) => result.status === "rejected");
 
     if (rejectedResult?.status === "rejected") {
-      console.error("Error loading manager data:", rejectedResult.reason);
+      console.info("Datele managerului nu au putut fi încărcate:", rejectedResult.reason);
       setErrorMessage(
         "Unele date nu au putut fi încărcate. Trage în jos pentru a reîncerca."
       );
@@ -158,7 +158,7 @@ export default function ManagerScreen() {
       setSelectedFriend(null);
       await loadData();
     } catch (error: any) {
-      console.error("Error sending manager request:", error);
+      console.info("Cererea de manager nu a putut fi trimisă:", error);
       let msg = "Nu s-a putut trimite cererea.";
       if (error.message === "ALREADY_HAS_MANAGER") {
         msg = "Ai deja un manager activ sau definit.";
@@ -182,7 +182,7 @@ export default function ManagerScreen() {
       showPlatformAlert("Succes", "Ai acceptat rolul de manager.");
       await loadData();
     } catch (error: any) {
-      console.error("Error accepting manager request:", error);
+      console.info("Cererea de manager nu a putut fi acceptată:", error);
       showPlatformAlert("Eroare", "Nu s-a putut accepta cererea.");
     } finally {
       setActionLoadingId(null);
@@ -212,7 +212,7 @@ export default function ManagerScreen() {
       await declineManagerRequest(requestId, uid);
       await loadData();
     } catch (error: any) {
-      console.error("Error declining/canceling request:", error);
+      console.info("Cererea de manager nu a putut fi anulată:", error);
       showPlatformAlert("Eroare", "A apărut o problemă la procesarea cererii.");
     } finally {
       setActionLoadingId(null);
@@ -239,7 +239,7 @@ export default function ManagerScreen() {
       showPlatformAlert("Succes", "Relația de manager a fost eliminată.");
       await loadData();
     } catch (error: any) {
-      console.error("Error removing manager:", error);
+      console.info("Managerul nu a putut fi eliminat:", error);
       showPlatformAlert("Eroare", "Nu s-a putut elimina managerul.");
     } finally {
       setActionLoadingId(null);

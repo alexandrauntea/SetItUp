@@ -120,7 +120,7 @@ export default function EditProfileScreen() {
         },
       ]);
     } catch (error) {
-      console.error("Profilul nu a putut fi actualizat:", error);
+      console.info("Profilul nu a putut fi actualizat:", error);
       setFormError(
         getFirebaseErrorMessage(
           error,

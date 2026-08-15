@@ -60,7 +60,7 @@ describe("Ecranul de autentificare", () => {
   });
 
   test("afișează mesajul Firebase când autentificarea eșuează", async () => {
-    const consoleSpy = jest.spyOn(console, "error").mockImplementation();
+    const consoleSpy = jest.spyOn(console, "info").mockImplementation();
     mockedLoginUser.mockRejectedValue({ code: "auth/invalid-credential" });
     await render(<LoginScreen />);
 

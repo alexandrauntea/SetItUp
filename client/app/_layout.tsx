@@ -29,7 +29,7 @@ function RootLayoutNav() {
     try {
       await logoutUser();
     } catch (error) {
-      console.error("Deconectarea a eșuat:", error);
+      console.info("Deconectarea a eșuat:", error);
     }
   }
 

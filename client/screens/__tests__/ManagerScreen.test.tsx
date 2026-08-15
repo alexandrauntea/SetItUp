@@ -149,8 +149,8 @@ describe("Ecranul managerului", () => {
   });
 
   test("afișează eroare când una dintre surse nu poate fi încărcată", async () => {
-    const consoleErrorSpy = jest
-      .spyOn(console, "error")
+    const consoleInfoSpy = jest
+      .spyOn(console, "info")
       .mockImplementation(() => undefined);
     mockedManagedProfiles.mockRejectedValueOnce(new Error("permission-denied"));
     await render(<ManagerScreen />);
@@ -160,7 +160,7 @@ describe("Ecranul managerului", () => {
         "Unele date nu au putut fi încărcate. Trage în jos pentru a reîncerca.",
       ),
     ).toBeTruthy();
-    expect(consoleErrorSpy).toHaveBeenCalled();
-    consoleErrorSpy.mockRestore();
+    expect(consoleInfoSpy).toHaveBeenCalled();
+    consoleInfoSpy.mockRestore();
   });
 });

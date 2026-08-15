@@ -81,8 +81,8 @@ describe("Ecranul listei de prieteni", () => {
   });
 
   test("afișează eroarea de încărcare și permite reîncercarea", async () => {
-    const consoleErrorSpy = jest
-      .spyOn(console, "error")
+    const consoleInfoSpy = jest
+      .spyOn(console, "info")
       .mockImplementation(() => undefined);
     mockedGetFriends
       .mockRejectedValueOnce(new Error("unavailable"))
@@ -93,7 +93,7 @@ describe("Ecranul listei de prieteni", () => {
 
     await waitFor(() => expect(mockedGetFriends).toHaveBeenCalledTimes(2));
     expect(await screen.findByText("Nu ai prieteni încă.")).toBeTruthy();
-    expect(consoleErrorSpy).toHaveBeenCalled();
-    consoleErrorSpy.mockRestore();
+    expect(consoleInfoSpy).toHaveBeenCalled();
+    consoleInfoSpy.mockRestore();
   });
 });

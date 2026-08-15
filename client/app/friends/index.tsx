@@ -62,7 +62,7 @@ export default function FriendsScreen() {
     try {
       setFriends(await getFriends(user.uid));
     } catch (error) {
-      console.error("Nu am putut încărca lista de prieteni:", error);
+      console.info("Nu am putut încărca lista de prieteni:", error);
       setErrorMessage("Lista de prieteni nu a putut fi încărcată.");
     } finally {
       setIsLoading(false);
@@ -103,7 +103,7 @@ export default function FriendsScreen() {
         current.filter((item) => item.id !== friendship.id),
       );
     } catch (error) {
-      console.error("Prietenul nu a putut fi eliminat:", error);
+      console.info("Prietenul nu a putut fi eliminat:", error);
       showPlatformAlert("Eroare", "Prietenul nu a putut fi eliminat.");
     } finally {
       setRemovingUid(null);

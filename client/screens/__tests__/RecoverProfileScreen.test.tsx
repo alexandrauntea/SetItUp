@@ -137,7 +137,7 @@ describe("Ecranul de recuperare a profilului", () => {
   });
 
   test("afișează un mesaj clar când username-ul este deja folosit", async () => {
-    const consoleSpy = jest.spyOn(console, "error").mockImplementation();
+    const consoleSpy = jest.spyOn(console, "info").mockImplementation();
     mockedCreateUserProfile.mockRejectedValue(new Error("USERNAME_TAKEN"));
     await render(<RecoverProfileScreen />);
     await completeValidForm();
@@ -153,7 +153,7 @@ describe("Ecranul de recuperare a profilului", () => {
   });
 
   test("afișează eroarea Firebase și rămâne pe ecran", async () => {
-    const consoleSpy = jest.spyOn(console, "error").mockImplementation();
+    const consoleSpy = jest.spyOn(console, "info").mockImplementation();
     mockedCreateUserProfile.mockRejectedValue(
       Object.assign(new Error("network"), {
         code: "auth/network-request-failed",

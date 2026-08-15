@@ -107,7 +107,7 @@ export default function FriendRequestsScreen() {
       setIncomingRequests(incoming);
       setOutgoingRequests(outgoing);
     } catch (error) {
-      console.error("Nu am putut încărca cererile de prietenie:", error);
+      console.info("Nu am putut încărca cererile de prietenie:", error);
       setErrorMessage(getRequestErrorMessage(error));
     } finally {
       setIsLoading(false);

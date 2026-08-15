@@ -81,7 +81,7 @@ export function ProfileProvider({ children }: ProfileProviderProps) {
         return;
       }
 
-      console.error("Profilul nu a putut fi încărcat:", error);
+      console.info("Profilul nu a putut fi încărcat:", error);
       setProfile(null);
       setLoadedProfileUid(profileUid);
       setProfileError("Profilul nu a putut fi încărcat.");
