@@ -57,7 +57,7 @@ const styles = StyleSheet.create({
   containerCompact: { paddingHorizontal: 14 },
   content: { width: "100%", maxWidth: 430, alignSelf: "center", gap: 22 },
   headerCard: {
-    minHeight: 132,
+    minHeight: 104,
     justifyContent: "center",
     padding: 24,
     borderRadius: 24,
@@ -67,7 +67,7 @@ const styles = StyleSheet.create({
     shadowRadius: 16,
     elevation: 4,
   },
-  headerCardCompact: { minHeight: 120, padding: 18, borderRadius: 20 },
+  headerCardCompact: { minHeight: 96, padding: 18, borderRadius: 20 },
   title: { color: COLORS.background, fontSize: 24, fontWeight: "bold" },
   emptyCard: { alignItems: "center", gap: 10, padding: 28, borderWidth: 1, borderColor: COLORS.border, borderRadius: 20, backgroundColor: COLORS.background },
   emptyIcon: {
