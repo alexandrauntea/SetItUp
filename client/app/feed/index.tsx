@@ -37,9 +37,6 @@ export default function FeedScreen() {
               style={[styles.headerCard, isCompact && styles.headerCardCompact]}
             >
               <Text style={styles.title}>Feed</Text>
-              <Text style={styles.subtitle}>
-                Descoperă profiluri potrivite pentru ownerul gestionat
-              </Text>
             </LinearGradient>
 
             <View style={styles.shortcuts}>
@@ -60,7 +57,6 @@ export default function FeedScreen() {
                 </View>
                 <View style={styles.shortcutText}>
                   <Text style={styles.shortcutLabel}>Filtre</Text>
-                  <Text style={styles.shortcutDescription}>Preferințe feed</Text>
                 </View>
                 <Ionicons
                   color={COLORS.textSecondary}
@@ -72,10 +68,6 @@ export default function FeedScreen() {
 
             <View style={styles.sectionHeading}>
               <Text style={styles.sectionTitle}>Profiluri recomandate</Text>
-              <View style={styles.liveBadge}>
-                <View style={styles.liveDot} />
-                <Text style={styles.liveText}>Feed activ</Text>
-              </View>
             </View>
             <FeedEmptyState message="Scheletul este pregătit. Profilurile vor fi conectate prin serviciul de feed." />
           </View>
@@ -93,7 +85,6 @@ const styles = StyleSheet.create({
   headerCard: {
     minHeight: 132,
     justifyContent: "center",
-    gap: 7,
     padding: 24,
     borderRadius: 24,
     shadowColor: COLORS.primaryPressed,
@@ -104,13 +95,6 @@ const styles = StyleSheet.create({
   },
   headerCardCompact: { minHeight: 120, padding: 18, borderRadius: 20 },
   title: { color: COLORS.background, fontSize: 24, fontWeight: "bold" },
-  subtitle: {
-    maxWidth: 310,
-    color: COLORS.background,
-    fontSize: 14,
-    lineHeight: 20,
-    opacity: 0.88,
-  },
   shortcuts: { gap: 10 },
   shortcut: {
     minHeight: 76,
@@ -132,26 +116,13 @@ const styles = StyleSheet.create({
     borderRadius: 14,
     backgroundColor: COLORS.primarySoft,
   },
-  shortcutText: { flex: 1, gap: 2 },
+  shortcutText: { flex: 1 },
   shortcutLabel: { color: COLORS.text, fontSize: 15, fontWeight: "800" },
-  shortcutDescription: { color: COLORS.textSecondary, fontSize: 13 },
   sectionHeading: {
     flexDirection: "row",
     alignItems: "center",
-    justifyContent: "space-between",
     gap: 10,
   },
   sectionTitle: { flex: 1, color: COLORS.text, fontSize: 21, fontWeight: "800" },
-  liveBadge: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 6,
-    paddingHorizontal: 10,
-    paddingVertical: 5,
-    borderRadius: 14,
-    backgroundColor: COLORS.primarySoft,
-  },
-  liveDot: { width: 7, height: 7, borderRadius: 4, backgroundColor: COLORS.primary },
-  liveText: { color: COLORS.primary, fontSize: 12, fontWeight: "800" },
   pressed: { opacity: 0.65 },
 });

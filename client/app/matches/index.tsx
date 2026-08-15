@@ -33,15 +33,7 @@ export default function MatchesScreen() {
               style={[styles.headerCard, isCompact && styles.headerCardCompact]}
             >
               <Text style={styles.title}>Match-uri</Text>
-              <Text style={styles.subtitle}>
-                Conexiunile create din aprecieri reciproce
-              </Text>
             </LinearGradient>
-
-            <View style={styles.sectionHeading}>
-              <Text style={styles.sectionTitle}>Conexiuni active</Text>
-              <Text style={styles.count}>0</Text>
-            </View>
 
             <View style={styles.emptyCard}>
               <View style={styles.emptyIcon}>
@@ -67,7 +59,6 @@ const styles = StyleSheet.create({
   headerCard: {
     minHeight: 132,
     justifyContent: "center",
-    gap: 7,
     padding: 24,
     borderRadius: 24,
     shadowColor: COLORS.primaryPressed,
@@ -78,19 +69,6 @@ const styles = StyleSheet.create({
   },
   headerCardCompact: { minHeight: 120, padding: 18, borderRadius: 20 },
   title: { color: COLORS.background, fontSize: 24, fontWeight: "bold" },
-  subtitle: { color: COLORS.background, fontSize: 14, opacity: 0.88 },
-  sectionHeading: { flexDirection: "row", alignItems: "center", gap: 9 },
-  sectionTitle: { color: COLORS.text, fontSize: 21, fontWeight: "800" },
-  count: {
-    minWidth: 26,
-    paddingHorizontal: 8,
-    paddingVertical: 3,
-    textAlign: "center",
-    color: COLORS.primary,
-    fontWeight: "800",
-    borderRadius: 13,
-    backgroundColor: COLORS.primarySoft,
-  },
   emptyCard: { alignItems: "center", gap: 10, padding: 28, borderWidth: 1, borderColor: COLORS.border, borderRadius: 20, backgroundColor: COLORS.background },
   emptyIcon: {
     width: 64,
