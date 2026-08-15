@@ -61,6 +61,20 @@ export interface ManagerRelationship {
   createdAt: string;
 }
 
+export type ManagerRole =
+  | {
+      uid: string;
+      role: "owner";
+      counterpartId: string;
+      createdAt: string;
+    }
+  | {
+      uid: string;
+      role: "manager";
+      counterpartId: string;
+      createdAt: string;
+    };
+
 export type UserSearchResult = {
   uid: string;
   username: string;
