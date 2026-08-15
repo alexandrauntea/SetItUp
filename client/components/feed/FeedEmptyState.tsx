@@ -26,7 +26,7 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: COLORS.border,
     borderRadius: 20,
-    backgroundColor: COLORS.surface,
+    backgroundColor: COLORS.background,
   },
   title: { color: COLORS.text, fontSize: 20, fontWeight: "800" },
   message: { color: COLORS.textSecondary, textAlign: "center", lineHeight: 21 },

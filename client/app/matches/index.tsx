@@ -69,7 +69,7 @@ const styles = StyleSheet.create({
   },
   headerCardCompact: { minHeight: 96, padding: 18, borderRadius: 20 },
   title: { color: COLORS.background, fontSize: 24, fontWeight: "bold" },
-  emptyCard: { alignItems: "center", gap: 10, padding: 28, borderWidth: 1, borderColor: COLORS.border, borderRadius: 20, backgroundColor: COLORS.surface },
+  emptyCard: { alignItems: "center", gap: 10, padding: 28, borderWidth: 1, borderColor: COLORS.border, borderRadius: 20, backgroundColor: COLORS.background },
   emptyIcon: {
     width: 64,
     height: 64,
