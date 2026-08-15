@@ -12,7 +12,7 @@ jest.mock("firebase/firestore", () => ({
   doc: jest.fn((db: unknown, name: string, id: string) => `doc:${name}:${id}`),
   getDoc: (...args: unknown[]) => mockGetDoc(...args),
   getDocs: (...args: unknown[]) => mockGetDocs(...args),
-  where: jest.fn((field: string, operator: string, value: string) =>
+  where: jest.fn((field: string, operator: string, value: string | boolean) =>
     `${field}:${operator}:${value}`,
   ),
   query: jest.fn((collectionReference: string, constraint: string) =>
@@ -123,7 +123,7 @@ describe("feedService", () => {
       };
     });
     mockGetDocs.mockImplementation(async (reference: string) => {
-      if (reference === "collection:publicProfiles") {
+      if (reference === "collection:publicProfiles|isPrivate:==:false") {
         return snapshot([...preferred, ...random, ...excluded]);
       }
       if (reference === "collection:friendships|memberIds:array-contains:owner") {

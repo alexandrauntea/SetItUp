@@ -205,7 +205,10 @@ export const getFeed: GetFeed = async (request) => {
 
   const [profilesSnapshot, friendshipsSnapshot, reactionsSnapshot, matchesSnapshot] =
     await Promise.all([
-      getDocs(collection(db, PUBLIC_PROFILES_COLLECTION)),
+      getDocs(query(
+        collection(db, PUBLIC_PROFILES_COLLECTION),
+        where("isPrivate", "==", false),
+      )),
       getDocs(query(
         collection(db, FRIENDSHIPS_COLLECTION),
         where("memberIds", "array-contains", request.ownerId),
