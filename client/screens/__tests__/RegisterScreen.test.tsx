@@ -122,7 +122,7 @@ describe("Ecranul de înregistrare", () => {
   });
 
   test("afișează eroarea și șterge contul Auth când username-ul este ocupat", async () => {
-    const consoleSpy = jest.spyOn(console, "error").mockImplementation();
+    const consoleSpy = jest.spyOn(console, "info").mockImplementation();
     mockedRegisterUser.mockResolvedValue({ uid: "user-123" } as never);
     mockedCreateUserProfile.mockRejectedValue(new Error("USERNAME_TAKEN"));
     await render(<RegisterScreen />);
@@ -149,7 +149,7 @@ describe("Ecranul de înregistrare", () => {
   });
 
   test("deconectează contul incomplet dacă ștergerea lui eșuează", async () => {
-    const consoleSpy = jest.spyOn(console, "error").mockImplementation();
+    const consoleSpy = jest.spyOn(console, "info").mockImplementation();
     mockedRegisterUser.mockResolvedValue({ uid: "user-123" } as never);
     mockedCreateUserProfile.mockRejectedValue(new Error("firestore-error"));
     mockedDeleteAccount.mockRejectedValue(new Error("delete-error"));

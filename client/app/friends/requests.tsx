@@ -10,16 +10,19 @@ import {
   getOutgoingFriendRequests,
 } from "@/services/social/friendRequestInboxService";
 import type { FriendRequest } from "@/types/social";
+import { requestConfirmation } from "@/utils/platformAlert";
 import { Ionicons } from "@expo/vector-icons";
+import { LinearGradient } from "expo-linear-gradient";
+import { type Href, useRouter } from "expo-router";
 import { useCallback, useEffect, useState } from "react";
 import {
   ActivityIndicator,
-  Alert,
   Pressable,
   RefreshControl,
   ScrollView,
   StyleSheet,
   Text,
+  useWindowDimensions,
   View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
@@ -64,6 +67,9 @@ function getRequestErrorMessage(error: unknown): string {
 }
 
 export default function FriendRequestsScreen() {
+  const router = useRouter();
+  const { width } = useWindowDimensions();
+  const isCompact = width < 380;
   const { user } = useAuth();
   const [incomingRequests, setIncomingRequests] = useState<FriendRequest[]>([]);
   const [outgoingRequests, setOutgoingRequests] = useState<FriendRequest[]>([]);
@@ -72,6 +78,14 @@ export default function FriendRequestsScreen() {
   const [errorMessage, setErrorMessage] = useState("");
   const [processingRequest, setProcessingRequest] =
     useState<ProcessingRequest | null>(null);
+
+  function handleBack() {
+    if (router.canGoBack()) {
+      router.back();
+    } else {
+      router.replace("/friends" as Href);
+    }
+  }
 
   const loadRequests = useCallback(async () => {
     if (!user) {
@@ -93,7 +107,7 @@ export default function FriendRequestsScreen() {
       setIncomingRequests(incoming);
       setOutgoingRequests(outgoing);
     } catch (error) {
-      console.error("Nu am putut încărca cererile de prietenie:", error);
+      console.info("Nu am putut încărca cererile de prietenie:", error);
       setErrorMessage(getRequestErrorMessage(error));
     } finally {
       setIsLoading(false);
@@ -153,21 +167,18 @@ export default function FriendRequestsScreen() {
       : null;
   }
 
-  function confirmCancellation(requestId: string) {
-    Alert.alert(
-      "Anulezi cererea?",
-      "Cererea trimisă va fi ștearsă.",
-      [
-        { text: "Înapoi", style: "cancel" },
-        {
-          text: "Anulează cererea",
-          style: "destructive",
-          onPress: () => {
-            void processRequest(requestId, "cancel");
-          },
-        },
-      ],
-    );
+  async function confirmCancellation(requestId: string) {
+    const confirmed = await requestConfirmation({
+      title: "Anulezi cererea?",
+      message: "Cererea trimisă va fi ștearsă.",
+      cancelText: "Înapoi",
+      confirmText: "Anulează cererea",
+      destructive: true,
+    });
+
+    if (confirmed) {
+      await processRequest(requestId, "cancel");
+    }
   }
 
   if (isLoading) {
@@ -187,7 +198,10 @@ export default function FriendRequestsScreen() {
     <ScreenBackground>
       <SafeAreaView style={styles.safeArea}>
         <ScrollView
-          contentContainerStyle={styles.container}
+          contentContainerStyle={[
+            styles.container,
+            isCompact && styles.containerCompact,
+          ]}
           refreshControl={
             <RefreshControl
               colors={[COLORS.primary]}
@@ -201,21 +215,35 @@ export default function FriendRequestsScreen() {
           showsVerticalScrollIndicator={false}
         >
           <View style={styles.content}>
-            <View style={styles.header}>
-              <View style={styles.headerIcon}>
+            <LinearGradient
+              colors={[COLORS.primary, COLORS.primaryPressed]}
+              start={{ x: 0, y: 0 }}
+              end={{ x: 1, y: 1 }}
+              style={[
+                styles.headerCard,
+                isCompact && styles.headerCardCompact,
+              ]}
+            >
+              <Pressable
+                accessibilityLabel="Înapoi"
+                accessibilityRole="button"
+                hitSlop={8}
+                onPress={handleBack}
+                style={({ pressed }) => [
+                  styles.backButton,
+                  pressed && styles.backButtonPressed,
+                ]}
+              >
                 <Ionicons
                   color={COLORS.primary}
-                  name="people-outline"
-                  size={26}
+                  name="arrow-back"
+                  size={23}
                 />
-              </View>
-              <View style={styles.headerText}>
-                <Text style={styles.title}>Cereri de prietenie</Text>
-                <Text style={styles.subtitle}>
-                  Gestionează cererile primite și trimise.
-                </Text>
-              </View>
-            </View>
+              </Pressable>
+              <Text style={[styles.title, isCompact && styles.titleCompact]}>
+                Cereri de prietenie
+              </Text>
+            </LinearGradient>
 
             {errorMessage ? (
               <View style={styles.errorBox}>
@@ -254,10 +282,7 @@ export default function FriendRequestsScreen() {
                     name="mail-open-outline"
                     size={28}
                   />
-                  <Text style={styles.emptyTitle}>Nicio cerere primită</Text>
-                  <Text style={styles.emptyText}>
-                    Cererile noi vor apărea aici.
-                  </Text>
+                  <Text style={styles.emptyTitle}>Nicio cerere.</Text>
                 </View>
               ) : (
                 <View style={styles.cardList}>
@@ -294,10 +319,7 @@ export default function FriendRequestsScreen() {
                     name="paper-plane-outline"
                     size={28}
                   />
-                  <Text style={styles.emptyTitle}>Nicio cerere trimisă</Text>
-                  <Text style={styles.emptyText}>
-                    Cererile în așteptare vor apărea aici.
-                  </Text>
+                  <Text style={styles.emptyTitle}>Nicio cerere.</Text>
                 </View>
               ) : (
                 <View style={styles.cardList}>
@@ -305,7 +327,9 @@ export default function FriendRequestsScreen() {
                     <FriendRequestCard
                       direction="outgoing"
                       key={request.id}
-                      onCancel={confirmCancellation}
+                      onCancel={(requestId) => {
+                        void confirmCancellation(requestId);
+                      }}
                       processingAction={getProcessingAction(request.id)}
                       request={request}
                     />
@@ -328,12 +352,15 @@ const styles = StyleSheet.create({
   container: {
     flexGrow: 1,
     paddingHorizontal: 20,
-    paddingTop: 16,
+    paddingTop: 18,
     paddingBottom: 120,
+  },
+  containerCompact: {
+    paddingHorizontal: 14,
   },
   content: {
     width: "100%",
-    maxWidth: 520,
+    maxWidth: 430,
     alignSelf: "center",
     gap: 20,
   },
@@ -348,32 +375,44 @@ const styles = StyleSheet.create({
     color: COLORS.textSecondary,
     fontSize: 15,
   },
-  header: {
+  headerCard: {
+    minHeight: 104,
     flexDirection: "row",
     alignItems: "center",
-    gap: 13,
+    gap: 12,
+    padding: 24,
+    borderRadius: 24,
+    shadowColor: COLORS.primaryPressed,
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.18,
+    shadowRadius: 16,
+    elevation: 4,
   },
-  headerIcon: {
-    width: 52,
-    height: 52,
+  headerCardCompact: {
+    minHeight: 96,
+    gap: 10,
+    padding: 18,
+    borderRadius: 20,
+  },
+  backButton: {
+    width: 42,
+    height: 42,
     alignItems: "center",
     justifyContent: "center",
-    backgroundColor: COLORS.primarySoft,
-    borderRadius: 16,
+    borderRadius: 21,
+    backgroundColor: COLORS.background,
   },
-  headerText: {
-    flex: 1,
-    gap: 3,
+  backButtonPressed: {
+    opacity: 0.7,
   },
   title: {
-    color: COLORS.text,
+    flex: 1,
+    color: COLORS.background,
     fontSize: 24,
-    fontWeight: "800",
+    fontWeight: "bold",
   },
-  subtitle: {
-    color: COLORS.textSecondary,
-    fontSize: 14,
-    lineHeight: 20,
+  titleCompact: {
+    fontSize: 21,
   },
   errorBox: {
     flexDirection: "row",
@@ -445,10 +484,5 @@ const styles = StyleSheet.create({
     color: COLORS.text,
     fontSize: 15,
     fontWeight: "700",
-  },
-  emptyText: {
-    color: COLORS.textSecondary,
-    fontSize: 13,
-    textAlign: "center",
   },
 });

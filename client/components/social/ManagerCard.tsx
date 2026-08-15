@@ -56,9 +56,9 @@ export const ManagerCard: React.FC<ManagerCardProps> = ({
         <View style={styles.badge}>
           <Text style={styles.badgeText}>
             {type === "incoming" && "Cerere"}
-            {type === "outgoing" && "Pending"}
+            {type === "outgoing" && "În așteptare"}
             {type === "active_as_owner" && "Manager"}
-            {type === "active_as_manager" && "Subordonat"}
+            {type === "active_as_manager" && "Profil gestionat"}
           </Text>
         </View>
       </View>

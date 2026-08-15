@@ -103,7 +103,7 @@ describe("ProfileContext", () => {
   });
 
   test("expune un mesaj când încărcarea profilului eșuează", async () => {
-    const consoleSpy = jest.spyOn(console, "error").mockImplementation();
+    const consoleSpy = jest.spyOn(console, "info").mockImplementation();
     mockedGetUserProfile.mockRejectedValue(new Error("permission-denied"));
 
     await render(

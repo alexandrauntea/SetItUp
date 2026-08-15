@@ -4,17 +4,22 @@ import { COLORS } from "@/constants/colors";
 import { useAuth } from "@/contexts/AuthContext";
 import { getFriends, removeFriend } from "@/services/social/friendshipService";
 import type { Friendship } from "@/types/social";
+import {
+  requestConfirmation,
+  showPlatformAlert,
+} from "@/utils/platformAlert";
 import { Ionicons } from "@expo/vector-icons";
+import { LinearGradient } from "expo-linear-gradient";
 import { type Href, useRouter } from "expo-router";
 import { useCallback, useEffect, useState } from "react";
 import {
   ActivityIndicator,
-  Alert,
   Pressable,
   RefreshControl,
   ScrollView,
   StyleSheet,
   Text,
+  useWindowDimensions,
   View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
@@ -42,6 +47,8 @@ function Shortcut({ icon, label, onPress }: ShortcutProps) {
 
 export default function FriendsScreen() {
   const router = useRouter();
+  const { width } = useWindowDimensions();
+  const isCompact = width < 380;
   const { user } = useAuth();
   const [friends, setFriends] = useState<Friendship[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -55,7 +62,7 @@ export default function FriendsScreen() {
     try {
       setFriends(await getFriends(user.uid));
     } catch (error) {
-      console.error("Nu am putut încărca lista de prieteni:", error);
+      console.info("Nu am putut încărca lista de prieteni:", error);
       setErrorMessage("Lista de prieteni nu a putut fi încărcată.");
     } finally {
       setIsLoading(false);
@@ -76,38 +83,41 @@ export default function FriendsScreen() {
     };
   }
 
-  function confirmRemove(friendship: Friendship) {
+  async function confirmRemove(friendship: Friendship) {
     if (!user) return;
     const friend = getFriend(friendship);
-    Alert.alert(
-      "Remove friend?",
-      `@${friend.username} va fi eliminat din lista ta. Orice relație de manager dintre voi va fi eliminată.`,
-      [
-        { text: "Anulează", style: "cancel" },
-        {
-          text: "Elimină",
-          style: "destructive",
-          onPress: async () => {
-            setRemovingUid(friend.uid);
-            try {
-              await removeFriend(user.uid, friend.uid);
-              setFriends((current) => current.filter((item) => item.id !== friendship.id));
-            } catch {
-              Alert.alert("Eroare", "Prietenul nu a putut fi eliminat.");
-            } finally {
-              setRemovingUid(null);
-            }
-          },
-        },
-      ],
-    );
+    const confirmed = await requestConfirmation({
+      title: "Elimini prietenul?",
+      message: `@${friend.username} va fi eliminat din lista ta. Orice relație de manager dintre voi va fi eliminată.`,
+      cancelText: "Anulează",
+      confirmText: "Elimină",
+      destructive: true,
+    });
+
+    if (!confirmed) return;
+
+    setRemovingUid(friend.uid);
+    try {
+      await removeFriend(user.uid, friend.uid);
+      setFriends((current) =>
+        current.filter((item) => item.id !== friendship.id),
+      );
+    } catch (error) {
+      console.info("Prietenul nu a putut fi eliminat:", error);
+      showPlatformAlert("Eroare", "Prietenul nu a putut fi eliminat.");
+    } finally {
+      setRemovingUid(null);
+    }
   }
 
   return (
     <ScreenBackground>
       <SafeAreaView style={styles.safeArea}>
         <ScrollView
-          contentContainerStyle={styles.container}
+          contentContainerStyle={[
+            styles.container,
+            isCompact && styles.containerCompact,
+          ]}
           refreshControl={
             <RefreshControl
               refreshing={isRefreshing}
@@ -121,15 +131,19 @@ export default function FriendsScreen() {
           showsVerticalScrollIndicator={false}
         >
           <View style={styles.content}>
-            <View style={styles.heading}>
-              <Text style={styles.title}>Friends</Text>
-              <Text style={styles.subtitle}>Caută persoane și gestionează relațiile tale.</Text>
-            </View>
+            <LinearGradient
+              colors={[COLORS.primary, COLORS.primaryPressed]}
+              start={{ x: 0, y: 0 }}
+              end={{ x: 1, y: 1 }}
+              style={[styles.headerCard, isCompact && styles.headerCardCompact]}
+            >
+              <Text style={styles.title}>Prieteni</Text>
+            </LinearGradient>
 
-            <View style={styles.shortcuts}>
+            <View style={[styles.shortcuts, isCompact && styles.shortcutsCompact]}>
               <Shortcut icon="search-outline" label="Caută" onPress={() => router.push("/friends/search")} />
               <Shortcut icon="mail-unread-outline" label="Cereri" onPress={() => router.push("/friends/requests" as Href)} />
-              <Shortcut icon="shield-checkmark-outline" label="Manager" onPress={() => router.push("/friends/manager")} />
+              <Shortcut icon="person-circle-outline" label="Manager" onPress={() => router.push("/friends/manager")} />
             </View>
 
             <View style={styles.sectionHeading}>
@@ -149,8 +163,7 @@ export default function FriendsScreen() {
             ) : friends.length === 0 ? (
               <View style={styles.emptyCard}>
                 <Ionicons color={COLORS.primary} name="people-outline" size={36} />
-                <Text style={styles.emptyTitle}>Lista este goală</Text>
-                <Text style={styles.emptyText}>Caută un utilizator și trimite-i o cerere de prietenie.</Text>
+                <Text style={styles.emptyText}>Nu ai prieteni încă.</Text>
               </View>
             ) : (
               <View style={styles.list}>
@@ -162,7 +175,9 @@ export default function FriendsScreen() {
                       username={friend.username}
                       isRemoving={removingUid === friend.uid}
                       onOpenProfile={() => router.push({ pathname: "/users/[uid]", params: { uid: friend.uid } })}
-                      onRemove={() => confirmRemove(friendship)}
+                      onRemove={() => {
+                        void confirmRemove(friendship);
+                      }}
                     />
                   );
                 })}
@@ -178,11 +193,23 @@ export default function FriendsScreen() {
 const styles = StyleSheet.create({
   safeArea: { flex: 1 },
   container: { padding: 20, paddingBottom: 120 },
+  containerCompact: { paddingHorizontal: 14 },
   content: { width: "100%", maxWidth: 430, alignSelf: "center", gap: 22 },
-  heading: { gap: 5 },
-  title: { color: COLORS.text, fontSize: 32, fontWeight: "800" },
-  subtitle: { color: COLORS.textSecondary, fontSize: 15, lineHeight: 21 },
+  headerCard: {
+    minHeight: 104,
+    justifyContent: "center",
+    padding: 24,
+    borderRadius: 24,
+    shadowColor: COLORS.primaryPressed,
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.18,
+    shadowRadius: 16,
+    elevation: 4,
+  },
+  headerCardCompact: { minHeight: 96, padding: 18, borderRadius: 20 },
+  title: { color: COLORS.background, fontSize: 24, fontWeight: "bold" },
   shortcuts: { flexDirection: "row", gap: 10 },
+  shortcutsCompact: { gap: 6 },
   shortcut: {
     flex: 1,
     minHeight: 94,
@@ -226,7 +253,6 @@ const styles = StyleSheet.create({
     borderRadius: 20,
     backgroundColor: COLORS.background,
   },
-  emptyTitle: { color: COLORS.text, fontSize: 18, fontWeight: "800" },
   emptyText: { color: COLORS.textSecondary, textAlign: "center", lineHeight: 20 },
   retry: { color: COLORS.primary, fontWeight: "800" },
   pressed: { opacity: 0.65 },

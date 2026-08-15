@@ -77,18 +77,18 @@ export default function RegisterScreen() {
       await refreshProfile(user.uid);
       router.replace("/profile/create");
     } catch (error) {
-      console.error("Înregistrarea a eșuat:", error);
+      console.info("Înregistrarea a eșuat:", error);
 
       if (accountWasCreated) {
         try {
           await deleteCurrentUserAccount();
         } catch (deleteError) {
-          console.error("Contul incomplet nu a putut fi șters:", deleteError);
+          console.info("Contul incomplet nu a putut fi șters:", deleteError);
 
           try {
             await logoutUser();
           } catch (logoutError) {
-            console.error("Contul nou nu a putut fi deconectat:", logoutError);
+            console.info("Contul nou nu a putut fi deconectat:", logoutError);
           }
         }
       }
