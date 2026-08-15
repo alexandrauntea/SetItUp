@@ -238,7 +238,7 @@ friendships/UID_A_UID_B
 
 Username-urile sunt păstrate pentru ca lista să poată afișa și un prieten cu profil privat.
 
-### `managerRequests/{ownerId_managerId}`
+### `managerRequests/{ownerId}`
 
 O propunere de manager în așteptare:
 
@@ -248,6 +248,8 @@ O propunere de manager în așteptare:
 - statusul `pending` și datele operației.
 
 Numai un prieten poate fi propus, iar persoana propusă trebuie să accepte.
+ID-ul este UID-ul ownerului, astfel încât fiecare profil poate avea maximum o
+singură propunere de manager activă.
 
 ### `managerRelationships/{ownerId}`
 
@@ -273,7 +275,8 @@ managerRelationships/UID_OWNER
 
 Astfel, A→B și B→A produc același ID. Între două persoane poate exista o singură cerere activă și o singură prietenie.
 
-`createManagerRequestId(ownerId, managerId)` păstrează direcția relației, deoarece ownerul și managerul au roluri diferite.
+`createManagerRequestId(ownerId)` folosește UID-ul ownerului și împiedică
+existența simultană a mai multor propuneri de manager pentru același profil.
 
 Aceste funcții sunt singurele surse pentru ID-urile sociale și nu trebuie duplicate în ecrane sau alte servicii.
 
@@ -312,7 +315,7 @@ Tranzacția înseamnă că ori reușesc ambele operații, ori nu se aplică nici
 ### Manager
 
 1. ownerul alege un prieten;
-2. se creează `managerRequests/{ownerId_managerId}`;
+2. se creează `managerRequests/{ownerId}`;
 3. persoana propusă acceptă sau refuză;
 4. acceptarea creează `managerRelationships/{ownerId}`;
 5. `isManagerForUser(managerId, ownerId)` va controla accesul la feed și mesagerie în sprinturile următoare;

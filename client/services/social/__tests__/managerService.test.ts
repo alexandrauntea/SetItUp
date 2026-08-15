@@ -106,13 +106,30 @@ describe("managerService", () => {
       expect(mockSetDoc).toHaveBeenCalledTimes(1);
       const setCallArg = mockSetDoc.mock.calls[0][1];
       expect(setCallArg).toMatchObject({
-        id: "ownerA_managerB",
+        id: "ownerA",
         ownerId: "ownerA",
         ownerUsername: "owner_user",
         managerId: "managerB",
         managerUsername: "manager_user",
         status: "pending",
       });
+    });
+
+    it("uses the owner ID so only one active request can exist per owner", async () => {
+      mockAreFriends.mockResolvedValueOnce(true);
+      mockGetDoc
+        .mockResolvedValueOnce({ exists: () => false })
+        .mockResolvedValueOnce({ exists: () => true });
+
+      await expect(sendManagerRequest("ownerA", "managerC")).rejects.toThrow(
+        "REQUEST_ALREADY_EXISTS",
+      );
+
+      expect(mockGetDoc).toHaveBeenNthCalledWith(
+        2,
+        "doc-managerRequests-ownerA",
+      );
+      expect(mockSetDoc).not.toHaveBeenCalled();
     });
   });
 

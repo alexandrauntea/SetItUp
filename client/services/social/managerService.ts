@@ -76,7 +76,9 @@ export async function sendManagerRequest(
     throw new Error("ALREADY_HAS_MANAGER");
   }
 
-  const requestId = createManagerRequestId(ownerId, managerId);
+  // Un document per owner garantează că nu pot exista două propuneri active,
+  // nici dacă cererile sunt trimise simultan de pe dispozitive diferite.
+  const requestId = createManagerRequestId(ownerId);
   const requestRef = doc(db, MANAGER_REQUESTS_COLLECTION, requestId);
   const requestSnap = await getDoc(requestRef);
   if (requestSnap.exists()) {

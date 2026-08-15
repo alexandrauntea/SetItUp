@@ -93,7 +93,7 @@ function friendship() {
 
 function managerRequest() {
   return {
-    id: `${ALICE_UID}_${BOB_UID}`,
+    id: ALICE_UID,
     ownerId: ALICE_UID,
     ownerUsername: "alice",
     managerId: BOB_UID,
@@ -471,6 +471,32 @@ describe("Regulile managerului", () => {
     expect((await getDoc(relationshipRef)).exists()).toBe(true);
   });
 
+  test("managerul poate accepta o cerere creată cu vechiul ID", async () => {
+    const data = {
+      ...managerRequest(),
+      id: `${ALICE_UID}_${BOB_UID}`,
+    };
+    await seedDocument("managerRequests", data.id, data);
+    await seedDocument("friendships", friendship().id, friendship());
+    const bob = testEnv.authenticatedContext(BOB_UID);
+    const firestore = bob.firestore();
+    const requestRef = doc(firestore, "managerRequests", data.id);
+    const relationshipRef = doc(
+      firestore,
+      "managerRelationships",
+      data.ownerId,
+    );
+
+    await assertSucceeds(
+      runTransaction(firestore, async (transaction) => {
+        await transaction.get(requestRef);
+        await transaction.get(relationshipRef);
+        transaction.set(relationshipRef, managerRelationship());
+        transaction.delete(requestRef);
+      }),
+    );
+  });
+
   test("ownerul nu poate crea direct relația de manager", async () => {
     const data = managerRequest();
     await seedDocument("managerRequests", data.id, data);
@@ -520,6 +546,25 @@ describe("Regulile managerului", () => {
       setDoc(
         doc(alice.firestore(), "managerRequests", data.id),
         data,
+      ),
+    );
+  });
+
+  test("ownerul nu poate păstra două propuneri de manager active", async () => {
+    const firstRequest = managerRequest();
+    await seedDocument("managerRequests", firstRequest.id, firstRequest);
+    await seedDocument("friendships", friendship().id, friendship());
+    const alice = testEnv.authenticatedContext(ALICE_UID);
+
+    await assertFails(
+      setDoc(
+        doc(alice.firestore(), "managerRequests", ALICE_UID),
+        {
+          ...firstRequest,
+          managerId: OUTSIDER_UID,
+          managerUsername: "outsider",
+          memberIds: [ALICE_UID, OUTSIDER_UID],
+        },
       ),
     );
   });

@@ -407,8 +407,9 @@ service cloud.firestore {
           'updatedAt'
         ])
         && request.resource.data.id == requestId
+        // UID-ul ownerului este cheia unică: un profil poate avea cel mult o
+        // singură propunere de manager activă, indiferent de managerul ales.
         && requestId == request.resource.data.ownerId
-          + '_' + request.resource.data.managerId
         && hasValidMembers(
           request.resource.data,
           request.resource.data.ownerId,
@@ -483,17 +484,37 @@ service cloud.firestore {
           request.resource.data.ownerId,
           request.resource.data.managerId
         )
-        && exists(
-          /databases/$(database)/documents/managerRequests/$(request.resource.data.ownerId + '_' + request.resource.data.managerId)
-        )
-        && get(
-          /databases/$(database)/documents/managerRequests/$(request.resource.data.ownerId + '_' + request.resource.data.managerId)
-        ).data.ownerUsername == request.resource.data.ownerUsername
-        && get(
-          /databases/$(database)/documents/managerRequests/$(request.resource.data.ownerId + '_' + request.resource.data.managerId)
-        ).data.managerUsername == request.resource.data.managerUsername
-        && !existsAfter(
-          /databases/$(database)/documents/managerRequests/$(request.resource.data.ownerId + '_' + request.resource.data.managerId)
+        && (
+          (
+            exists(
+              /databases/$(database)/documents/managerRequests/$(request.resource.data.ownerId)
+            )
+            && get(
+              /databases/$(database)/documents/managerRequests/$(request.resource.data.ownerId)
+            ).data.ownerUsername == request.resource.data.ownerUsername
+            && get(
+              /databases/$(database)/documents/managerRequests/$(request.resource.data.ownerId)
+            ).data.managerUsername == request.resource.data.managerUsername
+            && !existsAfter(
+              /databases/$(database)/documents/managerRequests/$(request.resource.data.ownerId)
+            )
+          )
+          // Compatibilitate temporară cu propunerile create înainte ca ID-ul
+          // să devină unic per owner.
+          || (
+            exists(
+              /databases/$(database)/documents/managerRequests/$(request.resource.data.ownerId + '_' + request.resource.data.managerId)
+            )
+            && get(
+              /databases/$(database)/documents/managerRequests/$(request.resource.data.ownerId + '_' + request.resource.data.managerId)
+            ).data.ownerUsername == request.resource.data.ownerUsername
+            && get(
+              /databases/$(database)/documents/managerRequests/$(request.resource.data.ownerId + '_' + request.resource.data.managerId)
+            ).data.managerUsername == request.resource.data.managerUsername
+            && !existsAfter(
+              /databases/$(database)/documents/managerRequests/$(request.resource.data.ownerId + '_' + request.resource.data.managerId)
+            )
+          )
         );
       allow update: if false;
       allow delete: if isMember(resource.data);
