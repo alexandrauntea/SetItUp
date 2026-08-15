@@ -43,7 +43,7 @@ export function FriendsCard({
         ) : (
           <>
             <Ionicons color={COLORS.primary} name="person-remove-outline" size={18} />
-            <Text style={styles.removeText}>Remove friend</Text>
+            <Text style={styles.removeText}>Elimină prietenul</Text>
           </>
         )}
       </Pressable>

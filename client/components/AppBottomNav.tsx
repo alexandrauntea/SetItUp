@@ -43,13 +43,13 @@ export function AppBottomNav() {
       <NavItem
         active={isProfile}
         icon={isProfile ? "person" : "person-outline"}
-        label="Profile"
+        label="Profil"
         onPress={() => router.replace("/profile/view")}
       />
       <NavItem
         active={isFriends}
         icon={isFriends ? "people" : "people-outline"}
-        label="Friends"
+        label="Prieteni"
         onPress={() => router.replace("/friends" as Href)}
       />
     </View>

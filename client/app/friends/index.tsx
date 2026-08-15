@@ -137,7 +137,7 @@ export default function FriendsScreen() {
               end={{ x: 1, y: 1 }}
               style={[styles.headerCard, isCompact && styles.headerCardCompact]}
             >
-              <Text style={styles.title}>Friends</Text>
+              <Text style={styles.title}>Prieteni</Text>
             </LinearGradient>
 
             <View style={[styles.shortcuts, isCompact && styles.shortcutsCompact]}>

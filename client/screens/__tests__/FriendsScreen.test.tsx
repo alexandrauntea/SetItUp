@@ -69,7 +69,7 @@ describe("Ecranul listei de prieteni", () => {
     mockedRemoveFriend.mockResolvedValue();
     await render(<FriendsScreen />);
 
-    await fireEvent.press(await screen.findByText("Remove friend"));
+    await fireEvent.press(await screen.findByText("Elimină prietenul"));
 
     await waitFor(() => {
       expect(mockedRemoveFriend).toHaveBeenCalledWith(
