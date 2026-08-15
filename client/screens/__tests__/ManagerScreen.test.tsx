@@ -11,11 +11,15 @@ import {
 } from "@/services/social/managerService";
 import { requestConfirmation } from "@/utils/platformAlert";
 
+const mockBack = jest.fn();
+const mockReplace = jest.fn();
+const mockCanGoBack = jest.fn();
+
 jest.mock("expo-router", () => ({
   useRouter: () => ({
-    back: jest.fn(),
-    canGoBack: () => true,
-    replace: jest.fn(),
+    back: mockBack,
+    canGoBack: mockCanGoBack,
+    replace: mockReplace,
   }),
 }));
 
@@ -80,6 +84,7 @@ const managedRelationship = {
 describe("Ecranul managerului", () => {
   beforeEach(() => {
     jest.clearAllMocks();
+    mockCanGoBack.mockReturnValue(true);
     mockedManagerRelationship.mockResolvedValue(ownedRelationship);
     mockedManagedProfiles.mockResolvedValue([managedRelationship]);
     mockedIncoming.mockResolvedValue([]);
@@ -93,8 +98,32 @@ describe("Ecranul managerului", () => {
     expect(await screen.findByText("@anca_manager")).toBeTruthy();
     expect(screen.getByText("@profil_gestionat")).toBeTruthy();
     expect(
-      screen.getByText("Profiluri pentru care ești manager (1)"),
+      screen.getByText("Profiluri pentru care ești manager"),
     ).toBeTruthy();
+  });
+
+  test("folosește bannerul cu navigare înapoi", async () => {
+    await render(<ManagerScreen />);
+
+    await fireEvent.press(
+      await screen.findByRole("button", { name: "Înapoi" }),
+    );
+
+    expect(screen.getByText("Gestionare Manager")).toBeTruthy();
+    expect(mockBack).toHaveBeenCalledTimes(1);
+    expect(mockReplace).not.toHaveBeenCalled();
+  });
+
+  test("revine la Friends când ecranul a fost deschis direct", async () => {
+    mockCanGoBack.mockReturnValue(false);
+    await render(<ManagerScreen />);
+
+    await fireEvent.press(
+      await screen.findByRole("button", { name: "Înapoi" }),
+    );
+
+    expect(mockBack).not.toHaveBeenCalled();
+    expect(mockReplace).toHaveBeenCalledWith("/friends");
   });
 
   test("managerul poate renunța la un profil gestionat", async () => {
@@ -106,7 +135,7 @@ describe("Ecranul managerului", () => {
     await render(<ManagerScreen />);
 
     const removeButtons = await screen.findAllByText("Șterge manager");
-    await fireEvent.press(removeButtons[1]);
+    await fireEvent.press(removeButtons[0]);
 
     await waitFor(() => {
       expect(mockedRemoveManager).toHaveBeenCalledWith(
@@ -114,7 +143,7 @@ describe("Ecranul managerului", () => {
         "current-user",
       );
       expect(
-        screen.getByText("Nu ești manager pentru niciun profil în acest moment."),
+        screen.getByText("Niciun profil gestionat."),
       ).toBeTruthy();
     });
   });

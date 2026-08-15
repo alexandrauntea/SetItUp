@@ -10,6 +10,17 @@ import {
 import { requestConfirmation } from "@/utils/platformAlert";
 
 const mockUser = { uid: "current-user" };
+const mockBack = jest.fn();
+const mockReplace = jest.fn();
+const mockCanGoBack = jest.fn();
+
+jest.mock("expo-router", () => ({
+  useRouter: () => ({
+    back: mockBack,
+    replace: mockReplace,
+    canGoBack: mockCanGoBack,
+  }),
+}));
 
 jest.mock("@expo/vector-icons", () => ({
   Ionicons: require("react-native").Text,
@@ -68,6 +79,7 @@ const outgoingRequest = {
 describe("Ecranul cererilor de prietenie", () => {
   beforeEach(() => {
     jest.clearAllMocks();
+    mockCanGoBack.mockReturnValue(true);
     mockedIncoming.mockResolvedValue([incomingRequest]);
     mockedOutgoing.mockResolvedValue([outgoingRequest]);
   });
@@ -79,6 +91,30 @@ describe("Ecranul cererilor de prietenie", () => {
     expect(screen.getByText("@bob_user")).toBeTruthy();
     expect(mockedIncoming).toHaveBeenCalledWith("current-user");
     expect(mockedOutgoing).toHaveBeenCalledWith("current-user");
+  });
+
+  test("folosește bannerul cu navigare înapoi", async () => {
+    await render(<FriendRequestsScreen />);
+
+    await fireEvent.press(
+      await screen.findByRole("button", { name: "Înapoi" }),
+    );
+
+    expect(screen.getByText("Cereri de prietenie")).toBeTruthy();
+    expect(mockBack).toHaveBeenCalledTimes(1);
+    expect(mockReplace).not.toHaveBeenCalled();
+  });
+
+  test("revine la Friends când ecranul a fost deschis direct", async () => {
+    mockCanGoBack.mockReturnValue(false);
+    await render(<FriendRequestsScreen />);
+
+    await fireEvent.press(
+      await screen.findByRole("button", { name: "Înapoi" }),
+    );
+
+    expect(mockBack).not.toHaveBeenCalled();
+    expect(mockReplace).toHaveBeenCalledWith("/friends");
   });
 
   test("acceptă cererea și o elimină din inbox", async () => {

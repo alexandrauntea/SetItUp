@@ -92,7 +92,7 @@ describe("Ecranul listei de prieteni", () => {
     await fireEvent.press(await screen.findByText("Încearcă din nou"));
 
     await waitFor(() => expect(mockedGetFriends).toHaveBeenCalledTimes(2));
-    expect(await screen.findByText("Lista este goală")).toBeTruthy();
+    expect(await screen.findByText("Nu ai prieteni încă.")).toBeTruthy();
     expect(consoleErrorSpy).toHaveBeenCalled();
     consoleErrorSpy.mockRestore();
   });
