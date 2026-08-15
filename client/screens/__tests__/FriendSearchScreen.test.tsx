@@ -21,6 +21,10 @@ jest.mock("expo-linear-gradient", () => ({
   LinearGradient: require("react-native").View,
 }));
 
+jest.mock("@expo/vector-icons", () => ({
+  Ionicons: require("react-native").Text,
+}));
+
 jest.mock("@/contexts/AuthContext", () => ({
   useAuth: () => ({ user: { uid: "current-user" } }),
 }));
@@ -52,7 +56,7 @@ const searchResult: UserSearchResult = {
 
 async function searchFor(username = "anca_21") {
   await fireEvent.changeText(
-    screen.getByPlaceholderText("De exemplu: anca_21"),
+    screen.getByPlaceholderText("Caută după username"),
     username,
   );
   await fireEvent.press(screen.getByText("Caută"));
@@ -64,10 +68,18 @@ describe("Ecranul de căutare a prietenilor", () => {
     mockCanGoBack.mockReturnValue(true);
   });
 
+  test("afișează o interfață de căutare fără instrucțiuni redundante", async () => {
+    await render(<FriendSearchScreen />);
+
+    expect(screen.getByText("Caută prieteni")).toBeTruthy();
+    expect(screen.getByPlaceholderText("Caută după username")).toBeTruthy();
+    expect(screen.queryByText("Descoperă persoane")).toBeNull();
+  });
+
   test("revine la ecranul anterior când există istoric", async () => {
     await render(<FriendSearchScreen />);
 
-    fireEvent.press(screen.getByText("Înapoi"));
+    fireEvent.press(screen.getByRole("button", { name: "Înapoi" }));
 
     expect(mockBack).toHaveBeenCalledTimes(1);
     expect(mockReplace).not.toHaveBeenCalled();
@@ -77,7 +89,7 @@ describe("Ecranul de căutare a prietenilor", () => {
     mockCanGoBack.mockReturnValue(false);
     await render(<FriendSearchScreen />);
 
-    fireEvent.press(screen.getByText("Înapoi"));
+    fireEvent.press(screen.getByRole("button", { name: "Înapoi" }));
 
     expect(mockBack).not.toHaveBeenCalled();
     expect(mockReplace).toHaveBeenCalledWith("/friends");

@@ -123,6 +123,7 @@ describe("Ecranul de editare a profilului", () => {
 
     await fireEvent.changeText(screen.getByDisplayValue("Student"), "  Inginer  ");
     await fireEvent.press(screen.getByText("Feminin"));
+    await fireEvent.press(screen.getByText("Muzică & activități"));
     await fireEvent.press(screen.getByText("Muzică"));
     await fireEvent.press(screen.getByText("Privat"));
     await fireEvent.press(screen.getByText("Salvează"));

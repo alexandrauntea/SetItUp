@@ -7,10 +7,14 @@ const {
   initializeTestEnvironment,
 } = require("@firebase/rules-unit-testing");
 const {
+  collection,
   doc,
   getDoc,
+  getDocs,
+  query,
   setDoc,
   updateDoc,
+  where,
   writeBatch,
 } = require("firebase/firestore");
 
@@ -73,6 +77,40 @@ function friendRequest() {
     status: "pending",
     createdAt: "2026-08-12T10:00:00.000Z",
     updatedAt: "2026-08-12T10:00:00.000Z",
+  };
+}
+
+function friendship() {
+  return {
+    id: `${ALICE_UID}_${BOB_UID}`,
+    memberIds: [ALICE_UID, BOB_UID],
+    memberUsernames: ["alice", "bob"],
+    createdAt: "2026-08-12T10:00:00.000Z",
+  };
+}
+
+function managerRequest() {
+  return {
+    id: `${ALICE_UID}_${BOB_UID}`,
+    ownerId: ALICE_UID,
+    ownerUsername: "alice",
+    managerId: BOB_UID,
+    managerUsername: "bob",
+    memberIds: [ALICE_UID, BOB_UID],
+    status: "pending",
+    createdAt: "2026-08-12T10:00:00.000Z",
+    updatedAt: "2026-08-12T10:00:00.000Z",
+  };
+}
+
+function managerRelationship() {
+  return {
+    ownerId: ALICE_UID,
+    ownerUsername: "alice",
+    managerId: BOB_UID,
+    managerUsername: "bob",
+    memberIds: [ALICE_UID, BOB_UID],
+    createdAt: "2026-08-12T10:00:00.000Z",
   };
 }
 
@@ -240,5 +278,143 @@ describe("Regulile cererii de prietenie", () => {
     await assertFails(
       getDoc(doc(outsider.firestore(), "friendRequests", request.id)),
     );
+  });
+
+  test("receiverul poate lista numai cererile primite", async () => {
+    const request = friendRequest();
+    await seedDocument("friendRequests", request.id, request);
+    const bob = testEnv.authenticatedContext(BOB_UID);
+    const incomingQuery = query(
+      collection(bob.firestore(), "friendRequests"),
+      where("receiverId", "==", BOB_UID),
+    );
+
+    const snapshot = await assertSucceeds(getDocs(incomingQuery));
+
+    expect(snapshot.docs).toHaveLength(1);
+    expect(snapshot.docs[0].id).toBe(request.id);
+  });
+
+  test("senderul poate lista numai cererile trimise", async () => {
+    const request = friendRequest();
+    await seedDocument("friendRequests", request.id, request);
+    const alice = testEnv.authenticatedContext(ALICE_UID);
+    const outgoingQuery = query(
+      collection(alice.firestore(), "friendRequests"),
+      where("senderId", "==", ALICE_UID),
+    );
+
+    const snapshot = await assertSucceeds(getDocs(outgoingQuery));
+
+    expect(snapshot.docs).toHaveLength(1);
+    expect(snapshot.docs[0].id).toBe(request.id);
+  });
+
+  test("un utilizator nu poate lista cererile altuia", async () => {
+    const request = friendRequest();
+    await seedDocument("friendRequests", request.id, request);
+    const outsider = testEnv.authenticatedContext(OUTSIDER_UID);
+    const otherUsersQuery = query(
+      collection(outsider.firestore(), "friendRequests"),
+      where("receiverId", "==", BOB_UID),
+    );
+
+    await assertFails(getDocs(otherUsersQuery));
+  });
+});
+
+describe("Regulile listei de prieteni", () => {
+  test("un participant poate lista prieteniile care îl conțin", async () => {
+    const data = friendship();
+    await seedDocument("friendships", data.id, data);
+    const alice = testEnv.authenticatedContext(ALICE_UID);
+    const friendsQuery = query(
+      collection(alice.firestore(), "friendships"),
+      where("memberIds", "array-contains", ALICE_UID),
+    );
+
+    const snapshot = await assertSucceeds(getDocs(friendsQuery));
+
+    expect(snapshot.docs).toHaveLength(1);
+    expect(snapshot.docs[0].id).toBe(data.id);
+  });
+
+  test("un utilizator nu poate interoga lista de prieteni a altcuiva", async () => {
+    const data = friendship();
+    await seedDocument("friendships", data.id, data);
+    const outsider = testEnv.authenticatedContext(OUTSIDER_UID);
+    const otherUserFriendsQuery = query(
+      collection(outsider.firestore(), "friendships"),
+      where("memberIds", "array-contains", ALICE_UID),
+    );
+
+    await assertFails(getDocs(otherUserFriendsQuery));
+  });
+});
+
+describe("Regulile managerului", () => {
+  test("managerul poate lista cererile primite", async () => {
+    const data = managerRequest();
+    await seedDocument("managerRequests", data.id, data);
+    const bob = testEnv.authenticatedContext(BOB_UID);
+    const incomingQuery = query(
+      collection(bob.firestore(), "managerRequests"),
+      where("managerId", "==", BOB_UID),
+    );
+
+    const snapshot = await assertSucceeds(getDocs(incomingQuery));
+
+    expect(snapshot.docs).toHaveLength(1);
+  });
+
+  test("ownerul poate lista cererile trimise", async () => {
+    const data = managerRequest();
+    await seedDocument("managerRequests", data.id, data);
+    const alice = testEnv.authenticatedContext(ALICE_UID);
+    const outgoingQuery = query(
+      collection(alice.firestore(), "managerRequests"),
+      where("ownerId", "==", ALICE_UID),
+    );
+
+    const snapshot = await assertSucceeds(getDocs(outgoingQuery));
+
+    expect(snapshot.docs).toHaveLength(1);
+  });
+
+  test("un utilizator nu poate lista cererile de manager ale altcuiva", async () => {
+    const data = managerRequest();
+    await seedDocument("managerRequests", data.id, data);
+    const outsider = testEnv.authenticatedContext(OUTSIDER_UID);
+    const otherUserRequestsQuery = query(
+      collection(outsider.firestore(), "managerRequests"),
+      where("managerId", "==", BOB_UID),
+    );
+
+    await assertFails(getDocs(otherUserRequestsQuery));
+  });
+
+  test("un participant poate verifica o relație inexistentă înainte de creare", async () => {
+    const bob = testEnv.authenticatedContext(BOB_UID);
+
+    await assertSucceeds(
+      getDoc(doc(bob.firestore(), "managerRelationships", ALICE_UID)),
+    );
+  });
+
+  test("un participant poate lista relațiile de manager care îl conțin", async () => {
+    await seedDocument(
+      "managerRelationships",
+      ALICE_UID,
+      managerRelationship(),
+    );
+    const bob = testEnv.authenticatedContext(BOB_UID);
+    const relationshipsQuery = query(
+      collection(bob.firestore(), "managerRelationships"),
+      where("memberIds", "array-contains", BOB_UID),
+    );
+
+    const snapshot = await assertSucceeds(getDocs(relationshipsQuery));
+
+    expect(snapshot.docs).toHaveLength(1);
   });
 });
