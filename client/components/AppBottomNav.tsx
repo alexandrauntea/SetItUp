@@ -35,22 +35,29 @@ export function AppBottomNav() {
   const insets = useSafeAreaInsets();
   const isProfile = segments[0] === "profile" && segments[1] === "view";
   const isFriends = segments[0] === "friends";
+  const isFeed = segments[0] === "feed";
 
-  if (!isProfile && !isFriends) return null;
+  if (!isProfile && !isFriends && !isFeed) return null;
 
   return (
     <View style={[styles.container, { paddingBottom: Math.max(insets.bottom, 8) }]}>
       <NavItem
-        active={isProfile}
-        icon={isProfile ? "person" : "person-outline"}
-        label="Profile"
-        onPress={() => router.replace("/profile/view")}
+        active={isFeed}
+        icon={isFeed ? "flame" : "flame-outline"}
+        label="Feed"
+        onPress={() => router.replace("/feed" as Href)}
       />
       <NavItem
         active={isFriends}
         icon={isFriends ? "people" : "people-outline"}
         label="Friends"
         onPress={() => router.replace("/friends" as Href)}
+      />
+      <NavItem
+        active={isProfile}
+        icon={isProfile ? "person" : "person-outline"}
+        label="Profile"
+        onPress={() => router.replace("/profile/view")}
       />
     </View>
   );

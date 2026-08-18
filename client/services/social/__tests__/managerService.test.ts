@@ -91,14 +91,10 @@ describe("managerService", () => {
       mockGetDoc.mockResolvedValueOnce({ exists: () => false });
       // existing request -> null
       mockGetDoc.mockResolvedValueOnce({ exists: () => false });
-      // friendship doc -> memberIds and memberUsernames
-      mockGetDoc.mockResolvedValueOnce({
-        exists: () => true,
-        data: () => ({
-          memberIds: ["ownerA", "managerB"],
-          memberUsernames: ["owner_user", "manager_user"],
-        }),
-      });
+      // public profile for ownerA
+      mockGetDoc.mockResolvedValueOnce({ exists: () => true, data: () => ({ username: "owner_user" }) });
+      // public profile for managerB
+      mockGetDoc.mockResolvedValueOnce({ exists: () => true, data: () => ({ username: "manager_user" }) });
 
       await sendManagerRequest("ownerA", "managerB");
 
