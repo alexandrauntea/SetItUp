@@ -29,7 +29,7 @@ function RootLayoutNav() {
     try {
       await logoutUser();
     } catch (error) {
-      console.error("Deconectarea a eÈ™uat:", error);
+      console.info("Deconectarea a eșuat:", error);
     }
   }
 
@@ -92,16 +92,16 @@ function RootLayoutNav() {
       <ScreenBackground>
         <SafeAreaView style={styles.errorSafeArea}>
           <View style={styles.errorCard}>
-            <Text style={styles.errorTitle}>Nu am putut Ã®ncÄƒrca profilul</Text>
+            <Text style={styles.errorTitle}>Nu am putut încărca profilul</Text>
             <Text style={styles.errorDescription}>
-              VerificÄƒ legÄƒtura la internet È™i Ã®ncearcÄƒ din nou.
+              Verifică legătura la internet și încearcă din nou.
             </Text>
             <AppButton
-              title="ÃŽncearcÄƒ din nou"
+              title="Încearcă din nou"
               onPress={() => void refreshProfile()}
             />
             <AppButton
-              title="IeÈ™i din cont"
+              title="Ieși din cont"
               variant="outline"
               onPress={() => void handleLogout()}
             />
@@ -119,8 +119,9 @@ function RootLayoutNav() {
         <Stack.Screen name="profile/edit" options={{ headerShown: false }} />
         <Stack.Screen name="profile/create" options={{ headerShown: false }} />
         <Stack.Screen name="profile/recover" options={{ headerShown: false }} />
-        <Stack.Screen name="feed" options={{ headerShown: false }} />
         <Stack.Screen name="friends" options={{ headerShown: false }} />
+        <Stack.Screen name="feed" options={{ headerShown: false }} />
+        <Stack.Screen name="matches" options={{ headerShown: false }} />
         <Stack.Screen name="users/[uid]" options={{ headerShown: false }} />
       </Stack>
       <AppBottomNav />

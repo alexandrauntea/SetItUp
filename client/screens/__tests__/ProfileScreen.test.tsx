@@ -98,7 +98,7 @@ describe("Ecranul profilului", () => {
   });
 
   test("gestionează eroarea de deconectare fără să blocheze ecranul", async () => {
-    const consoleSpy = jest.spyOn(console, "error").mockImplementation();
+    const consoleSpy = jest.spyOn(console, "info").mockImplementation();
     mockedLogoutUser.mockRejectedValue(new Error("logout-error"));
     await render(<ProfileScreen />);
 

@@ -34,7 +34,7 @@ export default function LoginScreen() {
     try {
       await loginUser(email.trim(), password);
     } catch (error) {
-      console.error("Autentificarea a eșuat:", error);
+      console.info("Autentificarea a eșuat:", error);
       setFormError(
         getFirebaseErrorMessage(
           error,

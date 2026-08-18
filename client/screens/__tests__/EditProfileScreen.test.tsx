@@ -182,7 +182,7 @@ describe("Ecranul de editare a profilului", () => {
   });
 
   test("afișează un mesaj și rămâne pe ecran dacă salvarea eșuează", async () => {
-    const consoleSpy = jest.spyOn(console, "error").mockImplementation();
+    const consoleSpy = jest.spyOn(console, "info").mockImplementation();
     updateProfile.mockRejectedValue(new Error("firestore-error"));
     await render(<EditProfileScreen />);
 

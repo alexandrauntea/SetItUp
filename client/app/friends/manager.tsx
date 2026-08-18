@@ -7,6 +7,7 @@ import {
   acceptManagerRequest,
   declineManagerRequest,
   getIncomingManagerRequests,
+  getManagedProfiles,
   getManagerRelationship,
   getOutgoingManagerRequests,
   removeManager,
@@ -26,12 +27,15 @@ import {
   StyleSheet,
   Text,
   TouchableOpacity,
+  useWindowDimensions,
   View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
 export default function ManagerScreen() {
   const router = useRouter();
+  const { width } = useWindowDimensions();
+  const isCompact = width < 380;
   const { user } = useAuth();
 
   function handleBack() {
@@ -49,6 +53,9 @@ export default function ManagerScreen() {
 
   const [activeManager, setActiveManager] = useState<ManagerRelationship | null>(
     null
+  );
+  const [managedProfiles, setManagedProfiles] = useState<ManagerRelationship[]>(
+    [],
   );
   const [incomingRequests, setIncomingRequests] = useState<ManagerRequest[]>([]);
   const [outgoingRequests, setOutgoingRequests] = useState<ManagerRequest[]>([]);
@@ -68,9 +75,16 @@ export default function ManagerScreen() {
     }
     setErrorMessage(null);
 
-    const [managerRelResult, incomingResult, outgoingResult, friendsResult] =
+    const [
+      managerRelResult,
+      managedProfilesResult,
+      incomingResult,
+      outgoingResult,
+      friendsResult,
+    ] =
       await Promise.allSettled([
         getManagerRelationship(uid),
+        getManagedProfiles(uid),
         getIncomingManagerRequests(uid),
         getOutgoingManagerRequests(uid),
         getFriends(uid),
@@ -78,6 +92,9 @@ export default function ManagerScreen() {
 
     if (managerRelResult.status === "fulfilled") {
       setActiveManager(managerRelResult.value);
+    }
+    if (managedProfilesResult.status === "fulfilled") {
+      setManagedProfiles(managedProfilesResult.value);
     }
     if (incomingResult.status === "fulfilled") {
       setIncomingRequests(incomingResult.value);
@@ -91,13 +108,14 @@ export default function ManagerScreen() {
 
     const rejectedResult = [
       managerRelResult,
+      managedProfilesResult,
       incomingResult,
       outgoingResult,
       friendsResult,
     ].find((result) => result.status === "rejected");
 
     if (rejectedResult?.status === "rejected") {
-      console.error("Error loading manager data:", rejectedResult.reason);
+      console.info("Datele managerului nu au putut fi încărcate:", rejectedResult.reason);
       setErrorMessage(
         "Unele date nu au putut fi încărcate. Trage în jos pentru a reîncerca."
       );
@@ -140,7 +158,7 @@ export default function ManagerScreen() {
       setSelectedFriend(null);
       await loadData();
     } catch (error: any) {
-      console.error("Error sending manager request:", error);
+      console.info("Cererea de manager nu a putut fi trimisă:", error);
       let msg = "Nu s-a putut trimite cererea.";
       if (error.message === "ALREADY_HAS_MANAGER") {
         msg = "Ai deja un manager activ sau definit.";
@@ -164,7 +182,7 @@ export default function ManagerScreen() {
       showPlatformAlert("Succes", "Ai acceptat rolul de manager.");
       await loadData();
     } catch (error: any) {
-      console.error("Error accepting manager request:", error);
+      console.info("Cererea de manager nu a putut fi acceptată:", error);
       showPlatformAlert("Eroare", "Nu s-a putut accepta cererea.");
     } finally {
       setActionLoadingId(null);
@@ -194,15 +212,15 @@ export default function ManagerScreen() {
       await declineManagerRequest(requestId, uid);
       await loadData();
     } catch (error: any) {
-      console.error("Error declining/canceling request:", error);
+      console.info("Cererea de manager nu a putut fi anulată:", error);
       showPlatformAlert("Eroare", "A apărut o problemă la procesarea cererii.");
     } finally {
       setActionLoadingId(null);
     }
   };
 
-  const handleRemoveManager = async () => {
-    if (!uid || !activeManager) return;
+  const handleRemoveManager = async (relationship: ManagerRelationship) => {
+    if (!uid) return;
 
     const confirmed = await requestConfirmation({
       title: "Confirmare",
@@ -214,13 +232,14 @@ export default function ManagerScreen() {
 
     if (!confirmed) return;
 
-    setActionLoadingId("remove-manager");
+    const loadingId = `remove-manager-${relationship.ownerId}`;
+    setActionLoadingId(loadingId);
     try {
-      await removeManager(activeManager.ownerId, uid);
+      await removeManager(relationship.ownerId, uid);
       showPlatformAlert("Succes", "Relația de manager a fost eliminată.");
       await loadData();
     } catch (error: any) {
-      console.error("Error removing manager:", error);
+      console.info("Managerul nu a putut fi eliminat:", error);
       showPlatformAlert("Eroare", "Nu s-a putut elimina managerul.");
     } finally {
       setActionLoadingId(null);
@@ -243,7 +262,10 @@ export default function ManagerScreen() {
       <SafeAreaView style={styles.safeArea}>
         <ScrollView
           style={styles.container}
-          contentContainerStyle={styles.contentContainer}
+          contentContainerStyle={[
+            styles.contentContainer,
+            isCompact && styles.contentContainerCompact,
+          ]}
           showsVerticalScrollIndicator={false}
           refreshControl={
             <RefreshControl
@@ -254,28 +276,29 @@ export default function ManagerScreen() {
           }
         >
           <View style={styles.content}>
-            <Pressable
-              accessibilityRole="button"
-              accessibilityLabel="Înapoi"
-              hitSlop={8}
-              onPress={handleBack}
-              style={({ pressed }) => [
-                styles.backButton,
-                pressed && styles.backButtonPressed,
-              ]}
-            >
-              <Ionicons name="arrow-back" size={23} color={COLORS.text} />
-            </Pressable>
-
             <LinearGradient
               colors={[COLORS.primary, COLORS.primaryPressed]}
               start={{ x: 0, y: 0 }}
               end={{ x: 1, y: 1 }}
-              style={styles.headerCard}
+              style={[
+                styles.headerCard,
+                isCompact && styles.headerCardCompact,
+              ]}
             >
-              <Text style={styles.title}>Gestionare Manager</Text>
-              <Text style={styles.subtitle}>
-                Setează un prieten drept manager pentru a-i oferi acces la profilul și activitatea ta.
+              <Pressable
+                accessibilityRole="button"
+                accessibilityLabel="Înapoi"
+                hitSlop={8}
+                onPress={handleBack}
+                style={({ pressed }) => [
+                  styles.backButton,
+                  pressed && styles.backButtonPressed,
+                ]}
+              >
+                <Ionicons name="arrow-back" size={23} color={COLORS.primary} />
+              </Pressable>
+              <Text style={[styles.title, isCompact && styles.titleCompact]}>
+                Gestionare Manager
               </Text>
             </LinearGradient>
 
@@ -285,21 +308,47 @@ export default function ManagerScreen() {
               </View>
             )}
 
-            {/* 1. Relație Activă */}
+            <View style={styles.section}>
+              <Text style={styles.sectionTitle}>
+                Profiluri pentru care ești manager
+              </Text>
+              {managedProfiles.length === 0 ? (
+                <View style={styles.emptyCard}>
+                  <Text style={styles.emptyText}>
+                    Niciun profil gestionat.
+                  </Text>
+                </View>
+              ) : (
+                managedProfiles.map((relationship) => (
+                  <ManagerCard
+                    key={relationship.ownerId}
+                    username={relationship.ownerUsername}
+                    type="active_as_manager"
+                    onRemove={() => handleRemoveManager(relationship)}
+                    loading={
+                      actionLoadingId ===
+                      `remove-manager-${relationship.ownerId}`
+                    }
+                  />
+                ))
+              )}
+            </View>
+
+            {/* Relație activă pentru profilul curent */}
             <View style={styles.section}>
               <Text style={styles.sectionTitle}>Managerul Tău Activ</Text>
               {activeManager ? (
                 <ManagerCard
                   username={activeManager.managerUsername}
                   type="active_as_owner"
-                  onRemove={handleRemoveManager}
-                  loading={actionLoadingId === "remove-manager"}
+                  onRemove={() => handleRemoveManager(activeManager)}
+                  loading={
+                    actionLoadingId === `remove-manager-${activeManager.ownerId}`
+                  }
                 />
               ) : (
                 <View style={styles.emptyCard}>
-                  <Text style={styles.emptyText}>
-                    Nu ai niciun manager desemnat în acest moment.
-                  </Text>
+                  <Text style={styles.emptyText}>Niciun manager activ.</Text>
                 </View>
               )}
             </View>
@@ -311,7 +360,7 @@ export default function ManagerScreen() {
                 {friends.length === 0 ? (
                   <View style={styles.emptyCard}>
                     <Text style={styles.emptyText}>
-                      Trebuie să ai cel puțin un prieten în listă pentru a-l propune drept manager.
+                      Ai nevoie de cel puțin un prieten.
                     </Text>
                   </View>
                 ) : (
@@ -373,13 +422,11 @@ export default function ManagerScreen() {
 
             {/* 3. Cereri Primite */}
             <View style={styles.section}>
-              <Text style={styles.sectionTitle}>
-                Cereri Primite ({incomingRequests.length})
-              </Text>
+              <Text style={styles.sectionTitle}>Cereri Primite</Text>
               {incomingRequests.length === 0 ? (
                 <View style={styles.emptyCard}>
                   <Text style={styles.emptyText}>
-                    Nu ai nicio cerere de manager primită.
+                    Nicio cerere.
                   </Text>
                 </View>
               ) : (
@@ -399,13 +446,11 @@ export default function ManagerScreen() {
 
             {/* 4. Cereri Trimise */}
             <View style={styles.section}>
-              <Text style={styles.sectionTitle}>
-                Cereri Trimise ({outgoingRequests.length})
-              </Text>
+              <Text style={styles.sectionTitle}>Cereri Trimise</Text>
               {outgoingRequests.length === 0 ? (
                 <View style={styles.emptyCard}>
                   <Text style={styles.emptyText}>
-                    Nu ai nicio cerere de manager în așteptare.
+                    Nicio cerere.
                   </Text>
                 </View>
               ) : (
@@ -437,9 +482,12 @@ const styles = StyleSheet.create({
     backgroundColor: "transparent",
   },
   contentContainer: {
-    paddingTop: 16,
+    paddingTop: 18,
     paddingBottom: 120,
     paddingHorizontal: 20,
+  },
+  contentContainerCompact: {
+    paddingHorizontal: 14,
   },
   content: {
     width: "100%",
@@ -469,6 +517,10 @@ const styles = StyleSheet.create({
     fontSize: 14,
   },
   headerCard: {
+    minHeight: 104,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 12,
     padding: 24,
     borderRadius: 24,
     shadowColor: COLORS.primaryPressed,
@@ -477,16 +529,20 @@ const styles = StyleSheet.create({
     shadowRadius: 16,
     elevation: 4,
   },
+  headerCardCompact: {
+    minHeight: 96,
+    gap: 10,
+    padding: 18,
+    borderRadius: 20,
+  },
   title: {
+    flex: 1,
     color: COLORS.background,
     fontSize: 24,
     fontWeight: "bold",
   },
-  subtitle: {
-    color: "rgba(255, 255, 255, 0.85)",
-    fontSize: 14,
-    marginTop: 6,
-    lineHeight: 20,
+  titleCompact: {
+    fontSize: 21,
   },
   errorBanner: {
     backgroundColor: COLORS.errorBackground,

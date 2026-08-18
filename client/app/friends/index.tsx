@@ -62,7 +62,7 @@ export default function FriendsScreen() {
     try {
       setFriends(await getFriends(user.uid));
     } catch (error) {
-      console.error("Nu am putut încărca lista de prieteni:", error);
+      console.info("Nu am putut încărca lista de prieteni:", error);
       setErrorMessage("Lista de prieteni nu a putut fi încărcată.");
     } finally {
       setIsLoading(false);
@@ -103,7 +103,7 @@ export default function FriendsScreen() {
         current.filter((item) => item.id !== friendship.id),
       );
     } catch (error) {
-      console.error("Prietenul nu a putut fi eliminat:", error);
+      console.info("Prietenul nu a putut fi eliminat:", error);
       showPlatformAlert("Eroare", "Prietenul nu a putut fi eliminat.");
     } finally {
       setRemovingUid(null);
@@ -137,14 +137,13 @@ export default function FriendsScreen() {
               end={{ x: 1, y: 1 }}
               style={[styles.headerCard, isCompact && styles.headerCardCompact]}
             >
-              <Text style={styles.title}>Friends</Text>
-              <Text style={styles.subtitle}>Caută persoane și gestionează relațiile tale.</Text>
+              <Text style={styles.title}>Prieteni</Text>
             </LinearGradient>
 
             <View style={[styles.shortcuts, isCompact && styles.shortcutsCompact]}>
               <Shortcut icon="search-outline" label="Caută" onPress={() => router.push("/friends/search")} />
               <Shortcut icon="mail-unread-outline" label="Cereri" onPress={() => router.push("/friends/requests" as Href)} />
-              <Shortcut icon="shield-checkmark-outline" label="Manager" onPress={() => router.push("/friends/manager")} />
+              <Shortcut icon="person-circle-outline" label="Manager" onPress={() => router.push("/friends/manager")} />
             </View>
 
             <View style={styles.sectionHeading}>
@@ -164,8 +163,7 @@ export default function FriendsScreen() {
             ) : friends.length === 0 ? (
               <View style={styles.emptyCard}>
                 <Ionicons color={COLORS.primary} name="people-outline" size={36} />
-                <Text style={styles.emptyTitle}>Lista este goală</Text>
-                <Text style={styles.emptyText}>Caută un utilizator și trimite-i o cerere de prietenie.</Text>
+                <Text style={styles.emptyText}>Nu ai prieteni încă.</Text>
               </View>
             ) : (
               <View style={styles.list}>
@@ -198,6 +196,8 @@ const styles = StyleSheet.create({
   containerCompact: { paddingHorizontal: 14 },
   content: { width: "100%", maxWidth: 430, alignSelf: "center", gap: 22 },
   headerCard: {
+    minHeight: 104,
+    justifyContent: "center",
     padding: 24,
     borderRadius: 24,
     shadowColor: COLORS.primaryPressed,
@@ -206,14 +206,8 @@ const styles = StyleSheet.create({
     shadowRadius: 16,
     elevation: 4,
   },
-  headerCardCompact: { padding: 18, borderRadius: 20 },
+  headerCardCompact: { minHeight: 96, padding: 18, borderRadius: 20 },
   title: { color: COLORS.background, fontSize: 24, fontWeight: "bold" },
-  subtitle: {
-    color: "rgba(255, 255, 255, 0.85)",
-    fontSize: 14,
-    marginTop: 6,
-    lineHeight: 20,
-  },
   shortcuts: { flexDirection: "row", gap: 10 },
   shortcutsCompact: { gap: 6 },
   shortcut: {
@@ -259,7 +253,6 @@ const styles = StyleSheet.create({
     borderRadius: 20,
     backgroundColor: COLORS.background,
   },
-  emptyTitle: { color: COLORS.text, fontSize: 18, fontWeight: "800" },
   emptyText: { color: COLORS.textSecondary, textAlign: "center", lineHeight: 20 },
   retry: { color: COLORS.primary, fontWeight: "800" },
   pressed: { opacity: 0.65 },

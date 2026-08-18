@@ -36,11 +36,24 @@ export function AppBottomNav() {
   const isProfile = segments[0] === "profile" && segments[1] === "view";
   const isFriends = segments[0] === "friends";
   const isFeed = segments[0] === "feed";
+  const isMatches = segments[0] === "matches";
 
-  if (!isProfile && !isFriends && !isFeed) return null;
+  if (!isProfile && !isFriends && !isFeed && !isMatches) return null;
 
   return (
     <View style={[styles.container, { paddingBottom: Math.max(insets.bottom, 8) }]}>
+      <NavItem
+        active={isProfile}
+        icon={isProfile ? "person" : "person-outline"}
+        label="Profil"
+        onPress={() => router.replace("/profile/view")}
+      />
+      <NavItem
+        active={isFriends}
+        icon={isFriends ? "people" : "people-outline"}
+        label="Prieteni"
+        onPress={() => router.replace("/friends" as Href)}
+      />
       <NavItem
         active={isFeed}
         icon={isFeed ? "flame" : "flame-outline"}
@@ -48,16 +61,10 @@ export function AppBottomNav() {
         onPress={() => router.replace("/feed" as Href)}
       />
       <NavItem
-        active={isFriends}
-        icon={isFriends ? "people" : "people-outline"}
-        label="Friends"
-        onPress={() => router.replace("/friends" as Href)}
-      />
-      <NavItem
-        active={isProfile}
-        icon={isProfile ? "person" : "person-outline"}
-        label="Profile"
-        onPress={() => router.replace("/profile/view")}
+        active={isMatches}
+        icon={isMatches ? "heart" : "heart-outline"}
+        label="Match-uri"
+        onPress={() => router.replace("/matches" as Href)}
       />
     </View>
   );
@@ -71,7 +78,7 @@ const styles = StyleSheet.create({
     left: 0,
     flexDirection: "row",
     paddingTop: 8,
-    paddingHorizontal: 28,
+    paddingHorizontal: 12,
     backgroundColor: COLORS.background,
     borderTopWidth: 1,
     borderTopColor: COLORS.border,

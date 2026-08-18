@@ -138,7 +138,7 @@ export default function CreateProfileScreen() {
         },
       ]);
     } catch (error) {
-      console.error("Profilul nu a putut fi salvat:", error);
+      console.info("Profilul nu a putut fi salvat:", error);
       setFormError(
         getFirebaseErrorMessage(
           error,

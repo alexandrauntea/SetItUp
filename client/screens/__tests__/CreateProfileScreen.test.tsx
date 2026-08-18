@@ -251,7 +251,7 @@ describe("Ecranul de creare a profilului", () => {
   });
 
   test("afișează o eroare și rămâne pe ecran dacă salvarea eșuează", async () => {
-    const consoleSpy = jest.spyOn(console, "error").mockImplementation();
+    const consoleSpy = jest.spyOn(console, "info").mockImplementation();
     updateProfile.mockRejectedValue(new Error("firestore-error"));
     await render(<CreateProfileScreen />);
 
