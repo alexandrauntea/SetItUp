@@ -55,3 +55,57 @@ export interface Match {
   memberIds: [string, string];
   createdAt: string;
 }
+
+export interface FeedCandidateProfile {
+  uid: string;
+  username: string;
+  firstName: string;
+  lastName: string;
+  occupation: string;
+  gender: "female" | "male" | "other";
+  description: string;
+  interests: string[];
+  age: number;
+  photoUrl?: string;
+  isPrivate?: boolean;
+}
+
+export interface FeedItem {
+  profile: FeedCandidateProfile;
+  commonFriendsCount: number;
+  isPreferred?: boolean;
+}
+
+export interface FeedFilterPreferences {
+  minAge?: number;
+  maxAge?: number;
+  gender?: "female" | "male" | "other" | "any";
+  interests?: string[];
+}
+
+export interface LikeRecord {
+  id: string;
+  fromOwnerId: string;
+  toOwnerId: string;
+  createdAt: string;
+}
+
+export interface DislikeRecord {
+  id: string;
+  fromOwnerId: string;
+  toOwnerId: string;
+  createdAt: string;
+}
+
+export interface LikeResult {
+  isMatch: boolean;
+  matchedProfile?: FeedCandidateProfile;
+}
+
+export interface MatchRecord {
+  id: string;
+  owner1Id: string;
+  owner2Id: string;
+  memberIds: [string, string];
+  createdAt: string;
+}

@@ -81,7 +81,7 @@ export function FeedCard({
         {/* Interests */}
         {profile.interests && profile.interests.length > 0 && (
           <View style={styles.interestsContainer}>
-            {profile.interests.map((interest, idx) => (
+            {profile.interests.map((interest: string, idx: number) => (
               <View key={`${interest}-${idx}`} style={styles.interestTag}>
                 <Text style={styles.interestTagText}>#{interest}</Text>
               </View>

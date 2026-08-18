@@ -52,6 +52,7 @@ describe("FeedScreen", () => {
     mockUseAuth.mockReturnValue({
       user: { uid: "mgr1" } as any,
       isLoading: false,
+      isAuthenticated: true,
     });
   });
 
