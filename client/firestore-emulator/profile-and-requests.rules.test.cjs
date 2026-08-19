@@ -196,7 +196,7 @@ describe("Regulile profilului", () => {
     await assertFails(getDoc(doc(bob.firestore(), "users", ALICE_UID)));
   });
 
-  test("un profil public este vizibil, iar unul privat rămâne ascuns", async () => {
+  test("profilurile publice și private pot fi deschise de utilizatorii autentificați", async () => {
     const bob = testEnv.authenticatedContext(BOB_UID);
     await seedDocument(
       "publicProfiles",
@@ -213,7 +213,7 @@ describe("Regulile profilului", () => {
       ALICE_UID,
       publicProfile(ALICE_UID, "alice", true),
     );
-    await assertFails(
+    await assertSucceeds(
       getDoc(doc(bob.firestore(), "publicProfiles", ALICE_UID)),
     );
   });

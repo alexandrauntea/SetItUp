@@ -84,6 +84,20 @@ describe("Ecranul profilului public", () => {
     expect(screen.getByText("Călătorii")).toBeTruthy();
   });
 
+  test("afișează profilul privat când este deschis din afara feedului", async () => {
+    mockedGetPublicProfileByUid.mockResolvedValue({
+      ...publicProfile,
+      isPrivate: true,
+    });
+
+    await render(<PublicUserProfileScreen />);
+
+    await waitFor(() => {
+      expect(screen.getByText("Anca Popescu, 21")).toBeTruthy();
+    });
+    expect(screen.queryByText("Profil indisponibil")).toBeNull();
+  });
+
   test("afișează un mesaj sigur când profilul nu poate fi citit", async () => {
     mockedGetPublicProfileByUid.mockResolvedValue(null);
 
@@ -94,7 +108,7 @@ describe("Ecranul profilului public", () => {
     });
     expect(
       screen.getByText(
-        "Profilul este privat, nu mai există sau nu a putut fi încărcat.",
+        "Profilul nu mai există sau nu a putut fi încărcat.",
       ),
     ).toBeTruthy();
   });

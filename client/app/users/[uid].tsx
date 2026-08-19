@@ -85,7 +85,7 @@ export default function PublicUserProfileScreen() {
             <Ionicons name="lock-closed-outline" size={38} color={COLORS.primary} />
             <Text style={styles.messageTitle}>Profil indisponibil</Text>
             <Text style={styles.messageText}>
-              Profilul este privat, nu mai există sau nu a putut fi încărcat.
+              Profilul nu mai există sau nu a putut fi încărcat.
             </Text>
             <AppButton title="Înapoi la căutare" onPress={handleBack} />
           </View>

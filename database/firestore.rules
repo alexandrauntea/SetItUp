@@ -279,10 +279,11 @@ service cloud.firestore {
     }
 
     match /publicProfiles/{userId} {
-      allow get: if isSignedIn()
-        && (isOwner(userId) || resource.data.isPrivate == false);
+      // isPrivate exclude profilul doar din feed; un utilizator autentificat
+      // poate deschide profilul din prieteni sau din căutare.
+      allow get: if isSignedIn();
 
-      // Căutările trebuie să includă filtrul isPrivate == false.
+      // Feed-ul trebuie să includă filtrul isPrivate == false.
       allow list: if isSignedIn()
         && resource.data.isPrivate == false;
 

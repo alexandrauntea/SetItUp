@@ -81,24 +81,10 @@ async function getVisibleProfile(
 
 export async function getPublicProfileByUid(
   targetUid: string,
-  currentUid?: string,
+  _currentUid?: string,
 ): Promise<PublicProfile | null> {
   if (!targetUid.trim()) {
     return null;
-  }
-
-  // Dacă utilizatorul curent încearcă să vadă un profil care nu e al lui, verificăm dacă sunt prieteni
-  if (currentUid && currentUid !== targetUid) {
-    const relationshipState = await getRelationshipState(currentUid, targetUid);
-    
-    // Dacă sunt prieteni, permitem citirea profilului chiar dacă regulile de bază îl consideră privat
-    if (relationshipState === "friends") {
-      const profileRef = doc(db, PUBLIC_PROFILES_COLLECTION, targetUid);
-      const profileSnapshot = await getDoc(profileRef);
-      if (profileSnapshot.exists()) {
-        return profileSnapshot.data() as PublicProfile;
-      }
-    }
   }
 
   return getVisibleProfile(targetUid);
@@ -132,10 +118,14 @@ export async function findUserByUsername(
     getRelationshipState(currentUid, targetUid),
   ]);
 
+  if (!profile) {
+    throw new Error("PUBLIC_PROFILE_NOT_FOUND");
+  }
+
   return {
     uid: targetUid,
     username: normalizedUsername,
-    isPrivate: profile === null,
+    isPrivate: profile.isPrivate,
     profile,
     relationshipState,
   };
