@@ -1,4 +1,4 @@
-export type Gender = "female" | "male" | "other";
+﻿export type Gender = "female" | "male" | "other";
 
 export interface UserProfile {
   uid: string;
@@ -13,6 +13,8 @@ export interface UserProfile {
   interests: string[];
   isPrivate: boolean;
   photoUrl?: string;
+  photoPaths?: string[];
+  primaryPhotoPath?: string;
   gdprAcceptedAt: string;
   profileCompleted: boolean;
   createdAt: string;

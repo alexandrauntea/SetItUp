@@ -1,4 +1,4 @@
-export type FriendRequestStatus = "pending";
+﻿export type FriendRequestStatus = "pending";
 export type Gender = "female" | "male" | "other";
 export type RelationshipState = "none" | "request-sent" | "request-received" | "friends";
 
@@ -19,6 +19,8 @@ export interface PublicProfile {
   age: number;
   isPrivate: boolean;
   photoUrl?: string;
+  photoPaths?: string[];
+  primaryPhotoPath?: string;
   updatedAt: string;
 }
 

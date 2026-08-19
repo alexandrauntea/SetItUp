@@ -1,4 +1,4 @@
-import type {
+﻿import type {
   CreateUserProfileInput,
   UpdateUserProfileInput,
   UserProfile,
@@ -49,7 +49,12 @@ function isUserProfile(value: unknown, expectedUid: string): value is UserProfil
     profile.interests.every((interest) => typeof interest === "string") &&
     typeof profile.isPrivate === "boolean" &&
     typeof profile.profileCompleted === "boolean" &&
-    (profile.photoUrl === undefined || typeof profile.photoUrl === "string")
+    (profile.photoUrl === undefined || typeof profile.photoUrl === "string") &&
+    (profile.photoPaths === undefined ||
+      (Array.isArray(profile.photoPaths) &&
+        profile.photoPaths.every((p) => typeof p === "string"))) &&
+    (profile.primaryPhotoPath === undefined ||
+      typeof profile.primaryPhotoPath === "string")
   );
 }
 
@@ -86,6 +91,12 @@ function toPublicProfile(profile: UserProfile): PublicProfile {
 
   if (profile.photoUrl) {
     publicProfile.photoUrl = profile.photoUrl;
+  }
+  if (profile.photoPaths) {
+    publicProfile.photoPaths = profile.photoPaths;
+  }
+  if (profile.primaryPhotoPath) {
+    publicProfile.primaryPhotoPath = profile.primaryPhotoPath;
   }
 
   return publicProfile;
