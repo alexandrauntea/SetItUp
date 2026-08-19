@@ -110,15 +110,16 @@ describe("feedService", () => {
           data: () => ({ ownerId: "owner", managerId: "manager" }),
         };
       }
-      if (reference === "doc:managerRelationships:unmanaged") {
+      if (reference === "doc:managerRoles:unmanaged") {
         return { exists: () => false };
       }
       const uid = reference.split(":").at(-1);
       return {
         exists: () => true,
         data: () => ({
-          ownerId: uid,
-          managerId: uid === "same-manager" ? "manager" : `manager-${uid}`,
+          uid,
+          role: "owner",
+          counterpartId: uid === "same-manager" ? "manager" : `manager-${uid}`,
         }),
       };
     });

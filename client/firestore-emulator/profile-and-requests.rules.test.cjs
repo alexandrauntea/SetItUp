@@ -772,3 +772,98 @@ describe("Regulile managerului", () => {
     }));
   });
 });
+
+describe("Regulile datelor din feed", () => {
+  beforeEach(async () => {
+    await seedDocument(
+      "managerRoles",
+      ALICE_UID,
+      managerRole(ALICE_UID, "owner", BOB_UID),
+    );
+    await seedDocument(
+      "managerRoles",
+      BOB_UID,
+      managerRole(BOB_UID, "manager", ALICE_UID),
+    );
+  });
+
+  test("managerul activ poate verifica rolul unui candidat", async () => {
+    await seedDocument(
+      "managerRoles",
+      OUTSIDER_UID,
+      managerRole(OUTSIDER_UID, "owner", "candidate-manager"),
+    );
+    const bob = testEnv.authenticatedContext(BOB_UID);
+
+    await assertSucceeds(
+      getDoc(doc(bob.firestore(), "managerRoles", OUTSIDER_UID)),
+    );
+
+    const alice = testEnv.authenticatedContext(ALICE_UID);
+    await assertFails(
+      getDoc(doc(alice.firestore(), "managerRoles", OUTSIDER_UID)),
+    );
+  });
+
+  test("managerul poate calcula prietenii comuni, dar un outsider nu", async () => {
+    await seedDocument("friendships", "candidate_friend", {
+      id: "candidate_friend",
+      memberIds: [OUTSIDER_UID, "friend-uid"],
+      memberUsernames: ["outsider", "friend"],
+      createdAt: "2026-08-15T10:00:00.000Z",
+    });
+    const bob = testEnv.authenticatedContext(BOB_UID);
+    const candidateFriendsQuery = query(
+      collection(bob.firestore(), "friendships"),
+      where("memberIds", "array-contains", OUTSIDER_UID),
+    );
+
+    const snapshot = await assertSucceeds(getDocs(candidateFriendsQuery));
+    expect(snapshot.docs).toHaveLength(1);
+
+    const unaffiliated = testEnv.authenticatedContext("unaffiliated-uid");
+    const forbiddenQuery = query(
+      collection(unaffiliated.firestore(), "friendships"),
+      where("memberIds", "array-contains", OUTSIDER_UID),
+    );
+    await assertFails(getDocs(forbiddenQuery));
+  });
+
+  test("numai managerul ownerului poate lista reacțiile și match-urile", async () => {
+    await seedDocument("reactions", `${ALICE_UID}_${OUTSIDER_UID}`, {
+      id: `${ALICE_UID}_${OUTSIDER_UID}`,
+      ownerId: ALICE_UID,
+      targetId: OUTSIDER_UID,
+      actorId: BOB_UID,
+      actorRole: "manager",
+      value: "like",
+      createdAt: "2026-08-15T10:00:00.000Z",
+      updatedAt: "2026-08-15T10:00:00.000Z",
+    });
+    await seedDocument("matches", `${ALICE_UID}_${OUTSIDER_UID}`, {
+      id: `${ALICE_UID}_${OUTSIDER_UID}`,
+      memberIds: [ALICE_UID, OUTSIDER_UID],
+      createdAt: "2026-08-15T10:00:00.000Z",
+    });
+    const bob = testEnv.authenticatedContext(BOB_UID);
+
+    await assertSucceeds(getDocs(query(
+      collection(bob.firestore(), "reactions"),
+      where("ownerId", "==", ALICE_UID),
+    )));
+    await assertSucceeds(getDocs(query(
+      collection(bob.firestore(), "matches"),
+      where("memberIds", "array-contains", ALICE_UID),
+    )));
+
+    const alice = testEnv.authenticatedContext(ALICE_UID);
+    await assertFails(getDocs(query(
+      collection(alice.firestore(), "reactions"),
+      where("ownerId", "==", ALICE_UID),
+    )));
+    await assertFails(getDocs(query(
+      collection(alice.firestore(), "matches"),
+      where("memberIds", "array-contains", ALICE_UID),
+    )));
+  });
+});

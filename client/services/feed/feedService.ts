@@ -7,7 +7,12 @@ import type {
   Match,
   Reaction,
 } from "@/types/feed";
-import type { Friendship, ManagerRelationship, PublicProfile } from "@/types/social";
+import type {
+  Friendship,
+  ManagerRelationship,
+  ManagerRole,
+  PublicProfile,
+} from "@/types/social";
 import {
   collection,
   doc,
@@ -26,6 +31,7 @@ export const FEED_RANDOM_PROFILE_RATIO = 0.2;
 const PUBLIC_PROFILES_COLLECTION = "publicProfiles";
 const FRIENDSHIPS_COLLECTION = "friendships";
 const MANAGER_RELATIONSHIPS_COLLECTION = "managerRelationships";
+const MANAGER_ROLES_COLLECTION = "managerRoles";
 const REACTIONS_COLLECTION = "reactions";
 const MATCHES_COLLECTION = "matches";
 
@@ -257,17 +263,17 @@ export const getFeed: GetFeed = async (request) => {
     .filter((profile) => !profile.isPrivate && !excludedIds.has(profile.uid));
 
   const eligibleProfiles = (await Promise.all(publicProfiles.map(async (profile) => {
-    const candidateRelationshipSnapshot = await getDoc(doc(
+    const candidateRoleSnapshot = await getDoc(doc(
       db,
-      MANAGER_RELATIONSHIPS_COLLECTION,
+      MANAGER_ROLES_COLLECTION,
       profile.uid,
     ));
-    if (!candidateRelationshipSnapshot.exists()) {
+    if (!candidateRoleSnapshot.exists()) {
       return null;
     }
 
-    const candidateRelationship = candidateRelationshipSnapshot.data() as ManagerRelationship;
-    if (candidateRelationship.managerId === request.actorId) {
+    const candidateRole = candidateRoleSnapshot.data() as ManagerRole;
+    if (candidateRole.role !== "owner" || candidateRole.counterpartId === request.actorId) {
       return null;
     }
 
