@@ -39,11 +39,11 @@ export function MatchModal({
             <Ionicons name="sparkles" size={48} color={COLORS.primary} />
           </View>
 
-          <Text style={styles.title}>Este match!</Text>
+          <Text style={styles.title}>Este o potrivire!</Text>
 
           <Text style={styles.description}>
             {ownerUsername
-              ? `Ai găsit o potrivire potrivită pentru @${ownerUsername}!`
+              ? `Ai găsit o potrivire pentru @${ownerUsername}!`
               : "Ați creat o potrivire reciprocă!"}
           </Text>
 

@@ -27,8 +27,8 @@ describe("MatchModal Component", () => {
     );
 
     expect(screen.getByTestId("match-modal-container")).toBeTruthy();
-    expect(screen.getByText("Este match!")).toBeTruthy();
-    expect(screen.getByText("Ai găsit o potrivire potrivită pentru @andrei_p!")).toBeTruthy();
+    expect(screen.getByText("Este o potrivire!")).toBeTruthy();
+    expect(screen.getByText("Ai găsit o potrivire pentru @andrei_p!")).toBeTruthy();
     expect(screen.getByText("Elena Vasilescu")).toBeTruthy();
     expect(screen.getByText("@elena_v")).toBeTruthy();
   });

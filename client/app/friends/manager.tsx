@@ -1,4 +1,5 @@
 import { ScreenBackground } from "@/components/ScreenBackground";
+import { PageBanner } from "@/components/PageBanner";
 import { ManagerCard } from "@/components/social/ManagerCard";
 import { COLORS } from "@/constants/colors";
 import { useAuth } from "@/contexts/AuthContext";
@@ -15,13 +16,10 @@ import {
 } from "@/services/social/managerService";
 import { Friendship, ManagerRelationship, ManagerRequest } from "@/types/social";
 import { requestConfirmation, showPlatformAlert } from "@/utils/platformAlert";
-import { Ionicons } from "@expo/vector-icons";
-import { LinearGradient } from "expo-linear-gradient";
 import { type Href, useRouter } from "expo-router";
 import React, { useCallback, useEffect, useState } from "react";
 import {
   ActivityIndicator,
-  Pressable,
   RefreshControl,
   ScrollView,
   StyleSheet,
@@ -276,31 +274,7 @@ export default function ManagerScreen() {
           }
         >
           <View style={styles.content}>
-            <LinearGradient
-              colors={[COLORS.primary, COLORS.primaryPressed]}
-              start={{ x: 0, y: 0 }}
-              end={{ x: 1, y: 1 }}
-              style={[
-                styles.headerCard,
-                isCompact && styles.headerCardCompact,
-              ]}
-            >
-              <Pressable
-                accessibilityRole="button"
-                accessibilityLabel="Înapoi"
-                hitSlop={8}
-                onPress={handleBack}
-                style={({ pressed }) => [
-                  styles.backButton,
-                  pressed && styles.backButtonPressed,
-                ]}
-              >
-                <Ionicons name="arrow-back" size={23} color={COLORS.primary} />
-              </Pressable>
-              <Text style={[styles.title, isCompact && styles.titleCompact]}>
-                Gestionare Manager
-              </Text>
-            </LinearGradient>
+            <PageBanner title="Gestionare manager" onBack={handleBack} />
 
             {errorMessage && (
               <View style={styles.errorBanner}>
@@ -336,7 +310,7 @@ export default function ManagerScreen() {
 
             {/* Relație activă pentru profilul curent */}
             <View style={styles.section}>
-              <Text style={styles.sectionTitle}>Managerul Tău Activ</Text>
+              <Text style={styles.sectionTitle}>Managerul tău activ</Text>
               {activeManager ? (
                 <ManagerCard
                   username={activeManager.managerUsername}
@@ -356,7 +330,7 @@ export default function ManagerScreen() {
             {/* 2. Propune Prieten ca Manager */}
             {!activeManager && outgoingRequests.length === 0 && (
               <View style={styles.section}>
-                <Text style={styles.sectionTitle}>Propune un Manager</Text>
+                <Text style={styles.sectionTitle}>Propune un manager</Text>
                 {friends.length === 0 ? (
                   <View style={styles.emptyCard}>
                     <Text style={styles.emptyText}>
@@ -482,7 +456,6 @@ const styles = StyleSheet.create({
     backgroundColor: "transparent",
   },
   contentContainer: {
-    paddingTop: 18,
     paddingBottom: 120,
     paddingHorizontal: 20,
   },
@@ -515,25 +488,6 @@ const styles = StyleSheet.create({
     color: COLORS.textSecondary,
     marginTop: 12,
     fontSize: 14,
-  },
-  headerCard: {
-    minHeight: 104,
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 12,
-    padding: 24,
-    borderRadius: 24,
-    shadowColor: COLORS.primaryPressed,
-    shadowOffset: { width: 0, height: 8 },
-    shadowOpacity: 0.18,
-    shadowRadius: 16,
-    elevation: 4,
-  },
-  headerCardCompact: {
-    minHeight: 96,
-    gap: 10,
-    padding: 18,
-    borderRadius: 20,
   },
   title: {
     flex: 1,

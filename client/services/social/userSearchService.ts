@@ -6,8 +6,8 @@ import type {
   RelationshipState,
   UserSearchResult,
 } from "@/types/social";
-import { doc, getDoc } from "firebase/firestore";
 import { normalizeUsername } from "@/utils/profileData";
+import { doc, getDoc } from "firebase/firestore";
 
 const USERNAMES_COLLECTION = "usernames";
 const PUBLIC_PROFILES_COLLECTION = "publicProfiles";
@@ -72,7 +72,6 @@ async function getVisibleProfile(
         : "";
 
     if (code === "permission-denied" || code === "firestore/permission-denied") {
-      // Regulile Firestore nu permit citirea unui profil privat.
       return null;
     }
 
@@ -82,6 +81,7 @@ async function getVisibleProfile(
 
 export async function getPublicProfileByUid(
   targetUid: string,
+  _currentUid?: string,
 ): Promise<PublicProfile | null> {
   if (!targetUid.trim()) {
     return null;
@@ -118,10 +118,14 @@ export async function findUserByUsername(
     getRelationshipState(currentUid, targetUid),
   ]);
 
+  if (!profile) {
+    throw new Error("PUBLIC_PROFILE_NOT_FOUND");
+  }
+
   return {
     uid: targetUid,
     username: normalizedUsername,
-    isPrivate: profile === null,
+    isPrivate: profile.isPrivate,
     profile,
     relationshipState,
   };

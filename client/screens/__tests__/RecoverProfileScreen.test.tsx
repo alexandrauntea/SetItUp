@@ -62,7 +62,7 @@ describe("Ecranul de recuperare a profilului", () => {
 
     expect(
       screen.getByText(
-        "Username-ul trebuie să aibă între 3 și 20 de caractere și poate conține litere, cifre și underscore (_).",
+        "Numele de utilizator trebuie să aibă între 3 și 20 de caractere și poate conține litere, cifre și linie joasă (_).",
       ),
     ).toBeTruthy();
     expect(mockedCreateUserProfile).not.toHaveBeenCalled();

@@ -1,18 +1,21 @@
 ﻿import { AppButton } from "@/components/AppButton";
 import { ScreenBackground } from "@/components/ScreenBackground";
+import { PageBanner } from "@/components/PageBanner";
 import { FeedCard } from "@/components/feed/FeedCard";
 import { FeedFilterModal } from "@/components/feed/FeedFilterModal";
 import { MatchModal } from "@/components/feed/MatchModal";
 import { COLORS } from "@/constants/colors";
 import { useAuth } from "@/contexts/AuthContext";
-import {
-  dislikeProfile,
-  getFeedProfiles,
-  getManagedOwnerForManager,
-  likeProfile,
-} from "@/services/social/feedService";
+import { getFeed } from "@/services/feed/feedService";
+import { saveReaction } from "@/services/feed/reactionService";
+import { getManagedProfiles } from "@/services/social/managerService";
 import { getPublicProfileByUid } from "@/services/social/userSearchService";
-import { FeedCandidateProfile, FeedFilterPreferences, FeedItem } from "@/types/feed";
+import {
+  FeedCandidateProfile,
+  FeedFilterPreferences,
+  FeedItem,
+  FeedPreferences,
+} from "@/types/feed";
 import { ManagerRelationship } from "@/types/social";
 import { Ionicons } from "@expo/vector-icons";
 import React, { useCallback, useEffect, useState } from "react";
@@ -22,11 +25,31 @@ import {
   StyleSheet,
   Text,
   TouchableOpacity,
+  useWindowDimensions,
   View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
+function buildPreferences(
+  ownerId: string,
+  selectedFilters: FeedFilterPreferences,
+): FeedPreferences {
+  return {
+    ownerId,
+    minAge: selectedFilters.minAge ?? 18,
+    maxAge: selectedFilters.maxAge ?? 100,
+    genders:
+      selectedFilters.gender && selectedFilters.gender !== "any"
+        ? [selectedFilters.gender]
+        : [],
+    interests: selectedFilters.interests ?? [],
+    updatedAt: new Date().toISOString(),
+  };
+}
+
 export function FeedScreen() {
+  const { width } = useWindowDimensions();
+  const isCompact = width < 380;
   const { user } = useAuth();
   const [managerRel, setManagerRel] = useState<ManagerRelationship | null>(null);
   const [isManagerChecked, setIsManagerChecked] = useState<boolean>(false);
@@ -51,7 +74,7 @@ export function FeedScreen() {
       setErrorMessage(null);
 
       try {
-        const rel = await getManagedOwnerForManager(user.uid);
+        const rel = (await getManagedProfiles(user.uid))[0] ?? null;
         setManagerRel(rel);
         setIsManagerChecked(true);
 
@@ -67,13 +90,28 @@ export function FeedScreen() {
           console.info("Nu s-a putut verifica profilul privat al ownerului:", e);
         }
 
-        const items = await getFeedProfiles(user.uid, targetFilters ?? filters);
-        setFeedItems(items);
+        const page = await getFeed({
+          ownerId: rel.ownerId,
+          actorId: user.uid,
+          preferences: buildPreferences(
+            rel.ownerId,
+            targetFilters ?? filters,
+          ),
+        });
+        setFeedItems(
+          page.profiles.map((profile) => ({
+            profile,
+            commonFriendsCount: profile.mutualFriendsCount,
+            isPreferred: profile.matchesPreferences,
+          })),
+        );
         setCurrentIndex(0);
       } catch (err: any) {
-        console.error("Error fetching feed:", err);
+        console.error("Eroare la încărcarea recomandărilor:", err);
         setErrorMessage(
-          "Nu am putut încărca profilurile din feed. Verifică conexiunea și încearcă din nou."
+          err.message === "NOT_A_MANAGER"
+            ? "Nu ești manager pentru niciun utilizator."
+            : "Nu am putut încărca recomandările. Verifică legătura și încearcă din nou."
         );
       } finally {
         setIsLoading(false);
@@ -91,7 +129,7 @@ export function FeedScreen() {
       }
 
       try {
-        const rel = await getManagedOwnerForManager(user.uid);
+        const rel = (await getManagedProfiles(user.uid))[0] ?? null;
         setManagerRel(rel);
         setIsManagerChecked(true);
 
@@ -117,14 +155,20 @@ export function FeedScreen() {
     setActionLoading("like");
 
     try {
-      const result = await likeProfile(user.uid, currentItem.profile.uid);
-      if (result.isMatch) {
-        setMatchedProfile(result.matchedProfile || currentItem.profile);
+      if (!managerRel) return;
+      const result = await saveReaction({
+        ownerId: managerRel.ownerId,
+        actorId: user.uid,
+        targetId: currentItem.profile.uid,
+        value: "like",
+      });
+      if (result.match) {
+        setMatchedProfile(currentItem.profile);
         setMatchModalVisible(true);
       }
       setCurrentIndex((prev) => prev + 1);
     } catch (err) {
-      console.error("Error liking profile:", err);
+      console.error("Eroare la salvarea aprecierii:", err);
       setErrorMessage("A apărut o eroare la salvarea aprecierii. Încearcă din nou.");
     } finally {
       setActionLoading(null);
@@ -136,11 +180,17 @@ export function FeedScreen() {
     setActionLoading("dislike");
 
     try {
-      await dislikeProfile(user.uid, currentItem.profile.uid);
+      if (!managerRel) return;
+      await saveReaction({
+        ownerId: managerRel.ownerId,
+        actorId: user.uid,
+        targetId: currentItem.profile.uid,
+        value: "dislike",
+      });
       setCurrentIndex((prev) => prev + 1);
     } catch (err) {
-      console.error("Error disliking profile:", err);
-      setErrorMessage("A apărut o eroare la trimiterea dislike-ului.");
+      console.error("Eroare la salvarea respingerii:", err);
+      setErrorMessage("Nu am putut salva opțiunea «Nu îmi place».");
     } finally {
       setActionLoading(null);
     }
@@ -154,19 +204,12 @@ export function FeedScreen() {
   return (
     <ScreenBackground>
       <SafeAreaView style={styles.safeArea}>
-        <View style={styles.container}>
+        <View style={[styles.container, isCompact && styles.containerCompact]}>
           {/* Top Header */}
-          <View style={styles.header}>
-            <View>
-              <Text style={styles.headerTitle}>Feed Potriviri</Text>
-              {managerRel && (
-                <Text style={styles.headerSubtitle}>
-                  Căuți match-uri pentru @{managerRel.ownerUsername}
-                </Text>
-              )}
-            </View>
-
-            {managerRel && (
+          <PageBanner
+            title="Recomandări"
+            subtitle={managerRel ? `Pentru @${managerRel.ownerUsername}` : undefined}
+            action={managerRel ? (
               <TouchableOpacity
                 accessibilityLabel="Filtre"
                 accessibilityRole="button"
@@ -176,8 +219,8 @@ export function FeedScreen() {
               >
                 <Ionicons name="options-outline" size={22} color={COLORS.primary} />
               </TouchableOpacity>
-            )}
-          </View>
+            ) : undefined}
+          />
 
           {/* Main Content Area */}
           <ScrollView
@@ -222,7 +265,7 @@ export function FeedScreen() {
                 <Ionicons name="shield-outline" size={56} color={COLORS.textSecondary} />
                 <Text style={styles.emptyTitle}>Doar pentru manageri</Text>
                 <Text style={styles.emptyDescription}>
-                  Momentan nu ești manager pentru niciun utilizator. Un owner trebuie să te desemneze drept manager pentru a accesa feedul.
+                  Un utilizator trebuie să te desemneze drept manager pentru a accesa recomandările.
                 </Text>
               </View>
             )}
@@ -234,12 +277,12 @@ export function FeedScreen() {
               (currentIndex >= feedItems.length || feedItems.length === 0) && (
                 <View style={styles.emptyCard} testID="feed-empty-container">
                   <Ionicons name="sparkles-outline" size={56} color={COLORS.primary} />
-                  <Text style={styles.emptyTitle}>Nu mai sunt profiluri</Text>
+                  <Text style={styles.emptyTitle}>Nu mai sunt recomandări</Text>
                   <Text style={styles.emptyDescription}>
-                    Ai parcurs toate profilurile disponibile. Revino mai târziu sau modifică filtrele pentru a găsi alte opțiuni!
+                    Revino mai târziu sau modifică filtrele.
                   </Text>
                   <AppButton
-                    title="Reîmprospătează feedul"
+                    title="Reîmprospătează"
                     onPress={() => void fetchFeed()}
                     variant="outline"
                     testID="feed-refresh-button"
@@ -293,43 +336,24 @@ const styles = StyleSheet.create({
   },
   container: {
     flex: 1,
-    paddingHorizontal: 16,
+    paddingHorizontal: 20,
   },
-  header: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    paddingVertical: 14,
-    paddingHorizontal: 4,
-    maxWidth: 440,
-    width: "100%",
-    alignSelf: "center",
-  },
-  headerTitle: {
-    color: COLORS.text,
-    fontSize: 24,
-    fontWeight: "900",
-  },
-  headerSubtitle: {
-    color: COLORS.primary,
-    fontSize: 13,
-    fontWeight: "600",
-    marginTop: 2,
+  containerCompact: {
+    paddingHorizontal: 14,
   },
   filterButton: {
     width: 42,
     height: 42,
     borderRadius: 21,
-    backgroundColor: COLORS.primarySoft,
+    backgroundColor: COLORS.background,
     justifyContent: "center",
     alignItems: "center",
   },
   scrollContent: {
     flexGrow: 1,
-    justifyContent: "center",
     alignItems: "center",
     paddingBottom: 110,
-    paddingTop: 8,
+    paddingTop: 22,
   },
   cardWrapper: {
     width: "100%",
@@ -356,6 +380,8 @@ const styles = StyleSheet.create({
     lineHeight: 18,
   },
   centerCard: {
+    width: "100%",
+    maxWidth: 430,
     padding: 32,
     alignItems: "center",
     justifyContent: "center",
@@ -368,7 +394,7 @@ const styles = StyleSheet.create({
   },
   errorCard: {
     width: "100%",
-    maxWidth: 400,
+    maxWidth: 430,
     backgroundColor: COLORS.background,
     padding: 24,
     borderRadius: 24,
@@ -395,7 +421,7 @@ const styles = StyleSheet.create({
   },
   emptyCard: {
     width: "100%",
-    maxWidth: 400,
+    maxWidth: 430,
     backgroundColor: COLORS.background,
     padding: 28,
     borderRadius: 24,

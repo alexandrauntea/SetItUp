@@ -72,7 +72,7 @@ export function FeedFilterModal({
       <View style={styles.overlay}>
         <View style={styles.container} testID="filter-modal-container">
           <View style={styles.header}>
-            <Text style={styles.title}>Filtre Preferințe</Text>
+            <Text style={styles.title}>Filtre</Text>
             <TouchableOpacity onPress={onClose} testID="filter-close-header">
               <Ionicons name="close-circle" size={28} color={COLORS.textSecondary} />
             </TouchableOpacity>

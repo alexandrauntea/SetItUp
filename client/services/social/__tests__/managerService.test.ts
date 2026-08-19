@@ -267,19 +267,47 @@ describe("managerService", () => {
                 status: "pending",
               }),
             })
+            .mockResolvedValueOnce({ exists: () => false })
+            .mockResolvedValueOnce({ exists: () => false })
             .mockResolvedValueOnce({ exists: () => false }),
           set: jest.fn(),
           delete: jest.fn(),
         };
         await cb(transactionMock);
-        expect(transactionMock.get).toHaveBeenCalledTimes(2);
-        expect(transactionMock.set).toHaveBeenCalled();
+        expect(transactionMock.get).toHaveBeenCalledTimes(4);
+        expect(transactionMock.set).toHaveBeenCalledTimes(3);
         expect(transactionMock.delete).toHaveBeenCalled();
       });
 
       await acceptManagerRequest("owner1_mgr1", "mgr1");
       expect(mockRunTransaction).toHaveBeenCalled();
       expect(mockGetDoc).not.toHaveBeenCalled();
+    });
+
+    it("refuses acceptance when either participant already has a role", async () => {
+      mockRunTransaction.mockImplementationOnce(async (db: any, cb: any) => {
+        await cb({
+          get: jest
+            .fn()
+            .mockResolvedValueOnce({
+              exists: () => true,
+              data: () => ({
+                ownerId: "owner1",
+                managerId: "mgr1",
+                status: "pending",
+              }),
+            })
+            .mockResolvedValueOnce({ exists: () => false })
+            .mockResolvedValueOnce({ exists: () => false })
+            .mockResolvedValueOnce({ exists: () => true }),
+          set: jest.fn(),
+          delete: jest.fn(),
+        });
+      });
+
+      await expect(acceptManagerRequest("owner1", "mgr1")).rejects.toThrow(
+        "ROLE_CONFLICT",
+      );
     });
   });
 
@@ -394,12 +422,13 @@ describe("managerService", () => {
 
   describe("removeManager", () => {
     it("should throw UNAUTHORIZED if non-participant tries to remove manager", async () => {
-      mockGetDoc.mockResolvedValueOnce({
-        exists: () => true,
-        data: () => ({
-          ownerId: "owner1",
-          managerId: "mgr1",
-        }),
+      mockRunTransaction.mockImplementationOnce(async (db: any, cb: any) => {
+        await cb({
+          get: jest.fn().mockResolvedValueOnce({
+            exists: () => true,
+            data: () => ({ ownerId: "owner1", managerId: "mgr1" }),
+          }),
+        });
       });
 
       await expect(removeManager("owner1", "thirdParty")).rejects.toThrow(
@@ -407,17 +436,21 @@ describe("managerService", () => {
       );
     });
 
-    it("should delete relationship when owner removes manager", async () => {
-      mockGetDoc.mockResolvedValueOnce({
-        exists: () => true,
-        data: () => ({
-          ownerId: "owner1",
-          managerId: "mgr1",
-        }),
+    it("deletes the relationship and both role locks atomically", async () => {
+      mockRunTransaction.mockImplementationOnce(async (db: any, cb: any) => {
+        const transactionMock = {
+          get: jest.fn().mockResolvedValueOnce({
+            exists: () => true,
+            data: () => ({ ownerId: "owner1", managerId: "mgr1" }),
+          }),
+          delete: jest.fn(),
+        };
+        await cb(transactionMock);
+        expect(transactionMock.delete).toHaveBeenCalledTimes(3);
       });
 
       await removeManager("owner1", "owner1");
-      expect(mockDeleteDoc).toHaveBeenCalledTimes(1);
+      expect(mockRunTransaction).toHaveBeenCalledTimes(1);
     });
   });
 });
