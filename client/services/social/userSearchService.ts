@@ -6,8 +6,8 @@ import type {
   RelationshipState,
   UserSearchResult,
 } from "@/types/social";
-import { doc, getDoc } from "firebase/firestore";
 import { normalizeUsername } from "@/utils/profileData";
+import { doc, getDoc } from "firebase/firestore";
 
 const USERNAMES_COLLECTION = "usernames";
 const PUBLIC_PROFILES_COLLECTION = "publicProfiles";
@@ -72,7 +72,6 @@ async function getVisibleProfile(
         : "";
 
     if (code === "permission-denied" || code === "firestore/permission-denied") {
-      // Regulile Firestore nu permit citirea unui profil privat.
       return null;
     }
 
@@ -82,9 +81,24 @@ async function getVisibleProfile(
 
 export async function getPublicProfileByUid(
   targetUid: string,
+  currentUid?: string,
 ): Promise<PublicProfile | null> {
   if (!targetUid.trim()) {
     return null;
+  }
+
+  // Dacă utilizatorul curent încearcă să vadă un profil care nu e al lui, verificăm dacă sunt prieteni
+  if (currentUid && currentUid !== targetUid) {
+    const relationshipState = await getRelationshipState(currentUid, targetUid);
+    
+    // Dacă sunt prieteni, permitem citirea profilului chiar dacă regulile de bază îl consideră privat
+    if (relationshipState === "friends") {
+      const profileRef = doc(db, PUBLIC_PROFILES_COLLECTION, targetUid);
+      const profileSnapshot = await getDoc(profileRef);
+      if (profileSnapshot.exists()) {
+        return profileSnapshot.data() as PublicProfile;
+      }
+    }
   }
 
   return getVisibleProfile(targetUid);
