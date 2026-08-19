@@ -118,6 +118,9 @@ describe("FeedScreen", () => {
     await waitFor(() => {
       expect(screen.getByTestId("feed-empty-container")).toBeTruthy();
     });
+
+    expect(mockGetManagedProfiles).toHaveBeenCalledTimes(1);
+    expect(mockGetFeed).toHaveBeenCalledTimes(1);
   });
 
   it("renders owner private warning banner when managed owner profile is private", async () => {

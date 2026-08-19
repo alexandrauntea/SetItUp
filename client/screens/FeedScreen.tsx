@@ -18,7 +18,7 @@ import {
 } from "@/types/feed";
 import { ManagerRelationship } from "@/types/social";
 import { Ionicons } from "@expo/vector-icons";
-import React, { useCallback, useEffect, useState } from "react";
+import React, { useCallback, useEffect, useRef, useState } from "react";
 import {
   ActivityIndicator,
   ScrollView,
@@ -61,6 +61,12 @@ export function FeedScreen() {
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
   const [filters, setFilters] = useState<FeedFilterPreferences>({});
+  const filtersRef = useRef<FeedFilterPreferences>({});
+  const requestSequence = useRef(0);
+  const activeRequest = useRef<{
+    key: string;
+    promise: Promise<void>;
+  } | null>(null);
   const [isFilterModalOpen, setIsFilterModalOpen] = useState<boolean>(false);
 
   const [actionLoading, setActionLoading] = useState<"like" | "dislike" | null>(null);
@@ -68,84 +74,95 @@ export function FeedScreen() {
   const [matchedProfile, setMatchedProfile] = useState<FeedCandidateProfile | undefined>();
 
   const fetchFeed = useCallback(
-    async (targetFilters?: FeedFilterPreferences) => {
-      if (!user?.uid) return;
-      setIsLoading(true);
-      setErrorMessage(null);
+    (targetFilters?: FeedFilterPreferences) => {
+      if (!user?.uid) return Promise.resolve();
 
-      try {
-        const rel = (await getManagedProfiles(user.uid))[0] ?? null;
-        setManagerRel(rel);
-        setIsManagerChecked(true);
+      const selectedFilters = targetFilters ?? filtersRef.current;
+      const requestKey = `${user.uid}:${JSON.stringify(selectedFilters)}`;
+      if (activeRequest.current?.key === requestKey) {
+        return activeRequest.current.promise;
+      }
 
-        if (!rel) {
-          setIsLoading(false);
-          return;
-        }
+      const requestId = ++requestSequence.current;
+      let promise!: Promise<void>;
+      promise = (async () => {
+        setIsLoading(true);
+        setErrorMessage(null);
 
         try {
-          const ownerProfile = await getPublicProfileByUid(rel.ownerId);
-          setIsOwnerPrivate(ownerProfile?.isPrivate ?? false);
-        } catch (e) {
-          console.info("Nu s-a putut verifica profilul privat al ownerului:", e);
-        }
+          const rel = (await getManagedProfiles(user.uid))[0] ?? null;
+          if (requestId !== requestSequence.current) return;
 
-        const page = await getFeed({
-          ownerId: rel.ownerId,
-          actorId: user.uid,
-          preferences: buildPreferences(
-            rel.ownerId,
-            targetFilters ?? filters,
-          ),
-        });
-        setFeedItems(
-          page.profiles.map((profile) => ({
-            profile,
-            commonFriendsCount: profile.mutualFriendsCount,
-            isPreferred: profile.matchesPreferences,
-          })),
-        );
-        setCurrentIndex(0);
-      } catch (err: any) {
-        console.error("Eroare la încărcarea recomandărilor:", err);
-        setErrorMessage(
-          err.message === "NOT_A_MANAGER"
-            ? "Nu ești manager pentru niciun utilizator."
-            : "Nu am putut încărca recomandările. Verifică legătura și încearcă din nou."
-        );
-      } finally {
-        setIsLoading(false);
-      }
+          setManagerRel(rel);
+          setIsManagerChecked(true);
+
+          if (!rel) {
+            setFeedItems([]);
+            return;
+          }
+
+          try {
+            const ownerProfile = await getPublicProfileByUid(rel.ownerId);
+            if (requestId === requestSequence.current) {
+              setIsOwnerPrivate(ownerProfile?.isPrivate ?? false);
+            }
+          } catch (error) {
+            console.info("Nu s-a putut verifica profilul privat al ownerului:", error);
+          }
+
+          const page = await getFeed({
+            ownerId: rel.ownerId,
+            actorId: user.uid,
+            preferences: buildPreferences(rel.ownerId, selectedFilters),
+          });
+          if (requestId !== requestSequence.current) return;
+
+          setFeedItems(
+            page.profiles.map((profile) => ({
+              profile,
+              commonFriendsCount: profile.mutualFriendsCount,
+              isPreferred: profile.matchesPreferences,
+            })),
+          );
+          setCurrentIndex(0);
+        } catch (err: any) {
+          if (requestId !== requestSequence.current) return;
+
+          console.error("Eroare la încărcarea recomandărilor:", err);
+          setErrorMessage(
+            err.message === "NOT_A_MANAGER"
+              ? "Nu ești manager pentru niciun utilizator."
+              : "Nu am putut încărca recomandările. Verifică legătura și încearcă din nou.",
+          );
+        } finally {
+          if (requestId === requestSequence.current) {
+            setIsLoading(false);
+          }
+          if (activeRequest.current?.promise === promise) {
+            activeRequest.current = null;
+          }
+        }
+      })();
+
+      activeRequest.current = { key: requestKey, promise };
+      return promise;
     },
-    [user?.uid, filters]
+    [user?.uid],
   );
 
   useEffect(() => {
-    async function checkRole() {
-      if (!user?.uid) {
-        setIsManagerChecked(true);
-        setIsLoading(false);
-        return;
-      }
-
-      try {
-        const rel = (await getManagedProfiles(user.uid))[0] ?? null;
-        setManagerRel(rel);
-        setIsManagerChecked(true);
-
-        if (!rel) {
-          setIsLoading(false);
-        } else {
-          void fetchFeed();
-        }
-      } catch (err) {
-        console.error("Error checking manager role:", err);
-        setErrorMessage("Nu s-a putut verifica rolul de manager. Încearcă din nou.");
-        setIsLoading(false);
-      }
+    if (!user?.uid) {
+      setIsManagerChecked(true);
+      setIsLoading(false);
+      return;
     }
 
-    void checkRole();
+    void fetchFeed();
+
+    return () => {
+      requestSequence.current += 1;
+      activeRequest.current = null;
+    };
   }, [user?.uid, fetchFeed]);
 
   const currentItem = feedItems[currentIndex];
@@ -197,6 +214,7 @@ export function FeedScreen() {
   }
 
   function handleApplyFilters(newFilters: FeedFilterPreferences) {
+    filtersRef.current = newFilters;
     setFilters(newFilters);
     void fetchFeed(newFilters);
   }
