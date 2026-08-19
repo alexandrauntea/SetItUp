@@ -1,4 +1,5 @@
-export type FriendRequestStatus = "pending";
+﻿export type FriendRequestStatus = "pending";
+export type Gender = "female" | "male" | "other";
 export type RelationshipState = "none" | "request-sent" | "request-received" | "friends";
 
 export interface UsernameDirectoryEntry {
@@ -18,6 +19,8 @@ export interface PublicProfile {
   age: number;
   isPrivate: boolean;
   photoUrl?: string;
+  photoPaths?: string[];
+  primaryPhotoPath?: string;
   updatedAt: string;
 }
 
@@ -60,6 +63,20 @@ export interface ManagerRelationship {
   memberIds: [string, string];
   createdAt: string;
 }
+
+export type ManagerRole =
+  | {
+      uid: string;
+      role: "owner";
+      counterpartId: string;
+      createdAt: string;
+    }
+  | {
+      uid: string;
+      role: "manager";
+      counterpartId: string;
+      createdAt: string;
+    };
 
 export type UserSearchResult = {
   uid: string;

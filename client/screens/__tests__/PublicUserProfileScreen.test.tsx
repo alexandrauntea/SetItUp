@@ -30,8 +30,19 @@ jest.mock("expo-image", () => ({
   Image: require("react-native").Image,
 }));
 
+jest.mock("@/services/photoStorageService", () => ({
+  getPhotoDownloadUrl: jest.fn(),
+}));
+
 jest.mock("@/services/social/userSearchService", () => ({
   getPublicProfileByUid: jest.fn(),
+}));
+
+jest.mock("@/contexts/AuthContext", () => ({
+  useAuth: () => ({
+    user: { uid: "current-user-uid" },
+    loading: false,
+  }),
 }));
 
 const mockedGetPublicProfileByUid = jest.mocked(getPublicProfileByUid);
@@ -65,13 +76,30 @@ describe("Ecranul profilului public", () => {
       expect(screen.getByText("Anca Popescu, 21")).toBeTruthy();
     });
 
-    expect(mockedGetPublicProfileByUid).toHaveBeenCalledWith("target-uid");
+    expect(mockedGetPublicProfileByUid).toHaveBeenCalledWith(
+      "target-uid",
+      "current-user-uid",
+    );
     expect(screen.getByText("@anca_21")).toBeTruthy();
     expect(screen.getByText("Îmi plac muzica și călătoriile.")).toBeTruthy();
     expect(screen.getByText("Studentă")).toBeTruthy();
     expect(screen.getByText("Feminin")).toBeTruthy();
     expect(screen.getByText("Muzică")).toBeTruthy();
     expect(screen.getByText("Călătorii")).toBeTruthy();
+  });
+
+  test("afișează profilul privat când este deschis din afara feedului", async () => {
+    mockedGetPublicProfileByUid.mockResolvedValue({
+      ...publicProfile,
+      isPrivate: true,
+    });
+
+    await render(<PublicUserProfileScreen />);
+
+    await waitFor(() => {
+      expect(screen.getByText("Anca Popescu, 21")).toBeTruthy();
+    });
+    expect(screen.queryByText("Profil indisponibil")).toBeNull();
   });
 
   test("afișează un mesaj sigur când profilul nu poate fi citit", async () => {
@@ -84,7 +112,7 @@ describe("Ecranul profilului public", () => {
     });
     expect(
       screen.getByText(
-        "Profilul este privat, nu mai există sau nu a putut fi încărcat.",
+        "Profilul nu mai există sau nu a putut fi încărcat.",
       ),
     ).toBeTruthy();
   });

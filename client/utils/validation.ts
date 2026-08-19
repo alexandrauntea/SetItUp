@@ -70,7 +70,7 @@ export function validateRegisterForm(
 
   if (!validateUsername(formData.username)) {
     errors.username =
-      "Numele de utilizator trebuie să aibă între 3 și 20 de caractere și poate conține doar litere, cifre și underscore (_).";
+      "Numele de utilizator trebuie să aibă între 3 și 20 de caractere și poate conține doar litere, cifre și linie joasă (_).";
   }
 
   if (!validateEmail(formData.email)) {

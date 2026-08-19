@@ -35,8 +35,10 @@ export function AppBottomNav() {
   const insets = useSafeAreaInsets();
   const isProfile = segments[0] === "profile" && segments[1] === "view";
   const isFriends = segments[0] === "friends";
+  const isFeed = segments[0] === "feed";
+  const isMatches = segments[0] === "matches";
 
-  if (!isProfile && !isFriends) return null;
+  if (!isProfile && !isFriends && !isFeed && !isMatches) return null;
 
   return (
     <View style={[styles.container, { paddingBottom: Math.max(insets.bottom, 8) }]}>
@@ -52,6 +54,18 @@ export function AppBottomNav() {
         label="Prieteni"
         onPress={() => router.replace("/friends" as Href)}
       />
+      <NavItem
+        active={isFeed}
+        icon={isFeed ? "flame" : "flame-outline"}
+        label="Recomandări"
+        onPress={() => router.replace("/feed" as Href)}
+      />
+      <NavItem
+        active={isMatches}
+        icon={isMatches ? "heart" : "heart-outline"}
+        label="Potriviri"
+        onPress={() => router.replace("/matches" as Href)}
+      />
     </View>
   );
 }
@@ -64,7 +78,7 @@ const styles = StyleSheet.create({
     left: 0,
     flexDirection: "row",
     paddingTop: 8,
-    paddingHorizontal: 28,
+    paddingHorizontal: 12,
     backgroundColor: COLORS.background,
     borderTopWidth: 1,
     borderTopColor: COLORS.border,

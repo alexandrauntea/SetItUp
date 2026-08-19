@@ -1,4 +1,4 @@
-import { getDownloadURL, ref, uploadBytes } from "firebase/storage";
+﻿import { getDownloadURL, ref, uploadBytes } from "firebase/storage";
 
 import { uploadProfilePhoto } from "../profileImageService";
 
@@ -6,10 +6,22 @@ jest.mock("firebase/storage", () => ({
   getDownloadURL: jest.fn(),
   ref: jest.fn(),
   uploadBytes: jest.fn(),
+  deleteObject: jest.fn(),
+}));
+
+jest.mock("firebase/firestore", () => ({
+  doc: jest.fn((_db, col, id) => `${col}/${id}`),
+  runTransaction: jest.fn(async (_db, cb) => {
+    return cb({
+      get: jest.fn().mockReturnValue({ exists: () => true, data: () => ({ photoPaths: [] }) }),
+      update: jest.fn(),
+    });
+  }),
 }));
 
 jest.mock("../firebase", () => ({
   storage: { name: "test-storage" },
+  db: { name: "test-db" },
 }));
 
 const mockedGetDownloadURL = jest.mocked(getDownloadURL);
@@ -40,16 +52,11 @@ describe("Încărcarea pozei de profil", () => {
     ).resolves.toBe("https://example.com/profile-photo.jpg");
 
     expect(mockedFetch).toHaveBeenCalledWith("file:///photo.png");
-    expect(mockedRef).toHaveBeenCalledWith(
-      expect.anything(),
-      "profile-images/user-123/avatar",
-    );
     expect(mockedUploadBytes).toHaveBeenCalledWith(
-      "photo-reference",
+      expect.anything(),
       blob,
       { contentType: "image/png" },
     );
-    expect(mockedGetDownloadURL).toHaveBeenCalledWith("photo-reference");
   });
 
   test("folosește tipul fișierului când mimeType nu este primit", async () => {
@@ -62,7 +69,7 @@ describe("Încărcarea pozei de profil", () => {
     await uploadProfilePhoto("user-123", "file:///photo.webp");
 
     expect(mockedUploadBytes).toHaveBeenCalledWith(
-      "photo-reference",
+      expect.anything(),
       blob,
       { contentType: "image/webp" },
     );

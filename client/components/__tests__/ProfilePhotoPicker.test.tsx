@@ -120,6 +120,58 @@ describe("Selectorul fotografiei de profil", () => {
     expect(onPhotoSelected).not.toHaveBeenCalled();
   });
 
+  test("respinge formatele care nu sunt acceptate de Storage", async () => {
+    mockedLaunchLibrary.mockResolvedValue({
+      canceled: false,
+      assets: [
+        {
+          uri: "file:///poza.heic",
+          fileName: "poza.heic",
+          mimeType: "image/heic",
+          fileSize: 1024 * 1024,
+        },
+      ],
+    } as never);
+    await render(
+      <ProfilePhotoPicker
+        initials="AB"
+        onPhotoSelected={onPhotoSelected}
+      />,
+    );
+
+    await fireEvent.press(screen.getByLabelText("Alege poza de profil"));
+
+    await waitFor(() => {
+      expect(Alert.alert).toHaveBeenCalledWith(
+        "Format neacceptat",
+        "Alege o fotografie JPG, PNG sau WebP.",
+      );
+    });
+    expect(onPhotoSelected).not.toHaveBeenCalled();
+  });
+
+  test("afișează o eroare în română dacă galeria nu poate fi deschisă", async () => {
+    const consoleSpy = jest.spyOn(console, "info").mockImplementation();
+    mockedLaunchLibrary.mockRejectedValue(new Error("picker unavailable"));
+    await render(
+      <ProfilePhotoPicker
+        initials="AB"
+        onPhotoSelected={onPhotoSelected}
+      />,
+    );
+
+    await fireEvent.press(screen.getByLabelText("Alege poza de profil"));
+
+    await waitFor(() => {
+      expect(Alert.alert).toHaveBeenCalledWith(
+        "Galeria nu este disponibilă",
+        "Nu am putut deschide galeria. Încearcă din nou.",
+      );
+    });
+    expect(onPhotoSelected).not.toHaveBeenCalled();
+    consoleSpy.mockRestore();
+  });
+
   test("trimite formularului fotografia validă selectată", async () => {
     mockedLaunchLibrary.mockResolvedValue({
       canceled: false,

@@ -109,7 +109,7 @@ describe("Ecranul managerului", () => {
       await screen.findByRole("button", { name: "Înapoi" }),
     );
 
-    expect(screen.getByText("Gestionare Manager")).toBeTruthy();
+    expect(screen.getByText("Gestionare manager")).toBeTruthy();
     expect(mockBack).toHaveBeenCalledTimes(1);
     expect(mockReplace).not.toHaveBeenCalled();
   });

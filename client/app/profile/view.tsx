@@ -1,11 +1,11 @@
 import { AppButton } from "@/components/AppButton";
+import { ProfilePhotoGallery } from "@/components/ProfilePhotoGallery";
 import { ScreenBackground } from "@/components/ScreenBackground";
 import { COLORS } from "@/constants/colors";
 import { GENDER_OPTIONS } from "@/constants/profileOptions";
 import { useProfile } from "@/contexts/ProfileContext";
 import { logoutUser } from "@/services/authService";
 import { Ionicons } from "@expo/vector-icons";
-import { Image } from "expo-image";
 import { LinearGradient } from "expo-linear-gradient";
 import { useRouter } from "expo-router";
 import {
@@ -38,7 +38,6 @@ export default function ProfileScreen() {
   }
 
   const fullName = `${profile.firstName} ${profile.lastName}`.trim();
-  const initials = `${profile.firstName.charAt(0)}${profile.lastName.charAt(0)}`;
   const age = calculateAgeFromBirthDate(profile.birthDate);
   const genderLabel =
     GENDER_OPTIONS.find((option) => option.value === profile.gender)?.label ??
@@ -70,21 +69,6 @@ export default function ProfileScreen() {
               end={{ x: 1, y: 1 }}
               style={styles.headerCard}
             >
-              <View style={styles.avatar}>
-                {profile.photoUrl ? (
-                  <Image
-                    source={{
-                      uri: profile.photoUrl,
-                      cacheKey: profile.updatedAt,
-                    }}
-                    contentFit="cover"
-                    style={styles.avatarImage}
-                  />
-                ) : (
-                  <Text style={styles.avatarText}>{initials}</Text>
-                )}
-              </View>
-
               <View style={styles.nameRow}>
                 <Text style={styles.name}>{fullName}</Text>
                 {age > 0 ? <Text style={styles.age}>{age}</Text> : null}
@@ -92,6 +76,13 @@ export default function ProfileScreen() {
 
               <Text style={styles.username}>@{profile.username}</Text>
             </LinearGradient>
+
+            <ProfilePhotoGallery
+              name={fullName}
+              photoPaths={profile.photoPaths}
+              primaryPhotoPath={profile.primaryPhotoPath}
+              primaryPhotoUrl={profile.photoUrl}
+            />
 
           <View style={styles.section}>
             <Text style={styles.sectionTitle}>Despre mine</Text>
@@ -224,27 +215,6 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.2,
     shadowRadius: 18,
     elevation: 5,
-  },
-  avatar: {
-    width: 96,
-    height: 96,
-    alignItems: "center",
-    justifyContent: "center",
-    marginBottom: 14,
-    backgroundColor: COLORS.background,
-    borderRadius: 48,
-    borderWidth: 5,
-    borderColor: "rgba(255, 255, 255, 0.35)",
-  },
-  avatarText: {
-    color: COLORS.primary,
-    fontSize: 30,
-    fontWeight: "bold",
-  },
-  avatarImage: {
-    width: "100%",
-    height: "100%",
-    borderRadius: 48,
   },
   nameRow: {
     flexDirection: "row",

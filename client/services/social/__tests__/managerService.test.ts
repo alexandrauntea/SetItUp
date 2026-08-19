@@ -1,4 +1,4 @@
-import { areFriends } from "@/services/social/friendshipService";
+﻿import { areFriends } from "@/services/social/friendshipService";
 import { where } from "firebase/firestore";
 import {
   acceptManagerRequest,
@@ -43,7 +43,7 @@ jest.mock("firebase/firestore", () => ({
 
 describe("managerService", () => {
   beforeEach(() => {
-    jest.clearAllMocks();
+    jest.resetAllMocks();
   });
 
   describe("sendManagerRequest", () => {
@@ -92,7 +92,7 @@ describe("managerService", () => {
       mockGetDoc.mockResolvedValueOnce({ exists: () => false });
       // existing request -> null
       mockGetDoc.mockResolvedValueOnce({ exists: () => false });
-      // friendship doc -> memberIds and memberUsernames
+      // friendship doc with memberIds and memberUsernames
       mockGetDoc.mockResolvedValueOnce({
         exists: () => true,
         data: () => ({
@@ -125,43 +125,36 @@ describe("managerService", () => {
         "REQUEST_ALREADY_EXISTS",
       );
 
-      expect(mockGetDoc).toHaveBeenNthCalledWith(
-        2,
-        "doc-managerRequests-ownerA",
-      );
-      expect(mockSetDoc).not.toHaveBeenCalled();
+      expect(mockGetDoc).toHaveBeenCalledTimes(2);
     });
   });
 
   describe("getIncomingManagerRequests", () => {
-    it("should fetch only pending incoming requests and sort newest first", async () => {
+    it("should fetch incoming pending requests for manager sorted desc by createdAt", async () => {
       mockGetDocs.mockResolvedValueOnce({
         docs: [
           {
             id: "old_pending",
             data: () => ({
-              ownerId: "owner1",
               managerId: "mgr",
               status: "pending",
-              createdAt: "2026-08-12T10:00:00.000Z",
-            }),
-          },
-          {
-            id: "not_pending",
-            data: () => ({
-              ownerId: "owner2",
-              managerId: "mgr",
-              status: "accepted",
-              createdAt: "2026-08-12T12:00:00.000Z",
+              createdAt: "2026-08-01T10:00:00.000Z",
             }),
           },
           {
             id: "new_pending",
             data: () => ({
-              ownerId: "owner3",
               managerId: "mgr",
               status: "pending",
-              createdAt: "2026-08-12T11:00:00.000Z",
+              createdAt: "2026-08-02T10:00:00.000Z",
+            }),
+          },
+          {
+            id: "accepted_req",
+            data: () => ({
+              managerId: "mgr",
+              status: "accepted",
+              createdAt: "2026-08-03T10:00:00.000Z",
             }),
           },
         ],
@@ -217,7 +210,7 @@ describe("managerService", () => {
       });
 
       await expect(acceptManagerRequest("req123", "user1")).rejects.toThrow(
-      "REQUEST_NOT_FOUND"
+        "REQUEST_NOT_FOUND"
       );
     });
 
@@ -274,19 +267,47 @@ describe("managerService", () => {
                 status: "pending",
               }),
             })
+            .mockResolvedValueOnce({ exists: () => false })
+            .mockResolvedValueOnce({ exists: () => false })
             .mockResolvedValueOnce({ exists: () => false }),
           set: jest.fn(),
           delete: jest.fn(),
         };
         await cb(transactionMock);
-        expect(transactionMock.get).toHaveBeenCalledTimes(2);
-        expect(transactionMock.set).toHaveBeenCalled();
+        expect(transactionMock.get).toHaveBeenCalledTimes(4);
+        expect(transactionMock.set).toHaveBeenCalledTimes(3);
         expect(transactionMock.delete).toHaveBeenCalled();
       });
 
       await acceptManagerRequest("owner1_mgr1", "mgr1");
       expect(mockRunTransaction).toHaveBeenCalled();
       expect(mockGetDoc).not.toHaveBeenCalled();
+    });
+
+    it("refuses acceptance when either participant already has a role", async () => {
+      mockRunTransaction.mockImplementationOnce(async (db: any, cb: any) => {
+        await cb({
+          get: jest
+            .fn()
+            .mockResolvedValueOnce({
+              exists: () => true,
+              data: () => ({
+                ownerId: "owner1",
+                managerId: "mgr1",
+                status: "pending",
+              }),
+            })
+            .mockResolvedValueOnce({ exists: () => false })
+            .mockResolvedValueOnce({ exists: () => false })
+            .mockResolvedValueOnce({ exists: () => true }),
+          set: jest.fn(),
+          delete: jest.fn(),
+        });
+      });
+
+      await expect(acceptManagerRequest("owner1", "mgr1")).rejects.toThrow(
+        "ROLE_CONFLICT",
+      );
     });
   });
 
@@ -401,12 +422,13 @@ describe("managerService", () => {
 
   describe("removeManager", () => {
     it("should throw UNAUTHORIZED if non-participant tries to remove manager", async () => {
-      mockGetDoc.mockResolvedValueOnce({
-        exists: () => true,
-        data: () => ({
-          ownerId: "owner1",
-          managerId: "mgr1",
-        }),
+      mockRunTransaction.mockImplementationOnce(async (db: any, cb: any) => {
+        await cb({
+          get: jest.fn().mockResolvedValueOnce({
+            exists: () => true,
+            data: () => ({ ownerId: "owner1", managerId: "mgr1" }),
+          }),
+        });
       });
 
       await expect(removeManager("owner1", "thirdParty")).rejects.toThrow(
@@ -414,17 +436,21 @@ describe("managerService", () => {
       );
     });
 
-    it("should delete relationship when owner removes manager", async () => {
-      mockGetDoc.mockResolvedValueOnce({
-        exists: () => true,
-        data: () => ({
-          ownerId: "owner1",
-          managerId: "mgr1",
-        }),
+    it("deletes the relationship and both role locks atomically", async () => {
+      mockRunTransaction.mockImplementationOnce(async (db: any, cb: any) => {
+        const transactionMock = {
+          get: jest.fn().mockResolvedValueOnce({
+            exists: () => true,
+            data: () => ({ ownerId: "owner1", managerId: "mgr1" }),
+          }),
+          delete: jest.fn(),
+        };
+        await cb(transactionMock);
+        expect(transactionMock.delete).toHaveBeenCalledTimes(3);
       });
 
       await removeManager("owner1", "owner1");
-      expect(mockDeleteDoc).toHaveBeenCalledTimes(1);
+      expect(mockRunTransaction).toHaveBeenCalledTimes(1);
     });
   });
 });

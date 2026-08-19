@@ -1,11 +1,12 @@
 import { AppButton } from "@/components/AppButton";
+import { ProfilePhotoGallery } from "@/components/ProfilePhotoGallery";
 import { ScreenBackground } from "@/components/ScreenBackground";
 import { COLORS } from "@/constants/colors";
 import { GENDER_OPTIONS } from "@/constants/profileOptions";
+import { useAuth } from "@/contexts/AuthContext";
 import { getPublicProfileByUid } from "@/services/social/userSearchService";
 import type { PublicProfile } from "@/types/social";
 import { Ionicons } from "@expo/vector-icons";
-import { Image } from "expo-image";
 import { LinearGradient } from "expo-linear-gradient";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { useEffect, useState } from "react";
@@ -22,6 +23,7 @@ import { SafeAreaView } from "react-native-safe-area-context";
 
 export default function PublicUserProfileScreen() {
   const router = useRouter();
+  const { user: currentUser } = useAuth();
   const { width } = useWindowDimensions();
   const isCompact = width < 380;
   const params = useLocalSearchParams<{ uid?: string | string[] }>();
@@ -41,7 +43,8 @@ export default function PublicUserProfileScreen() {
       }
 
       try {
-        const publicProfile = await getPublicProfileByUid(uid);
+        // Trimitem și ID-ul utilizatorului curent pentru a verifica relația de prietenie în servicii
+        const publicProfile = await getPublicProfileByUid(uid, currentUser?.uid);
         if (isActive) setProfile(publicProfile);
       } catch {
         if (isActive) setHasError(true);
@@ -54,7 +57,7 @@ export default function PublicUserProfileScreen() {
     return () => {
       isActive = false;
     };
-  }, [uid]);
+  }, [uid, currentUser?.uid]);
 
   function handleBack() {
     if (router.canGoBack()) {
@@ -82,7 +85,7 @@ export default function PublicUserProfileScreen() {
             <Ionicons name="lock-closed-outline" size={38} color={COLORS.primary} />
             <Text style={styles.messageTitle}>Profil indisponibil</Text>
             <Text style={styles.messageText}>
-              Profilul este privat, nu mai există sau nu a putut fi încărcat.
+              Profilul nu mai există sau nu a putut fi încărcat.
             </Text>
             <AppButton title="Înapoi la căutare" onPress={handleBack} />
           </View>
@@ -92,7 +95,6 @@ export default function PublicUserProfileScreen() {
   }
 
   const fullName = `${profile.firstName} ${profile.lastName}`.trim();
-  const initials = `${profile.firstName.charAt(0)}${profile.lastName.charAt(0)}`;
   const gender =
     GENDER_OPTIONS.find((option) => option.value === profile.gender)?.label ??
     profile.gender;
@@ -126,22 +128,18 @@ export default function PublicUserProfileScreen() {
             colors={[COLORS.primary, COLORS.primaryPressed]}
             style={[styles.header, isCompact && styles.headerCompact]}
           >
-            <View style={styles.avatar}>
-              {profile.photoUrl ? (
-                <Image
-                  source={{ uri: profile.photoUrl }}
-                  contentFit="cover"
-                  style={styles.photo}
-                />
-              ) : (
-                <Text style={styles.initials}>{initials.toUpperCase()}</Text>
-              )}
-            </View>
             <Text style={styles.name}>
               {fullName}{profile.age > 0 ? `, ${profile.age}` : ""}
             </Text>
             <Text style={styles.username}>@{profile.username}</Text>
           </LinearGradient>
+
+          <ProfilePhotoGallery
+            name={fullName}
+            photoPaths={profile.photoPaths}
+            primaryPhotoPath={profile.primaryPhotoPath}
+            primaryPhotoUrl={profile.photoUrl}
+          />
 
           <View style={styles.section}>
             <Text style={styles.sectionTitle}>Despre mine</Text>
@@ -227,18 +225,6 @@ const styles = StyleSheet.create({
   },
   header: { alignItems: "center", gap: 8, padding: 24, borderRadius: 24 },
   headerCompact: { padding: 20, borderRadius: 20 },
-  avatar: {
-    width: 96,
-    height: 96,
-    alignItems: "center",
-    justifyContent: "center",
-    overflow: "hidden",
-    marginBottom: 6,
-    borderRadius: 48,
-    backgroundColor: COLORS.background,
-  },
-  photo: { width: "100%", height: "100%" },
-  initials: { color: COLORS.primary, fontSize: 30, fontWeight: "800" },
   name: {
     color: COLORS.background,
     textAlign: "center",

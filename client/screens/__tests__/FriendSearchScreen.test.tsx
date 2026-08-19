@@ -56,7 +56,7 @@ const searchResult: UserSearchResult = {
 
 async function searchFor(username = "anca_21") {
   await fireEvent.changeText(
-    screen.getByPlaceholderText("Caută după username"),
+    screen.getByPlaceholderText("Caută după numele de utilizator"),
     username,
   );
   await fireEvent.press(screen.getByText("Caută"));
@@ -72,7 +72,7 @@ describe("Ecranul de căutare a prietenilor", () => {
     await render(<FriendSearchScreen />);
 
     expect(screen.getByText("Caută prieteni")).toBeTruthy();
-    expect(screen.getByPlaceholderText("Caută după username")).toBeTruthy();
+    expect(screen.getByPlaceholderText("Caută după numele de utilizator")).toBeTruthy();
     expect(screen.queryByText("Descoperă persoane")).toBeNull();
   });
 
@@ -114,7 +114,11 @@ describe("Ecranul de căutare a prietenilor", () => {
 
     await searchFor("nimeni");
 
-    expect(await screen.findByText("Nu am găsit niciun utilizator cu acest username.")).toBeTruthy();
+    expect(
+      await screen.findByText(
+        "Nu am găsit niciun utilizator cu acest nume de utilizator.",
+      ),
+    ).toBeTruthy();
   });
 
   test("afișează mesajul dedicat când utilizatorul se caută pe sine", async () => {

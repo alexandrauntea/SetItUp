@@ -246,7 +246,7 @@ describe("Validarea formularului de înregistrare", () => {
 
     expect(result.isValid).toBe(false);
     expect(result.errors.username).toBe(
-      "Numele de utilizator trebuie să aibă între 3 și 20 de caractere și poate conține doar litere, cifre și underscore (_).",
+      "Numele de utilizator trebuie să aibă între 3 și 20 de caractere și poate conține doar litere, cifre și linie joasă (_).",
     );
   });
 

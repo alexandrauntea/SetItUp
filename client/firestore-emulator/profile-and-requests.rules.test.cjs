@@ -116,6 +116,15 @@ function managerRelationship() {
   };
 }
 
+function managerRole(uid, role, counterpartId) {
+  return {
+    uid,
+    role,
+    counterpartId,
+    createdAt: "2026-08-12T10:00:00.000Z",
+  };
+}
+
 async function seedDocument(collectionName, documentId, data) {
   await testEnv.withSecurityRulesDisabled(async (context) => {
     await setDoc(doc(context.firestore(), collectionName, documentId), data);
@@ -187,7 +196,7 @@ describe("Regulile profilului", () => {
     await assertFails(getDoc(doc(bob.firestore(), "users", ALICE_UID)));
   });
 
-  test("un profil public este vizibil, iar unul privat rămâne ascuns", async () => {
+  test("profilurile publice și private pot fi deschise de utilizatorii autentificați", async () => {
     const bob = testEnv.authenticatedContext(BOB_UID);
     await seedDocument(
       "publicProfiles",
@@ -204,7 +213,7 @@ describe("Regulile profilului", () => {
       ALICE_UID,
       publicProfile(ALICE_UID, "alice", true),
     );
-    await assertFails(
+    await assertSucceeds(
       getDoc(doc(bob.firestore(), "publicProfiles", ALICE_UID)),
     );
   });
@@ -227,6 +236,85 @@ describe("Regulile profilului", () => {
       }),
     );
     await assertFails(updateDoc(ref, { email: "changed@example.com" }));
+  });
+
+  test("ownerul poate salva cel mult șase fotografii valide", async () => {
+    await seedDocument(
+      "users",
+      ALICE_UID,
+      privateProfile(ALICE_UID, "alice", "alice@example.com"),
+    );
+    const alice = testEnv.authenticatedContext(ALICE_UID);
+    const paths = Array.from(
+      { length: 6 },
+      (_, index) => `profilePhotos/${ALICE_UID}/photo-${index}.jpg`,
+    );
+
+    await assertSucceeds(
+      updateDoc(doc(alice.firestore(), "users", ALICE_UID), {
+        photoPaths: paths,
+        primaryPhotoPath: paths[0],
+        photoUrl: "https://example.com/photo-0.jpg",
+        updatedAt: "2026-08-12T11:00:00.000Z",
+      }),
+    );
+  });
+
+  test("regulile refuză peste șase fotografii, duplicate și căi străine", async () => {
+    await seedDocument(
+      "users",
+      ALICE_UID,
+      privateProfile(ALICE_UID, "alice", "alice@example.com"),
+    );
+    const alice = testEnv.authenticatedContext(ALICE_UID);
+    const profileRef = doc(alice.firestore(), "users", ALICE_UID);
+    const sevenPaths = Array.from(
+      { length: 7 },
+      (_, index) => `profilePhotos/${ALICE_UID}/photo-${index}.jpg`,
+    );
+
+    await assertFails(
+      updateDoc(profileRef, {
+        photoPaths: sevenPaths,
+        primaryPhotoPath: sevenPaths[0],
+        photoUrl: "https://example.com/photo.jpg",
+        updatedAt: "2026-08-12T11:00:00.000Z",
+      }),
+    );
+    await assertFails(
+      updateDoc(profileRef, {
+        photoPaths: [sevenPaths[0], sevenPaths[0]],
+        primaryPhotoPath: sevenPaths[0],
+        photoUrl: "https://example.com/photo.jpg",
+        updatedAt: "2026-08-12T11:00:00.000Z",
+      }),
+    );
+    await assertFails(
+      updateDoc(profileRef, {
+        photoPaths: [`profilePhotos/${BOB_UID}/photo.jpg`],
+        primaryPhotoPath: `profilePhotos/${BOB_UID}/photo.jpg`,
+        photoUrl: "https://example.com/photo.jpg",
+        updatedAt: "2026-08-12T11:00:00.000Z",
+      }),
+    );
+  });
+
+  test("fotografia principală trebuie să se afle în lista profilului", async () => {
+    await seedDocument(
+      "users",
+      ALICE_UID,
+      privateProfile(ALICE_UID, "alice", "alice@example.com"),
+    );
+    const alice = testEnv.authenticatedContext(ALICE_UID);
+
+    await assertFails(
+      updateDoc(doc(alice.firestore(), "users", ALICE_UID), {
+        photoPaths: [`profilePhotos/${ALICE_UID}/photo-1.jpg`],
+        primaryPhotoPath: `profilePhotos/${ALICE_UID}/photo-2.jpg`,
+        photoUrl: "https://example.com/photo-2.jpg",
+        updatedAt: "2026-08-12T11:00:00.000Z",
+      }),
+    );
   });
 });
 
@@ -453,22 +541,37 @@ describe("Regulile managerului", () => {
       "managerRelationships",
       data.ownerId,
     );
+    const ownerRoleRef = doc(firestore, "managerRoles", data.ownerId);
+    const managerRoleRef = doc(firestore, "managerRoles", data.managerId);
 
     await assertSucceeds(
       runTransaction(firestore, async (transaction) => {
         const requestSnapshot = await transaction.get(requestRef);
         const relationshipSnapshot = await transaction.get(relationshipRef);
+        const ownerRoleSnapshot = await transaction.get(ownerRoleRef);
+        const managerRoleSnapshot = await transaction.get(managerRoleRef);
 
         expect(requestSnapshot.exists()).toBe(true);
         expect(relationshipSnapshot.exists()).toBe(false);
+        expect(ownerRoleSnapshot.exists()).toBe(false);
+        expect(managerRoleSnapshot.exists()).toBe(false);
 
         transaction.set(relationshipRef, managerRelationship());
+        transaction.set(
+          ownerRoleRef,
+          managerRole(data.ownerId, "owner", data.managerId),
+        );
+        transaction.set(
+          managerRoleRef,
+          managerRole(data.managerId, "manager", data.ownerId),
+        );
         transaction.delete(requestRef);
       }),
     );
 
     expect((await getDoc(requestRef)).exists()).toBe(false);
     expect((await getDoc(relationshipRef)).exists()).toBe(true);
+    expect((await getDoc(managerRoleRef)).exists()).toBe(true);
   });
 
   test("managerul poate accepta o cerere creată cu vechiul ID", async () => {
@@ -486,12 +589,24 @@ describe("Regulile managerului", () => {
       "managerRelationships",
       data.ownerId,
     );
+    const ownerRoleRef = doc(firestore, "managerRoles", data.ownerId);
+    const managerRoleRef = doc(firestore, "managerRoles", data.managerId);
 
     await assertSucceeds(
       runTransaction(firestore, async (transaction) => {
         await transaction.get(requestRef);
         await transaction.get(relationshipRef);
+        await transaction.get(ownerRoleRef);
+        await transaction.get(managerRoleRef);
         transaction.set(relationshipRef, managerRelationship());
+        transaction.set(
+          ownerRoleRef,
+          managerRole(data.ownerId, "owner", data.managerId),
+        );
+        transaction.set(
+          managerRoleRef,
+          managerRole(data.managerId, "manager", data.ownerId),
+        );
         transaction.delete(requestRef);
       }),
     );
@@ -522,6 +637,48 @@ describe("Regulile managerului", () => {
         doc(bob.firestore(), "managerRelationships", ALICE_UID),
         managerRelationship(),
       ),
+    );
+  });
+
+  test("un rol nu poate fi creat în afara acceptării atomice", async () => {
+    const bob = testEnv.authenticatedContext(BOB_UID);
+
+    await assertFails(
+      setDoc(
+        doc(bob.firestore(), "managerRoles", BOB_UID),
+        managerRole(BOB_UID, "manager", ALICE_UID),
+      ),
+    );
+  });
+
+  test("acceptarea este refuzată dacă managerul are deja un rol", async () => {
+    const data = managerRequest();
+    await seedDocument("managerRequests", data.id, data);
+    await seedDocument("friendships", friendship().id, friendship());
+    await seedDocument(
+      "managerRoles",
+      BOB_UID,
+      managerRole(BOB_UID, "owner", OUTSIDER_UID),
+    );
+    const bob = testEnv.authenticatedContext(BOB_UID);
+    const firestore = bob.firestore();
+
+    await assertFails(
+      runTransaction(firestore, async (transaction) => {
+        transaction.set(
+          doc(firestore, "managerRelationships", ALICE_UID),
+          managerRelationship(),
+        );
+        transaction.set(
+          doc(firestore, "managerRoles", ALICE_UID),
+          managerRole(ALICE_UID, "owner", BOB_UID),
+        );
+        transaction.set(
+          doc(firestore, "managerRoles", BOB_UID),
+          managerRole(BOB_UID, "manager", ALICE_UID),
+        );
+        transaction.delete(doc(firestore, "managerRequests", data.id));
+      }),
     );
   });
 
@@ -672,6 +829,16 @@ describe("Regulile managerului", () => {
       ALICE_UID,
       managerRelationship(),
     );
+    await seedDocument(
+      "managerRoles",
+      ALICE_UID,
+      managerRole(ALICE_UID, "owner", BOB_UID),
+    );
+    await seedDocument(
+      "managerRoles",
+      BOB_UID,
+      managerRole(BOB_UID, "manager", ALICE_UID),
+    );
     const outsider = testEnv.authenticatedContext(OUTSIDER_UID);
 
     await assertFails(
@@ -681,8 +848,212 @@ describe("Regulile managerului", () => {
     );
 
     const bob = testEnv.authenticatedContext(BOB_UID);
-    await assertSucceeds(
-      deleteDoc(doc(bob.firestore(), "managerRelationships", ALICE_UID)),
+    await assertSucceeds(runTransaction(bob.firestore(), async (transaction) => {
+      transaction.delete(
+        doc(bob.firestore(), "managerRelationships", ALICE_UID),
+      );
+      transaction.delete(doc(bob.firestore(), "managerRoles", ALICE_UID));
+      transaction.delete(doc(bob.firestore(), "managerRoles", BOB_UID));
+    }));
+  });
+});
+
+describe("Regulile datelor din feed", () => {
+  beforeEach(async () => {
+    await seedDocument(
+      "managerRoles",
+      ALICE_UID,
+      managerRole(ALICE_UID, "owner", BOB_UID),
     );
+    await seedDocument(
+      "managerRoles",
+      BOB_UID,
+      managerRole(BOB_UID, "manager", ALICE_UID),
+    );
+  });
+
+  test("managerul activ poate verifica rolul unui candidat", async () => {
+    await seedDocument(
+      "managerRoles",
+      OUTSIDER_UID,
+      managerRole(OUTSIDER_UID, "owner", "candidate-manager"),
+    );
+    const bob = testEnv.authenticatedContext(BOB_UID);
+
+    await assertSucceeds(
+      getDoc(doc(bob.firestore(), "managerRoles", OUTSIDER_UID)),
+    );
+
+    const alice = testEnv.authenticatedContext(ALICE_UID);
+    await assertFails(
+      getDoc(doc(alice.firestore(), "managerRoles", OUTSIDER_UID)),
+    );
+  });
+
+  test("managerul poate calcula prietenii comuni, dar un outsider nu", async () => {
+    await seedDocument("friendships", "candidate_friend", {
+      id: "candidate_friend",
+      memberIds: [OUTSIDER_UID, "friend-uid"],
+      memberUsernames: ["outsider", "friend"],
+      createdAt: "2026-08-15T10:00:00.000Z",
+    });
+    const bob = testEnv.authenticatedContext(BOB_UID);
+    const candidateFriendsQuery = query(
+      collection(bob.firestore(), "friendships"),
+      where("memberIds", "array-contains", OUTSIDER_UID),
+    );
+
+    const snapshot = await assertSucceeds(getDocs(candidateFriendsQuery));
+    expect(snapshot.docs).toHaveLength(1);
+
+    const unaffiliated = testEnv.authenticatedContext("unaffiliated-uid");
+    const forbiddenQuery = query(
+      collection(unaffiliated.firestore(), "friendships"),
+      where("memberIds", "array-contains", OUTSIDER_UID),
+    );
+    await assertFails(getDocs(forbiddenQuery));
+  });
+
+  test("numai managerul ownerului poate lista reacțiile și match-urile", async () => {
+    await seedDocument("reactions", `${ALICE_UID}_${OUTSIDER_UID}`, {
+      id: `${ALICE_UID}_${OUTSIDER_UID}`,
+      ownerId: ALICE_UID,
+      targetId: OUTSIDER_UID,
+      actorId: BOB_UID,
+      actorRole: "manager",
+      value: "like",
+      createdAt: "2026-08-15T10:00:00.000Z",
+      updatedAt: "2026-08-15T10:00:00.000Z",
+    });
+    await seedDocument("matches", `${ALICE_UID}_${OUTSIDER_UID}`, {
+      id: `${ALICE_UID}_${OUTSIDER_UID}`,
+      memberIds: [ALICE_UID, OUTSIDER_UID],
+      createdAt: "2026-08-15T10:00:00.000Z",
+    });
+    const bob = testEnv.authenticatedContext(BOB_UID);
+
+    await assertSucceeds(getDocs(query(
+      collection(bob.firestore(), "reactions"),
+      where("ownerId", "==", ALICE_UID),
+    )));
+    await assertSucceeds(getDocs(query(
+      collection(bob.firestore(), "matches"),
+      where("memberIds", "array-contains", ALICE_UID),
+    )));
+
+    const alice = testEnv.authenticatedContext(ALICE_UID);
+    await assertFails(getDocs(query(
+      collection(alice.firestore(), "reactions"),
+      where("ownerId", "==", ALICE_UID),
+    )));
+    await assertFails(getDocs(query(
+      collection(alice.firestore(), "matches"),
+      where("memberIds", "array-contains", ALICE_UID),
+    )));
+  });
+
+  test("managerul poate salva reacția prin tranzacția folosită de feed", async () => {
+    await seedDocument(
+      "managerRelationships",
+      ALICE_UID,
+      managerRelationship(),
+    );
+    await seedDocument(
+      "managerRoles",
+      OUTSIDER_UID,
+      managerRole(OUTSIDER_UID, "owner", "candidate-manager"),
+    );
+    const bob = testEnv.authenticatedContext(BOB_UID);
+    const firestore = bob.firestore();
+    const reactionId = `${ALICE_UID}_${OUTSIDER_UID}`;
+    const reverseReactionId = `${OUTSIDER_UID}_${ALICE_UID}`;
+    const reactionRef = doc(firestore, "reactions", reactionId);
+    const reverseReactionRef = doc(
+      firestore,
+      "reactions",
+      reverseReactionId,
+    );
+    const matchRef = doc(firestore, "matches", reactionId);
+
+    await assertSucceeds(runTransaction(firestore, async (transaction) => {
+      await transaction.get(
+        doc(firestore, "managerRelationships", ALICE_UID),
+      );
+      await transaction.get(doc(firestore, "managerRoles", OUTSIDER_UID));
+      await transaction.get(reactionRef);
+      await transaction.get(reverseReactionRef);
+      await transaction.get(matchRef);
+      transaction.set(reactionRef, {
+        id: reactionId,
+        ownerId: ALICE_UID,
+        targetId: OUTSIDER_UID,
+        actorId: BOB_UID,
+        actorRole: "manager",
+        value: "dislike",
+        createdAt: "2026-08-19T12:00:00.000Z",
+        updatedAt: "2026-08-19T12:00:00.000Z",
+        expiresAt: "2026-09-18T12:00:00.000Z",
+      });
+    }));
+
+    expect((await getDoc(reactionRef)).exists()).toBe(true);
+  });
+
+  test("like-ul reciproc poate crea atomic un singur match", async () => {
+    await seedDocument(
+      "managerRelationships",
+      ALICE_UID,
+      managerRelationship(),
+    );
+    await seedDocument(
+      "managerRoles",
+      OUTSIDER_UID,
+      managerRole(OUTSIDER_UID, "owner", "candidate-manager"),
+    );
+    await seedDocument("reactions", `${OUTSIDER_UID}_${ALICE_UID}`, {
+      id: `${OUTSIDER_UID}_${ALICE_UID}`,
+      ownerId: OUTSIDER_UID,
+      targetId: ALICE_UID,
+      actorId: "candidate-manager",
+      actorRole: "manager",
+      value: "like",
+      createdAt: "2026-08-18T12:00:00.000Z",
+      updatedAt: "2026-08-18T12:00:00.000Z",
+    });
+    const bob = testEnv.authenticatedContext(BOB_UID);
+    const firestore = bob.firestore();
+    const reactionId = `${ALICE_UID}_${OUTSIDER_UID}`;
+    const reverseReactionId = `${OUTSIDER_UID}_${ALICE_UID}`;
+    const reactionRef = doc(firestore, "reactions", reactionId);
+    const matchRef = doc(firestore, "matches", reactionId);
+
+    await assertSucceeds(runTransaction(firestore, async (transaction) => {
+      await transaction.get(
+        doc(firestore, "managerRelationships", ALICE_UID),
+      );
+      await transaction.get(doc(firestore, "managerRoles", OUTSIDER_UID));
+      await transaction.get(reactionRef);
+      await transaction.get(
+        doc(firestore, "reactions", reverseReactionId),
+      );
+      await transaction.get(matchRef);
+      transaction.set(reactionRef, {
+        id: reactionId,
+        ownerId: ALICE_UID,
+        targetId: OUTSIDER_UID,
+        actorId: BOB_UID,
+        actorRole: "manager",
+        value: "like",
+        createdAt: "2026-08-19T12:00:00.000Z",
+        updatedAt: "2026-08-19T12:00:00.000Z",
+      });
+      transaction.set(matchRef, {
+        id: reactionId,
+        memberIds: [ALICE_UID, OUTSIDER_UID],
+        createdAt: "2026-08-19T12:00:00.000Z",
+      });
+    }));
+
+    expect((await getDoc(matchRef)).exists()).toBe(true);
   });
 });

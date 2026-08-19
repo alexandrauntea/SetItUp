@@ -10,7 +10,9 @@
     "lint": "expo lint",
     "test": "jest",
     "test:ci": "jest --ci --runInBand",
-    "test:firestore-rules": "firebase --config ../firebase.json emulators:exec --project demo-setitup --only firestore \"jest --config jest.firestore.config.cjs --runInBand\""
+    "test:firestore-rules": "firebase --config ../firebase.json emulators:exec --project demo-setitup --only firestore \"jest --config jest.firestore.config.cjs --runInBand\"",
+    "test:storage-rules": "firebase --config ../firebase.json emulators:exec --project demo-setitup --only storage \"jest --config jest.storage.config.cjs --runInBand\"",
+    "test:firebase-rules": "firebase --config ../firebase.json emulators:exec --project demo-setitup --only firestore,storage \"jest --config jest.firestore.config.cjs --runInBand && jest --config jest.storage.config.cjs --runInBand\""
   },
   "jest": {
     "preset": "jest-expo",
@@ -18,7 +20,8 @@
       "<rootDir>/jest.setup.js"
     ],
     "testPathIgnorePatterns": [
-      "<rootDir>/firestore-emulator/"
+      "<rootDir>/firestore-emulator/",
+      "<rootDir>/storage-emulator/"
     ]
   },
   "dependencies": {
@@ -59,6 +62,7 @@
     "firebase-tools": "^14.27.0",
     "jest": "~29.7.0",
     "jest-expo": "~54.0.17",
+    "test-renderer": "1.1.0",
     "typescript": "~5.9.2"
   },
   "private": true

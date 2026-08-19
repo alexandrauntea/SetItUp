@@ -207,10 +207,12 @@ describe("Serviciul de căutare a utilizatorilor", () => {
     expect(result?.relationshipState).toBe("request-received");
   });
 
-  test("ascunde datele unui profil privat", async () => {
+  test("afișează un profil privat în căutare, dar îl marchează pentru excluderea din feed", async () => {
+    const privateProfile = { ...publicProfile, isPrivate: true };
+
     mockedGetDoc
       .mockResolvedValueOnce(existingSnapshot({ uid: "target-uid" }))
-      .mockRejectedValueOnce({ code: "permission-denied" })
+      .mockResolvedValueOnce(existingSnapshot(privateProfile))
       .mockResolvedValueOnce(missingSnapshot())
       .mockResolvedValueOnce(missingSnapshot());
 
@@ -220,7 +222,7 @@ describe("Serviciul de căutare a utilizatorilor", () => {
       uid: "target-uid",
       username: "anca_21",
       isPrivate: true,
-      profile: null,
+      profile: privateProfile,
       relationshipState: "none",
     });
   });

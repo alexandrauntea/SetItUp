@@ -6,6 +6,7 @@ import {
 } from "@/services/social/socialIds";
 import type {
   Friendship,
+  ManagerRole,
   ManagerRelationship,
   ManagerRequest,
 } from "@/types/social";
@@ -23,6 +24,7 @@ import {
 
 const MANAGER_REQUESTS_COLLECTION = "managerRequests";
 const MANAGER_RELATIONSHIPS_COLLECTION = "managerRelationships";
+const MANAGER_ROLES_COLLECTION = "managerRoles";
 const FRIENDSHIPS_COLLECTION = "friendships";
 
 async function getFriendUsernames(
@@ -174,10 +176,28 @@ export async function acceptManagerRequest(
       MANAGER_RELATIONSHIPS_COLLECTION,
       requestData.ownerId,
     );
-    const relSnap = await transaction.get(relationshipRef);
+    const ownerRoleRef = doc(
+      db,
+      MANAGER_ROLES_COLLECTION,
+      requestData.ownerId,
+    );
+    const managerRoleRef = doc(
+      db,
+      MANAGER_ROLES_COLLECTION,
+      requestData.managerId,
+    );
+    const [relSnap, ownerRoleSnap, managerRoleSnap] = await Promise.all([
+      transaction.get(relationshipRef),
+      transaction.get(ownerRoleRef),
+      transaction.get(managerRoleRef),
+    ]);
 
     if (relSnap.exists()) {
       throw new Error("ALREADY_HAS_MANAGER");
+    }
+
+    if (ownerRoleSnap.exists() || managerRoleSnap.exists()) {
+      throw new Error("ROLE_CONFLICT");
     }
 
     const now = new Date().toISOString();
@@ -189,8 +209,22 @@ export async function acceptManagerRequest(
       memberIds: [requestData.ownerId, requestData.managerId],
       createdAt: now,
     };
+    const ownerRole: ManagerRole = {
+      uid: requestData.ownerId,
+      role: "owner",
+      counterpartId: requestData.managerId,
+      createdAt: now,
+    };
+    const managerRole: ManagerRole = {
+      uid: requestData.managerId,
+      role: "manager",
+      counterpartId: requestData.ownerId,
+      createdAt: now,
+    };
 
     transaction.set(relationshipRef, newRelationship);
+    transaction.set(ownerRoleRef, ownerRole);
+    transaction.set(managerRoleRef, managerRole);
     transaction.delete(requestRef);
   });
 }
@@ -263,17 +297,21 @@ export async function removeManager(
   currentUid: string
 ): Promise<void> {
   const relRef = doc(db, MANAGER_RELATIONSHIPS_COLLECTION, ownerId);
-  const relSnap = await getDoc(relRef);
+  await runTransaction(db, async (transaction) => {
+    const relSnap = await transaction.get(relRef);
 
-  if (!relSnap.exists()) {
-    return;
-  }
+    if (!relSnap.exists()) {
+      return;
+    }
 
-  const relData = relSnap.data() as ManagerRelationship;
+    const relData = relSnap.data() as ManagerRelationship;
 
-  if (currentUid !== relData.ownerId && currentUid !== relData.managerId) {
-    throw new Error("UNAUTHORIZED");
-  }
+    if (currentUid !== relData.ownerId && currentUid !== relData.managerId) {
+      throw new Error("UNAUTHORIZED");
+    }
 
-  await deleteDoc(relRef);
+    transaction.delete(relRef);
+    transaction.delete(doc(db, MANAGER_ROLES_COLLECTION, relData.ownerId));
+    transaction.delete(doc(db, MANAGER_ROLES_COLLECTION, relData.managerId));
+  });
 }
