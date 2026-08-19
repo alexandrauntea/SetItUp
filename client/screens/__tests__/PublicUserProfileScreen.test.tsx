@@ -30,6 +30,10 @@ jest.mock("expo-image", () => ({
   Image: require("react-native").Image,
 }));
 
+jest.mock("@/services/photoStorageService", () => ({
+  getPhotoDownloadUrl: jest.fn(),
+}));
+
 jest.mock("@/services/social/userSearchService", () => ({
   getPublicProfileByUid: jest.fn(),
 }));

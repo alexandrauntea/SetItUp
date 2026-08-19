@@ -1,5 +1,6 @@
 import { AppButton } from "@/components/AppButton";
 import { ProfileImage } from "@/components/ProfileImage";
+import { ProfilePhotoGallery } from "@/components/ProfilePhotoGallery";
 import { ScreenBackground } from "@/components/ScreenBackground";
 import { COLORS } from "@/constants/colors";
 import { GENDER_OPTIONS } from "@/constants/profileOptions";
@@ -134,6 +135,13 @@ export default function PublicUserProfileScreen() {
             </Text>
             <Text style={styles.username}>@{profile.username}</Text>
           </LinearGradient>
+
+          <ProfilePhotoGallery
+            name={fullName}
+            photoPaths={profile.photoPaths}
+            primaryPhotoPath={profile.primaryPhotoPath}
+            primaryPhotoUrl={profile.photoUrl}
+          />
 
           <View style={styles.section}>
             <Text style={styles.sectionTitle}>Despre mine</Text>
