@@ -84,6 +84,8 @@ export async function uploadProfilePhoto(
   try {
     await runTransaction(db, async (transaction) => {
       const userSnap = await transaction.get(userRef);
+      const publicSnap = await transaction.get(publicRef);
+
       if (!userSnap.exists()) {
         throw new Error("PROFILE_NOT_FOUND");
       }
@@ -110,7 +112,6 @@ export async function uploadProfilePhoto(
 
       transaction.update(userRef, updates);
 
-      const publicSnap = await transaction.get(publicRef);
       if (publicSnap.exists()) {
         const publicUpdates: Record<string, unknown> = {
           photoPaths: updatedPaths,
@@ -156,6 +157,8 @@ export async function deleteProfilePhoto(
 
   await runTransaction(db, async (transaction) => {
     const userSnap = await transaction.get(userRef);
+    const publicSnap = await transaction.get(publicRef);
+
     if (!userSnap.exists()) {
       throw new Error("PROFILE_NOT_FOUND");
     }
@@ -186,7 +189,6 @@ export async function deleteProfilePhoto(
 
     transaction.update(userRef, updates);
 
-    const publicSnap = await transaction.get(publicRef);
     if (publicSnap.exists()) {
       const publicUpdates: Record<string, unknown> = {
         photoPaths: updatedPaths,
@@ -211,8 +213,9 @@ export async function deleteProfilePhoto(
     try {
       const newPrimaryDownloadUrl = await getPhotoDownloadUrl(newPrimaryPath);
       await runTransaction(db, async (transaction) => {
-        transaction.update(userRef, { photoUrl: newPrimaryDownloadUrl });
         const publicSnap = await transaction.get(publicRef);
+
+        transaction.update(userRef, { photoUrl: newPrimaryDownloadUrl });
         if (publicSnap.exists()) {
           transaction.update(publicRef, { photoUrl: newPrimaryDownloadUrl });
         }
@@ -258,53 +261,54 @@ export async function replaceProfilePhoto(
 
   try {
     await runTransaction(db, async (transaction) => {
-    const userSnap = await transaction.get(userRef);
-    if (!userSnap.exists()) {
-      throw new Error("PROFILE_NOT_FOUND");
-    }
-    const data = userSnap.data();
-    const existingPaths: string[] = Array.isArray(data.photoPaths)
-      ? [...data.photoPaths]
-      : [];
+      const userSnap = await transaction.get(userRef);
+      const publicSnap = await transaction.get(publicRef);
 
-    const targetIndex = existingPaths.indexOf(targetStoragePath);
-    if (targetIndex === -1) {
-      existingPaths.push(newStoragePath);
-      finalPosition = existingPaths.length - 1;
-    } else {
-      existingPaths[targetIndex] = newStoragePath;
-      finalPosition = targetIndex;
-    }
+      if (!userSnap.exists()) {
+        throw new Error("PROFILE_NOT_FOUND");
+      }
+      const data = userSnap.data();
+      const existingPaths: string[] = Array.isArray(data.photoPaths)
+        ? [...data.photoPaths]
+        : [];
 
-    const wasPrimary =
-      data.primaryPhotoPath === targetStoragePath ||
-      data.primaryPhotoPath === undefined;
-    isPrimary = wasPrimary;
+      const targetIndex = existingPaths.indexOf(targetStoragePath);
+      if (targetIndex === -1) {
+        existingPaths.push(newStoragePath);
+        finalPosition = existingPaths.length - 1;
+      } else {
+        existingPaths[targetIndex] = newStoragePath;
+        finalPosition = targetIndex;
+      }
 
-    const updates: Record<string, unknown> = {
-      photoPaths: existingPaths,
-      updatedAt: new Date().toISOString(),
-    };
+      const wasPrimary =
+        data.primaryPhotoPath === targetStoragePath ||
+        data.primaryPhotoPath === undefined;
+      isPrimary = wasPrimary;
 
-    if (wasPrimary) {
-      updates.primaryPhotoPath = newStoragePath;
-      updates.photoUrl = downloadUrl;
-    }
-
-    transaction.update(userRef, updates);
-
-    const publicSnap = await transaction.get(publicRef);
-    if (publicSnap.exists()) {
-      const publicUpdates: Record<string, unknown> = {
+      const updates: Record<string, unknown> = {
         photoPaths: existingPaths,
         updatedAt: new Date().toISOString(),
       };
+
       if (wasPrimary) {
-        publicUpdates.primaryPhotoPath = newStoragePath;
-        publicUpdates.photoUrl = downloadUrl;
+        updates.primaryPhotoPath = newStoragePath;
+        updates.photoUrl = downloadUrl;
       }
-      transaction.update(publicRef, publicUpdates);
-    }
+
+      transaction.update(userRef, updates);
+
+      if (publicSnap.exists()) {
+        const publicUpdates: Record<string, unknown> = {
+          photoPaths: existingPaths,
+          updatedAt: new Date().toISOString(),
+        };
+        if (wasPrimary) {
+          publicUpdates.primaryPhotoPath = newStoragePath;
+          publicUpdates.photoUrl = downloadUrl;
+        }
+        transaction.update(publicRef, publicUpdates);
+      }
     });
   } catch (error) {
     try {
