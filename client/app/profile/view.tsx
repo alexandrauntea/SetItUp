@@ -1,5 +1,4 @@
 import { AppButton } from "@/components/AppButton";
-import { ProfileImage } from "@/components/ProfileImage";
 import { ProfilePhotoGallery } from "@/components/ProfilePhotoGallery";
 import { ScreenBackground } from "@/components/ScreenBackground";
 import { COLORS } from "@/constants/colors";
@@ -70,13 +69,6 @@ export default function ProfileScreen() {
               end={{ x: 1, y: 1 }}
               style={styles.headerCard}
             >
-              <ProfileImage
-                name={fullName}
-                size={96}
-                style={styles.avatar}
-                uri={profile.photoUrl}
-              />
-
               <View style={styles.nameRow}>
                 <Text style={styles.name}>{fullName}</Text>
                 {age > 0 ? <Text style={styles.age}>{age}</Text> : null}
@@ -223,14 +215,6 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.2,
     shadowRadius: 18,
     elevation: 5,
-  },
-  avatar: {
-    width: 96,
-    height: 96,
-    marginBottom: 14,
-    backgroundColor: COLORS.background,
-    borderWidth: 5,
-    borderColor: "rgba(255, 255, 255, 0.35)",
   },
   nameRow: {
     flexDirection: "row",

@@ -1,5 +1,4 @@
 import { AppButton } from "@/components/AppButton";
-import { ProfileImage } from "@/components/ProfileImage";
 import { ProfilePhotoGallery } from "@/components/ProfilePhotoGallery";
 import { ScreenBackground } from "@/components/ScreenBackground";
 import { COLORS } from "@/constants/colors";
@@ -129,7 +128,6 @@ export default function PublicUserProfileScreen() {
             colors={[COLORS.primary, COLORS.primaryPressed]}
             style={[styles.header, isCompact && styles.headerCompact]}
           >
-            <ProfileImage name={fullName} size={96} uri={profile.photoUrl} />
             <Text style={styles.name}>
               {fullName}{profile.age > 0 ? `, ${profile.age}` : ""}
             </Text>
