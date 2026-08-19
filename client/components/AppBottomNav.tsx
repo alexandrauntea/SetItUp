@@ -57,13 +57,13 @@ export function AppBottomNav() {
       <NavItem
         active={isFeed}
         icon={isFeed ? "flame" : "flame-outline"}
-        label="Feed"
+        label="Recomandări"
         onPress={() => router.replace("/feed" as Href)}
       />
       <NavItem
         active={isMatches}
         icon={isMatches ? "heart" : "heart-outline"}
-        label="Match-uri"
+        label="Potriviri"
         onPress={() => router.replace("/matches" as Href)}
       />
     </View>

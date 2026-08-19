@@ -66,7 +66,7 @@ export function MatchCard({
       </View>
 
       <Text style={styles.matchDate}>
-        Match din {formatMatchDate(createdAt)}
+        Potrivire din {formatMatchDate(createdAt)}
       </Text>
 
       <AppButton

@@ -106,7 +106,7 @@ describe("Ecranul Match-uri", () => {
     mockedListMatches.mockResolvedValue([]);
     await render(<MatchesScreen />);
 
-    expect(await screen.findByText("Niciun match încă")).toBeTruthy();
+    expect(await screen.findByText("Nicio potrivire încă")).toBeTruthy();
   });
 
   test("nu expune lista unui utilizator care nu este manager", async () => {
@@ -135,7 +135,7 @@ describe("Ecranul Match-uri", () => {
     );
 
     await waitFor(() => expect(mockedListMatches).toHaveBeenCalledTimes(2));
-    expect(await screen.findByText("Niciun match încă")).toBeTruthy();
+    expect(await screen.findByText("Nicio potrivire încă")).toBeTruthy();
     consoleInfoSpy.mockRestore();
   });
 

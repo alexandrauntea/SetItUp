@@ -127,10 +127,7 @@ export default function FeedFiltersScreen() {
             style={styles.container}
             contentContainerStyle={styles.contentContainer}
           >
-            <Text style={styles.title}>Filtre feed</Text>
-            <Text style={styles.description}>
-              Configurați vârsta, genul și interesele profilurilor pe care doriți să le vedeți.
-            </Text>
+            <Text style={styles.title}>Filtre pentru recomandări</Text>
 
             {errorMessage ? (
               <View style={styles.errorBox} testID="error-box">
@@ -241,13 +238,13 @@ export default function FeedFiltersScreen() {
 
             <View style={styles.buttonContainer}>
               <AppButton
-                title={saving ? "Se salvează..." : "Salvează Preferințele"}
+                title={saving ? "Se salvează..." : "Salvează"}
                 onPress={handleSave}
                 disabled={saving}
                 testID="save-button"
               />
               <AppButton
-                title="Înapoi la feed"
+                title="Înapoi la recomandări"
                 variant="outline"
                 onPress={() => router.back()}
               />

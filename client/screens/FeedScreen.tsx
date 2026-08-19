@@ -98,11 +98,11 @@ export function FeedScreen() {
         );
         setCurrentIndex(0);
       } catch (err: any) {
-        console.error("Error fetching feed:", err);
+        console.error("Eroare la încărcarea recomandărilor:", err);
         setErrorMessage(
           err.message === "NOT_A_MANAGER"
             ? "Nu ești manager pentru niciun utilizator."
-            : "Nu am putut încărca profilurile din feed. Verifică conexiunea și încearcă din nou."
+            : "Nu am putut încărca recomandările. Verifică legătura și încearcă din nou."
         );
       } finally {
         setIsLoading(false);
@@ -135,7 +135,7 @@ export function FeedScreen() {
       }
       setCurrentIndex((prev) => prev + 1);
     } catch (err) {
-      console.error("Error liking profile:", err);
+      console.error("Eroare la salvarea aprecierii:", err);
       setErrorMessage("A apărut o eroare la salvarea aprecierii. Încearcă din nou.");
     } finally {
       setActionLoading(null);
@@ -156,8 +156,8 @@ export function FeedScreen() {
       });
       setCurrentIndex((prev) => prev + 1);
     } catch (err) {
-      console.error("Error disliking profile:", err);
-      setErrorMessage("A apărut o eroare la trimiterea dislike-ului.");
+      console.error("Eroare la salvarea respingerii:", err);
+      setErrorMessage("Nu am putut salva opțiunea «Nu îmi place».");
     } finally {
       setActionLoading(null);
     }
@@ -174,8 +174,8 @@ export function FeedScreen() {
         <View style={[styles.container, isCompact && styles.containerCompact]}>
           {/* Top Header */}
           <PageBanner
-            title="Feed Potriviri"
-            subtitle={managerRel ? `Căuți match-uri pentru @${managerRel.ownerUsername}` : undefined}
+            title="Recomandări"
+            subtitle={managerRel ? `Pentru @${managerRel.ownerUsername}` : undefined}
             action={managerRel ? (
               <TouchableOpacity
                 accessibilityLabel="Filtre"
@@ -222,7 +222,7 @@ export function FeedScreen() {
                 <Ionicons name="shield-outline" size={56} color={COLORS.textSecondary} />
                 <Text style={styles.emptyTitle}>Doar pentru manageri</Text>
                 <Text style={styles.emptyDescription}>
-                  Momentan nu ești manager pentru niciun utilizator. Un owner trebuie să te desemneze drept manager pentru a accesa feedul.
+                  Un utilizator trebuie să te desemneze drept manager pentru a accesa recomandările.
                 </Text>
               </View>
             )}
@@ -234,12 +234,12 @@ export function FeedScreen() {
               (currentIndex >= feedItems.length || feedItems.length === 0) && (
                 <View style={styles.emptyCard} testID="feed-empty-container">
                   <Ionicons name="sparkles-outline" size={56} color={COLORS.primary} />
-                  <Text style={styles.emptyTitle}>Nu mai sunt profiluri</Text>
+                  <Text style={styles.emptyTitle}>Nu mai sunt recomandări</Text>
                   <Text style={styles.emptyDescription}>
-                    Ai parcurs toate profilurile disponibile. Revino mai târziu sau modifică filtrele pentru a găsi alte opțiuni!
+                    Revino mai târziu sau modifică filtrele.
                   </Text>
                   <AppButton
-                    title="Reîmprospătează feedul"
+                    title="Reîmprospătează"
                     onPress={() => void fetchFeed()}
                     variant="outline"
                     testID="feed-refresh-button"

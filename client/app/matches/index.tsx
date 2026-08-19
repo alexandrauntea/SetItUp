@@ -140,14 +140,14 @@ export default function MatchesScreen() {
         >
           <View style={styles.content}>
             <PageBanner
-              title="Match-uri"
+              title="Potriviri"
               subtitle={managedOwner ? `Pentru @${managedOwner.ownerUsername}` : undefined}
             />
 
             {isLoading ? (
               <View style={styles.stateCard}>
                 <ActivityIndicator color={COLORS.primary} size="large" />
-                <Text style={styles.stateTitle}>Se încarcă match-urile...</Text>
+                <Text style={styles.stateTitle}>Se încarcă potrivirile...</Text>
               </View>
             ) : hasError ? (
               <View style={styles.stateCard}>
@@ -159,7 +159,7 @@ export default function MatchesScreen() {
                   />
                 </View>
                 <Text style={styles.stateTitle}>
-                  Nu am putut încărca match-urile
+                  Nu am putut încărca potrivirile
                 </Text>
                 <Text style={styles.description}>
                   Verifică legătura la internet și încearcă din nou.
@@ -182,7 +182,7 @@ export default function MatchesScreen() {
                   Disponibil numai managerului
                 </Text>
                 <Text style={styles.description}>
-                  Lista Match-uri este folosită de manager în numele ownerului.
+                  Managerul vede aici potrivirile utilizatorului pe care îl reprezintă.
                 </Text>
               </View>
             ) : items.length === 0 ? (
@@ -194,16 +194,15 @@ export default function MatchesScreen() {
                     size={36}
                   />
                 </View>
-                <Text style={styles.stateTitle}>Niciun match încă</Text>
+                <Text style={styles.stateTitle}>Nicio potrivire încă</Text>
                 <Text style={styles.description}>
-                  Continuă să descoperi profiluri. Match-urile reciproce vor
-                  apărea aici.
+                  Potrivirile reciproce vor apărea aici.
                 </Text>
               </View>
             ) : (
               <View style={styles.matchesList}>
                 <Text style={styles.sectionTitle}>
-                  {items.length} {items.length === 1 ? "match" : "match-uri"}
+                  {items.length} {items.length === 1 ? "potrivire" : "potriviri"}
                 </Text>
                 {items.map(({ match, profile, profileId }) => (
                   <MatchCard

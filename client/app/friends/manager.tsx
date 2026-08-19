@@ -274,7 +274,7 @@ export default function ManagerScreen() {
           }
         >
           <View style={styles.content}>
-            <PageBanner title="Gestionare Manager" onBack={handleBack} />
+            <PageBanner title="Gestionare manager" onBack={handleBack} />
 
             {errorMessage && (
               <View style={styles.errorBanner}>
@@ -310,7 +310,7 @@ export default function ManagerScreen() {
 
             {/* Relație activă pentru profilul curent */}
             <View style={styles.section}>
-              <Text style={styles.sectionTitle}>Managerul Tău Activ</Text>
+              <Text style={styles.sectionTitle}>Managerul tău activ</Text>
               {activeManager ? (
                 <ManagerCard
                   username={activeManager.managerUsername}
@@ -330,7 +330,7 @@ export default function ManagerScreen() {
             {/* 2. Propune Prieten ca Manager */}
             {!activeManager && outgoingRequests.length === 0 && (
               <View style={styles.section}>
-                <Text style={styles.sectionTitle}>Propune un Manager</Text>
+                <Text style={styles.sectionTitle}>Propune un manager</Text>
                 {friends.length === 0 ? (
                   <View style={styles.emptyCard}>
                     <Text style={styles.emptyText}>

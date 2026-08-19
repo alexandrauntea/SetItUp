@@ -93,7 +93,7 @@ export function FeedCard({
       {/* Action Buttons */}
       <View style={styles.actionsRow}>
         <Pressable
-          accessibilityLabel="Dislike"
+          accessibilityLabel="Nu îmi place"
           accessibilityRole="button"
           disabled={isActionBusy}
           onPress={onDislike}
@@ -112,7 +112,7 @@ export function FeedCard({
         </Pressable>
 
         <Pressable
-          accessibilityLabel="Like"
+          accessibilityLabel="Îmi place"
           accessibilityRole="button"
           disabled={isActionBusy}
           onPress={onLike}

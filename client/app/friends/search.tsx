@@ -70,7 +70,7 @@ export default function FriendSearchScreen() {
       setResult(foundUser);
 
       if (!foundUser) {
-        setMessage("Nu am găsit niciun utilizator cu acest username.");
+        setMessage("Nu am găsit niciun utilizator cu acest nume de utilizator.");
       }
     } catch (error) {
       if (error instanceof Error && error.message === "CANNOT_SEARCH_SELF") {
@@ -131,10 +131,10 @@ export default function FriendSearchScreen() {
                   color={COLORS.textSecondary}
                 />
                 <TextInput
-                  accessibilityLabel="Username"
+                  accessibilityLabel="Nume de utilizator"
                   value={username}
                   onChangeText={setUsername}
-                  placeholder="Caută după username"
+                  placeholder="Caută după numele de utilizator"
                   placeholderTextColor={COLORS.textSecondary}
                   autoCapitalize="none"
                   autoCorrect={false}

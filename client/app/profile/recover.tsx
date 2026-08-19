@@ -38,7 +38,7 @@ export default function RecoverProfileScreen() {
   async function handleRecoverProfile() {
     if (!validateUsername(username)) {
       setFormError(
-        "Username-ul trebuie să aibă între 3 și 20 de caractere și poate conține litere, cifre și underscore (_).",
+        "Numele de utilizator trebuie să aibă între 3 și 20 de caractere și poate conține litere, cifre și linie joasă (_).",
       );
       return;
     }

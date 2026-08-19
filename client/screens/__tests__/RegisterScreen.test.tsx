@@ -88,7 +88,7 @@ describe("Ecranul de înregistrare", () => {
     expect(mockedRegisterUser).not.toHaveBeenCalled();
     expect(
       screen.getByText(
-        "Numele de utilizator trebuie să aibă între 3 și 20 de caractere și poate conține doar litere, cifre și underscore (_).",
+        "Numele de utilizator trebuie să aibă între 3 și 20 de caractere și poate conține doar litere, cifre și linie joasă (_).",
       ),
     ).toBeTruthy();
   });
