@@ -16,6 +16,7 @@ import {
 } from "@/types/feed";
 import { ManagerRelationship } from "@/types/social";
 import { Ionicons } from "@expo/vector-icons";
+import { LinearGradient } from "expo-linear-gradient";
 import React, { useCallback, useEffect, useState } from "react";
 import {
   ActivityIndicator,
@@ -169,7 +170,12 @@ export function FeedScreen() {
       <SafeAreaView style={styles.safeArea}>
         <View style={styles.container}>
           {/* Top Header */}
-          <View style={styles.header}>
+          <LinearGradient
+            colors={[COLORS.primary, COLORS.primaryPressed]}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 1, y: 1 }}
+            style={styles.header}
+          >
             <View>
               <Text style={styles.headerTitle}>Feed Potriviri</Text>
               {managerRel && (
@@ -190,7 +196,7 @@ export function FeedScreen() {
                 <Ionicons name="options-outline" size={22} color={COLORS.primary} />
               </TouchableOpacity>
             )}
-          </View>
+          </LinearGradient>
 
           {/* Main Content Area */}
           <ScrollView
@@ -296,49 +302,58 @@ const styles = StyleSheet.create({
   },
   container: {
     flex: 1,
-    paddingHorizontal: 16,
+    paddingHorizontal: 20,
   },
   header: {
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
-    paddingVertical: 14,
-    paddingHorizontal: 4,
-    maxWidth: 440,
+    minHeight: 104,
+    padding: 24,
+    marginTop: 6,
+    maxWidth: 430,
     width: "100%",
     alignSelf: "center",
+    borderRadius: 24,
+    shadowColor: COLORS.primaryPressed,
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.18,
+    shadowRadius: 16,
+    elevation: 4,
   },
   headerTitle: {
-    color: COLORS.text,
+    color: COLORS.background,
     fontSize: 24,
-    fontWeight: "900",
+    fontWeight: "bold",
   },
   headerSubtitle: {
-    color: COLORS.primary,
+    color: COLORS.background,
     fontSize: 13,
     fontWeight: "600",
-    marginTop: 2,
+    marginTop: 4,
+    opacity: 0.9,
   },
   filterButton: {
     width: 42,
     height: 42,
     borderRadius: 21,
-    backgroundColor: COLORS.primarySoft,
+    backgroundColor: COLORS.background,
     justifyContent: "center",
     alignItems: "center",
   },
   scrollContent: {
     flexGrow: 1,
-    justifyContent: "center",
     alignItems: "center",
     paddingBottom: 110,
-    paddingTop: 8,
+    paddingTop: 22,
   },
   cardWrapper: {
     width: "100%",
     maxWidth: 440,
   },
   centerCard: {
+    width: "100%",
+    maxWidth: 430,
     padding: 32,
     alignItems: "center",
     justifyContent: "center",
@@ -351,7 +366,7 @@ const styles = StyleSheet.create({
   },
   errorCard: {
     width: "100%",
-    maxWidth: 400,
+    maxWidth: 430,
     backgroundColor: COLORS.background,
     padding: 24,
     borderRadius: 24,
@@ -378,7 +393,7 @@ const styles = StyleSheet.create({
   },
   emptyCard: {
     width: "100%",
-    maxWidth: 400,
+    maxWidth: 430,
     backgroundColor: COLORS.background,
     padding: 28,
     borderRadius: 24,
