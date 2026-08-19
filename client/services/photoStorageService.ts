@@ -5,6 +5,7 @@
   uploadBytes,
 } from "firebase/storage";
 import {
+  deleteField,
   doc,
   runTransaction,
 } from "firebase/firestore";
@@ -175,12 +176,12 @@ export async function deleteProfilePhoto(
 
     const updates: Record<string, unknown> = {
       photoPaths: updatedPaths,
-      primaryPhotoPath: newPrimaryPath,
+      primaryPhotoPath: newPrimaryPath ?? deleteField(),
       updatedAt: new Date().toISOString(),
     };
 
     if (wasPrimary && !newPrimaryPath) {
-      updates.photoUrl = null;
+      updates.photoUrl = deleteField();
     }
 
     transaction.update(userRef, updates);
@@ -189,11 +190,11 @@ export async function deleteProfilePhoto(
     if (publicSnap.exists()) {
       const publicUpdates: Record<string, unknown> = {
         photoPaths: updatedPaths,
-        primaryPhotoPath: newPrimaryPath,
+        primaryPhotoPath: newPrimaryPath ?? deleteField(),
         updatedAt: new Date().toISOString(),
       };
       if (wasPrimary && !newPrimaryPath) {
-        publicUpdates.photoUrl = null;
+        publicUpdates.photoUrl = deleteField();
       }
       transaction.update(publicRef, publicUpdates);
     }
