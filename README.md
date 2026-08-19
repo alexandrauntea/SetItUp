@@ -1,33 +1,48 @@
 # SetItUp — ghidul proiectului
 
-Acest document explică scopul, structura și regulile aplicației SetItUp. El trebuie actualizat atunci când se adaugă un flux, o rută, o colecție Firestore sau o regulă importantă de produs.
+SetItUp este o aplicație mobilă socială construită cu Expo și Firebase. Un utilizator își creează profilul, își adaugă prieteni și desemnează un prieten de încredere drept manager. Managerul folosește recomandările și potrivirile în numele proprietarului profilului.
 
-## 1. Ce este SetItUp
+Acest README este documentul unic pentru arhitectura, regulile și starea proiectului. Se actualizează în același PR cu orice schimbare importantă.
 
-SetItUp este o aplicație mobilă socială în care un utilizator își creează un profil, își adaugă prieteni și poate desemna un prieten de încredere drept manager. În sprinturile următoare, managerul va putea folosi feedul și mesageria în numele proprietarului profilului.
+## 1. Starea produsului
 
-Planul MVP este:
+Implementat:
 
-1. autentificare și profil;
-2. prieteni și manager;
-3. feed, like/dislike și match;
-4. conversații, mesaje și block/unblock.
+- autentificare, sesiune și profil;
+- profil public sau privat;
+- galerie cu maximum 6 fotografii și fotografie principală;
+- încărcare, înlocuire și ștergere în Firebase Storage;
+- căutare, cereri de prietenie și listă de prieteni;
+- propunerea, acceptarea și eliminarea unui manager;
+- roluri exclusive de owner și manager;
+- recomandări cu filtre de vârstă, gen și interese;
+- like, dislike și creare automată a unei potriviri la like reciproc;
+- lista potrivirilor;
+- interfață în limba română pentru fluxurile principale;
+- teste Jest și teste pentru regulile Firestore și Storage în Firebase Emulator.
 
-În versiunea curentă sunt implementate autentificarea, profilul și funcționalitățile planificate pentru Sprintul 2. Închiderea sprintului mai necesită validarea manuală a fluxurilor sociale cu două conturi reale. Feedul și mesageria nu sunt încă implementate.
+Neimplementat încă:
+
+- conversații și mesaje;
+- notificări push;
+- block/unblock și eliminarea unei potriviri.
 
 ## 2. Tehnologii
 
-- Expo SDK 54 și React Native pentru aplicația mobilă;
-- TypeScript pentru verificarea tipurilor;
-- Expo Router pentru navigarea bazată pe fișiere;
-- Firebase Authentication pentru conturi și sesiuni;
-- Cloud Firestore pentru profiluri și relații sociale;
-- Firebase Storage pentru fotografia de profil, dacă serviciul este disponibil;
-- Jest și React Native Testing Library pentru teste.
+- Expo SDK 54 și React Native;
+- TypeScript;
+- Expo Router;
+- Firebase Authentication;
+- Cloud Firestore;
+- Firebase Storage;
+- Jest și React Native Testing Library;
+- Firebase Emulator Suite și `@firebase/rules-unit-testing`.
 
-## 3. Pornirea proiectului
+Proiectul Firebase folosit este `setitup-84173`, iar bucket-ul Storage este `setitup-84173.firebasestorage.app`.
 
-Toate comenzile de mai jos se rulează din folderul `client`:
+## 3. Pornirea și verificarea proiectului
+
+Comenzile se rulează din folderul `client`:
 
 ```bash
 cd client
@@ -35,446 +50,300 @@ npm install
 npx expo start
 ```
 
-Din terminalul Expo se poate deschide aplicația pe iOS, Android sau web.
+Expo permite deschiderea aplicației pe iOS, Android și web.
 
-Înainte de commit se rulează obligatoriu:
+Înainte de PR se rulează:
 
 ```bash
 npm test -- --runInBand
 npx tsc --noEmit
 npm run lint
-npm run test:firestore-rules
+npm run test:firebase-rules
 ```
 
-Ultima comandă pornește automat un Firestore Emulator local și testează regulile fără să atingă proiectul Firebase real. Necesită Java; Java 21 sau mai nou este recomandat pentru versiunile viitoare Firebase CLI. Verificările locale nu demonstrează că regulile și indexurile sunt publicate în Firebase, deci fluxurile sociale trebuie testate și manual cu cel puțin două conturi.
+Testele regulilor necesită Java și pornesc local emulatoarele Firestore și Storage fără să modifice proiectul Firebase real. Se pot rula și separat:
 
-## 4. Arhitectura pe scurt
+```bash
+npm run test:firestore-rules
+npm run test:storage-rules
+```
 
-Fluxul obișnuit este:
+Testele locale nu confirmă faptul că regulile și indexurile au fost publicate. După schimbarea lor trebuie făcut deploy și trebuie testat manual fluxul cu mai multe conturi reale.
+
+## 4. Arhitectura
 
 ```text
-Utilizatorul apasă un buton
-            ↓
-Ecranul validează acțiunea și apelează un serviciu
-            ↓
-Serviciul citește sau scrie în Firebase
-            ↓
-Regulile Firestore permit sau refuză operația
-            ↓
-Serviciul întoarce rezultatul sau eroarea
-            ↓
-Ecranul își actualizează starea și interfața
+Interfață
+   ↓ validează acțiunea
+Serviciu
+   ↓ citește sau scrie
+Firebase Authentication / Firestore / Storage
+   ↓ aplică regulile de securitate
+Rezultat sau eroare
+   ↓
+Interfață actualizată
 ```
 
-Responsabilitățile trebuie păstrate separate:
+Responsabilități:
 
-- ecranele afișează date și gestionează interacțiunea;
-- componentele oferă elemente vizuale reutilizabile;
+- ecranele gestionează interacțiunea și starea interfeței;
+- componentele conțin elemente vizuale reutilizabile;
 - serviciile conțin logica Firebase;
-- contextele păstrează date globale;
-- tipurile definesc forma comună a datelor;
-- regulile Firestore reprezintă securitatea reală.
+- contextele păstrează autentificarea și profilul curent;
+- tipurile definesc contractele comune;
+- regulile Firestore și Storage reprezintă securitatea reală.
 
-Un ecran nu ar trebui să implementeze o a doua versiune a unei operații care există deja într-un serviciu.
+Ecranele nu trebuie să implementeze direct o operație Firebase care există deja într-un serviciu.
 
-## 5. Structura folderelor
+## 5. Structura principală
 
 ```text
 client/
-├── app/                    ecrane și rute Expo Router
-│   ├── (auth)/             login și înregistrare
+├── app/
+│   ├── (auth)/             autentificare și înregistrare
 │   ├── profile/            creare, recuperare, vizualizare și editare profil
-│   ├── friends/            listă, căutare, cereri și manager
-│   └── users/[uid].tsx     profilul public al altui utilizator
+│   ├── friends/            prieteni, cereri, căutare și manager
+│   ├── feed/               recomandări și filtre
+│   ├── matches/            potriviri
+│   └── users/[uid].tsx     profilul altui utilizator
 ├── components/             componente vizuale reutilizabile
-│   └── social/             carduri pentru funcțiile sociale
-├── constants/              culori și opțiuni comune
 ├── contexts/               autentificarea și profilul curent
-├── services/               acces la Firebase și logica aplicației
+├── services/
+│   ├── feed/               recomandări, reacții și potriviri
 │   └── social/             căutare, cereri, prietenii și manager
 ├── types/                  tipuri TypeScript comune
 ├── utils/                  validări și mesaje de eroare
-└── **/__tests__/           teste automate
+├── firestore-emulator/     teste pentru regulile Firestore
+└── storage-emulator/       teste pentru regulile Storage
 
 database/
-├── firestore.rules         reguli de securitate Firestore
-└── storage.rules           reguli pentru fișiere
+├── firestore.rules
+└── storage.rules
 ```
 
 ## 6. Rute și navigare
 
-Expo Router transformă structura din `app` în rute:
-
-| Fișier | Rută | Rol |
-|---|---|---|
-| `app/(auth)/login.tsx` | `/login` | autentificare |
-| `app/(auth)/register.tsx` | `/register` | creare cont |
-| `app/profile/create.tsx` | `/profile/create` | completare profil |
-| `app/profile/recover.tsx` | `/profile/recover` | recuperarea profilului lipsă |
-| `app/profile/view.tsx` | `/profile/view` | propriul profil |
-| `app/profile/edit.tsx` | `/profile/edit` | editare profil |
-| `app/friends/index.tsx` | `/friends` | lista și centrul Friends |
-| `app/friends/search.tsx` | `/friends/search` | căutare după username |
-| `app/friends/requests.tsx` | `/friends/requests` | cereri primite/trimise |
-| `app/friends/manager.tsx` | `/friends/manager` | gestionarea managerului |
-| `app/users/[uid].tsx` | `/users/{uid}` | profil public dinamic |
+| Rută | Rol |
+|---|---|
+| `/login` | autentificare |
+| `/register` | creare cont |
+| `/profile/create` | completarea profilului |
+| `/profile/recover` | recuperarea profilului lipsă |
+| `/profile/view` | propriul profil |
+| `/profile/edit` | editarea profilului și fotografiilor |
+| `/friends` | lista și funcțiile de prietenie |
+| `/friends/search` | căutare după username |
+| `/friends/requests` | cereri primite și trimise |
+| `/friends/manager` | gestionarea managerului |
+| `/feed` | recomandările folosite de manager |
+| `/feed/filters` | filtrele recomandărilor |
+| `/matches` | lista potrivirilor |
+| `/users/{uid}` | profilul altui utilizator |
 
 `app/_layout.tsx` protejează rutele:
 
-- fără utilizator autentificat → `/login`;
-- cont fără document de profil → `/profile/recover`;
+- fără sesiune → `/login`;
+- profil inexistent → `/profile/recover`;
 - profil incomplet → `/profile/create`;
-- profil complet → `/profile/view`.
+- profil complet care intră într-un flux de autentificare → `/profile/view`.
 
-`AppBottomNav` afișează secțiunile `Profile` și `Friends`. Funcționalitățile sociale trebuie să rămână în secțiunea Friends, nu în pagina profilului.
+Navbarul principal conține `Profil`, `Prieteni`, `Recomandări` și `Potriviri`.
 
-## 7. Authentication, profil și contexte
+## 7. Profiluri și fotografii
 
-Firebase Authentication păstrează UID-ul, emailul, parola securizată și sesiunea. Parola nu este salvată în Firestore și nu poate fi citită de aplicație.
-
-`AuthContext` oferă întregii aplicații:
-
-- utilizatorul autentificat;
-- starea de încărcare;
-- informația dacă există o sesiune.
-
-`ProfileContext` oferă:
-
-- profilul complet al utilizatorului curent;
-- starea profilului (`ready`, `missing`, `error` etc.);
-- încărcarea, reîmprospătarea și actualizarea profilului.
-
-Nu se creează alte contexte pentru aceleași date.
-
-## 8. De ce un utilizator apare în mai multe locuri
-
-La înregistrare și completarea profilului sunt implicate mai multe surse:
+Datele sunt separate astfel:
 
 ```text
 Firebase Authentication
-└── cont, UID, email și parolă securizată
+└── cont, UID, email, parolă securizată și sesiune
 
 users/{uid}
-└── profil complet și privat
+└── profilul complet al proprietarului
 
-usernames/{username}
-└── legătura username → UID
+usernames/{normalizedUsername}
+└── asocierea username → UID
 
 publicProfiles/{uid}
-└── informațiile care pot fi afișate altor utilizatori
+└── datele profilului folosite în funcțiile sociale
+
+Firebase Storage
+└── profilePhotos/{uid}/{photoId}.{extensie}
 ```
 
-Separarea permite căutare rapidă fără expunerea datelor private.
+`users/{uid}` conține inclusiv emailul, data exactă a nașterii, acceptarea GDPR, `photoPaths`, `primaryPhotoPath` și `photoUrl`.
 
-## 9. Colecțiile Firestore
+`publicProfiles/{uid}` nu conține emailul, data exactă a nașterii sau acceptarea GDPR. Conține vârsta calculată și datele necesare pentru profil, prieteni, recomandări și potriviri.
 
-Firestore este organizat în colecții și documente. O colecție este asemănătoare unui tabel, iar documentul este o înregistrare. O colecție goală nu apare în Firebase Console.
+Un profil privat este ascuns din recomandări. Proprietarul și prietenii lui îl pot vedea în continuare; utilizatorii care nu sunt prieteni nu primesc profilul complet.
 
-### `users/{uid}`
+Regulile galeriei:
 
-Profilul privat al proprietarului:
+- fiecare profil poate avea cel mult 6 fotografii;
+- prima fotografie încărcată devine principală dacă nu există alta;
+- `primaryPhotoPath` trebuie să aparțină listei `photoPaths`;
+- `photoUrl` păstrează URL-ul fotografiei principale pentru afișare rapidă;
+- metadatele sunt sincronizate în `users` și `publicProfiles`;
+- ștergerea fotografiei principale alege următoarea fotografie disponibilă;
+- înlocuirea păstrează poziția fotografiei în galerie;
+- după actualizarea Firestore, fișierul vechi este curățat din Storage;
+- operațiile verifică starea profilului pentru a evita suprascrierile concurente.
 
-- UID și username;
-- email și data exactă a nașterii;
-- nume, ocupație, gen și descriere;
-- interese și vizibilitate;
-- acceptarea GDPR;
-- starea completării profilului;
-- fotografia și datele de creare/actualizare.
+Regulile Storage permit:
 
-Documentul trebuie citit și modificat numai de proprietar.
+- citire numai utilizatorilor autentificați;
+- încărcare, înlocuire și ștergere numai proprietarului folderului;
+- numai fișiere JPEG, PNG și WebP;
+- maximum 5 MB pentru fiecare fotografie;
+- numai nume de fișier și căi conforme structurii aplicației.
 
-### `usernames/{normalizedUsername}`
+## 8. Prieteni și manager
 
-Registrul username-urilor unice. ID-ul documentului este username-ul normalizat cu `trim().toLowerCase()`.
+`friendRequests/{pairId}` păstrează o singură cerere activă între două UID-uri. La acceptare, cererea este ștearsă și se creează `friendships/{pairId}` în aceeași tranzacție.
 
-```text
-usernames/andrei
-└── uid: UID_ANDREI
-```
+`managerRequests` păstrează propunerile în așteptare, iar `managerRelationships/{ownerId}` relația acceptată.
 
-Este folosit pentru verificarea unicității și căutarea exactă. Nu trebuie să conțină email sau alte date private.
-
-### `publicProfiles/{uid}`
-
-Varianta sigură a profilului:
-
-- username;
-- nume și prenume;
-- vârstă calculată, nu data nașterii;
-- ocupație, gen, descriere și interese;
-- vizibilitate și fotografie.
-
-Nu conține email, data exactă a nașterii sau acceptarea GDPR. Dacă profilul este privat, alt utilizator vede doar informația minimă obținută din `usernames`.
-
-### `friendRequests/{pairId}`
-
-Conține numai cereri active cu status `pending`:
+`managerRoles/{uid}` blochează rolurile incompatibile:
 
 ```text
-friendRequests/UID_A_UID_B
-├── senderId
-├── senderUsername
-├── receiverId
-├── receiverUsername
-├── memberIds
-├── status: "pending"
-├── createdAt
-└── updatedAt
-```
-
-La acceptare, cererea este ștearsă și se creează o prietenie. La refuz sau anulare este doar ștearsă.
-
-### `friendships/{pairId}`
-
-Reprezintă o prietenie acceptată:
-
-```text
-friendships/UID_A_UID_B
-├── memberIds
-├── memberUsernames
+managerRoles/{uid}
+├── uid
+├── role: "owner" | "manager"
+├── counterpartId
 └── createdAt
 ```
 
-Username-urile sunt păstrate pentru ca lista să poată afișa și un prieten cu profil privat.
+Regulile produsului:
 
-### `managerRequests/{ownerId}`
+- un owner poate avea un singur manager;
+- un manager poate gestiona un singur owner;
+- aceeași persoană nu poate fi simultan owner și manager;
+- propunerea este permisă numai între prieteni;
+- persoana propusă trebuie să accepte;
+- acceptarea și eliminarea actualizează atomic relația și rolurile.
 
-O propunere de manager în așteptare:
+## 9. Recomandări, reacții și potriviri
 
-- `ownerId` — persoana care oferă acces la viitorul său feed și mesagerie;
-- `managerId` — prietenul propus;
-- username-urile și UID-urile celor doi;
-- statusul `pending` și datele operației.
+Numai managerul activ folosește recomandările și potrivirile în numele ownerului.
 
-Numai un prieten poate fi propus, iar persoana propusă trebuie să accepte.
-ID-ul este UID-ul ownerului, astfel încât fiecare profil poate avea maximum o
-singură propunere de manager activă.
+Un candidat este eligibil dacă:
 
-### `managerRelationships/{ownerId}`
+- are profil public;
+- are propriul manager activ;
+- nu este ownerul sau managerul care folosește feedul;
+- nu este prieten direct cu ownerul;
+- nu este gestionat de același manager;
+- nu este ascuns de o reacție activă;
+- nu există deja o potrivire cu ownerul.
 
-Relația de manager acceptată. ID-ul documentului este UID-ul ownerului, ceea ce garantează maximum un manager activ pentru fiecare owner în MVP.
+Ordinea recomandărilor este stabilă pentru pagina curentă și se schimbă la o reîmprospătare nouă. Profilurile care respectă vârsta, genul și interesele sunt afișate primele. Dacă nu există niciun profil compatibil, aplicația afișează toate profilurile eligibile, astfel încât feedul să nu rămână gol.
 
-```text
-managerRelationships/UID_OWNER
-├── ownerId
-├── ownerUsername
-├── managerId
-├── managerUsername
-├── memberIds
-└── createdAt
-```
+Apăsările repetate și cererile identice sunt consolidate pentru a evita rezultate duplicate sau răspunsuri vechi care suprascriu starea curentă.
 
-## 10. Identificatori deterministici
+`reactions/{ownerId_targetId}` păstrează direcția reacției. Like-ul rămâne ascuns până la reciprocitate. Un like reciproc creează tranzacțional un singur document `matches/{pairId}`. După dislike, profilul este ascuns până la expirarea reacției.
 
-`createPairId(uidA, uidB)` sortează UID-urile și le unește:
+## 10. Colecțiile Firestore
 
-```ts
-[uidA, uidB].sort().join("_")
-```
+| Colecție | Responsabilitate |
+|---|---|
+| `users` | profilul complet și privat |
+| `usernames` | username unic și asocierea cu UID-ul |
+| `publicProfiles` | date sociale sigure și metadatele fotografiilor |
+| `friendRequests` | cereri de prietenie active |
+| `friendships` | prietenii acceptate |
+| `managerRequests` | propuneri de manager |
+| `managerRelationships` | relații de manager acceptate |
+| `managerRoles` | rolul exclusiv și persoana asociată |
+| `preferences` | filtrele salvate pentru recomandări |
+| `reactions` | like/dislike direcționat |
+| `matches` | potriviri reciproce |
 
-Astfel, A→B și B→A produc același ID. Între două persoane poate exista o singură cerere activă și o singură prietenie.
+ID-urile dintre două persoane sunt deterministe. Pentru relațiile fără direcție UID-urile sunt sortate; pentru reacții se păstrează ordinea owner → candidat.
 
-`createManagerRequestId(ownerId)` folosește UID-ul ownerului și împiedică
-existența simultană a mai multor propuneri de manager pentru același profil.
-
-Aceste funcții sunt singurele surse pentru ID-urile sociale și nu trebuie duplicate în ecrane sau alte servicii.
-
-## 11. Fluxurile Sprintului 2
-
-### Căutare și trimitere
-
-1. utilizatorul introduce username-ul exact;
-2. `findUserByUsername(username, currentUid)` citește `usernames/{username}`;
-3. aplicația încearcă să citească profilul public;
-4. verifică prietenia și cererea existentă folosind `pairId`;
-5. rezultatul primește starea `none`, `request-sent`, `request-received` sau `friends`;
-6. `sendFriendRequest` verifică self-request, prietenia și duplicatele;
-7. cererea este salvată în `friendRequests/{pairId}`.
-
-Un `permission-denied` la citirea profilului public înseamnă profil privat. O eroare de rețea trebuie tratată ca eroare, nu ca profil privat.
-
-### Cereri primite și trimise
-
-1. inboxul încarcă separat cererile după `receiverId` și `senderId`;
-2. numai receiverul poate accepta sau refuza;
-3. numai senderul poate anula;
-4. acceptarea rulează într-o tranzacție;
-5. tranzacția creează `friendships/{pairId}` și șterge cererea.
-
-Tranzacția înseamnă că ori reușesc ambele operații, ori nu se aplică niciuna.
-
-### Lista de prieteni
-
-1. se caută documentele `friendships` în care `memberIds` conține UID-ul curent;
-2. se identifică celălalt membru;
-3. se afișează username-ul și inițialele;
-4. utilizatorul poate deschide profilul permis sau elimina prietenia;
-5. eliminarea prieteniei curăță și cererile/relațiile de manager dintre cei doi.
-
-### Manager
-
-1. ownerul alege un prieten;
-2. se creează `managerRequests/{ownerId}`;
-3. persoana propusă acceptă sau refuză;
-4. ID-ul cererii permite maximum o propunere activă pentru fiecare owner;
-5. acceptarea creează tranzacțional `managerRelationships/{ownerId}` și șterge cererea;
-6. managerul vede toate profilurile pe care le gestionează;
-7. `isManagerForUser(managerId, ownerId)` va controla accesul la feed și mesagerie în sprinturile următoare;
-8. oricare participant poate elimina relația.
-
-## 12. Serviciile și funcțiile lor
+## 11. Servicii principale
 
 | Serviciu | Responsabilitate |
 |---|---|
-| `authService.ts` | register, login, logout, ștergerea contului și observarea sesiunii |
-| `profileService.ts` | creare, citire, actualizare și sincronizare profil social |
-| `profileImageService.ts` | încărcarea fotografiei |
-| `userSearchService.ts` | căutare exactă, profil public și starea relației |
-| `friendRequestSendService.ts` | validare și creare cerere |
+| `authService.ts` | cont, sesiune, login, logout și ștergere cont |
+| `profileService.ts` | creare, citire și sincronizare profil |
+| `photoStorageService.ts` | încărcare, înlocuire, ștergere și URL-uri Storage |
+| `userSearchService.ts` | căutare și starea relației |
+| `friendRequestSendService.ts` | crearea cererilor |
 | `friendRequestInboxService.ts` | listare, acceptare, refuz și anulare |
 | `friendshipService.ts` | listă, verificare și eliminare prieten |
-| `managerService.ts` | propuneri, acceptare, relație activă și eliminare manager |
+| `managerService.ts` | cereri, relații și roluri de manager |
+| `preferencesService.ts` | citirea, validarea și salvarea filtrelor |
+| `feed/feedService.ts` | eligibilitate, filtrare, ordine și paginare |
+| `feed/reactionService.ts` | like/dislike și detectarea reciprocității |
+| `feed/matchService.ts` | listarea potrivirilor |
 
-Tipurile sociale sunt definite o singură dată în `types/social.ts` și nu trebuie redefinite local.
+Tipurile comune sunt în `types/profile.ts`, `types/social.ts`, `types/feed.ts` și `types/photo.ts`. Nu se definesc copii locale ale acelorași contracte.
 
-## 13. Starea interfeței
+## 12. Securitate Firebase
 
-Ecranele asincrone folosesc de regulă:
+Interfața nu este securitate. Ascunderea unui buton nu înlocuiește regulile Firestore sau Storage.
 
-- `isLoading` pentru prima încărcare;
-- `isRefreshing` pentru pull-to-refresh;
-- `isSubmitting`, `isSending` sau un ID de procesare pentru acțiuni;
-- `errorMessage` pentru probleme;
-- o variabilă precum `result`, `friends` sau `requests` pentru date.
+Regulile verifică, în funcție de operație:
 
-În timpul unei acțiuni, butonul trebuie dezactivat pentru a preveni apăsările duplicate. O eroare Firebase nu trebuie mascată ca listă goală sau profil privat, exceptând cazurile intenționate și documentate.
+- utilizatorul autentificat;
+- proprietarul documentului sau fotografiei;
+- participanții relației;
+- rolul activ de manager;
+- forma exactă a documentului și câmpurile permise;
+- existența reacțiilor reciproce înainte de crearea unui match;
+- limita și consistența metadatelor fotografiilor.
 
-## 14. Regulile Firestore și indexurile
+Fișierele sunt:
 
-Interfața nu este securitate. Chiar dacă un buton este ascuns, regulile Firestore trebuie să verifice UID-ul autentificat, rolul participantului și câmpurile scrise.
+- `database/firestore.rules`;
+- `database/storage.rules`;
+- `client/database/firestore.indexes.json`.
 
-Exemple de reguli de produs:
+Interogările compuse pot necesita indexuri. O eroare Firestore care oferă un link de creare a indexului nu trebuie mascată ca listă goală.
 
-- numai ownerul citește `users/{uid}`;
-- numai senderul creează o cerere;
-- numai receiverul o acceptă/refuză;
-- numai participanții văd cererea sau prietenia;
-- numai prietenii pot începe o relație de manager;
-- persoana propusă trebuie să accepte.
+## 13. Testare manuală minimă
 
-Regulile se află în `database/firestore.rules`, iar indexurile în `client/database/firestore.indexes.json`. Faptul că fișierele există local nu înseamnă că sunt publicate.
+### Prietenie și manager
 
-Interogările compuse, precum:
+1. A trimite o cerere către B;
+2. B acceptă și prietenia apare pentru amândoi;
+3. A îl propune pe B ca manager;
+4. B acceptă;
+5. relația și cele două roluri sunt create;
+6. eliminarea relației șterge și blocările de rol.
 
-```text
-receiverId == UID
-status == pending
-orderBy createdAt desc
-```
+### Recomandări și potriviri
 
-au nevoie de indexuri Firestore. Dacă un index lipsește, consola aplicației afișează de obicei o eroare cu un link de creare.
+1. două perechi owner–manager sunt active;
+2. managerul primei perechi vede ownerul celeilalte perechi;
+3. profilurile private, prietenii și profilurile deja procesate sunt excluse;
+4. dacă există profile compatibile, acestea au prioritate;
+5. dacă nu există, apar celelalte profiluri eligibile;
+6. două like-uri reciproce creează o singură potrivire;
+7. potrivirea apare pentru managerii ambelor profile.
 
-## 15. Testare
+### Fotografii
 
-Testele Jest obișnuite folosesc Firebase simulat și verifică logica fără să modifice baza reală. Testele din `client/firestore-emulator` folosesc pachetul oficial `@firebase/rules-unit-testing` și regulile reale din `database/firestore.rules` într-un proiect local `demo-setitup`.
+1. proprietarul încarcă o fotografie acceptată sub 5 MB;
+2. fotografia apare în profil, recomandări, prieteni și potriviri;
+3. se pot încărca maximum 6 fotografii;
+4. înlocuirea păstrează poziția și elimină fișierul vechi;
+5. ștergerea fotografiei principale promovează următoarea fotografie;
+6. alt utilizator nu poate modifica folderul proprietarului;
+7. un tip neacceptat sau un fișier peste 5 MB este refuzat.
 
-```bash
-cd client
-npm run test:firestore-rules
-```
+## 14. Convenții
 
-Comanda pornește emulatorul, rulează testele și îl oprește automat. Testele trebuie să acopere:
-
-- rezultate normale;
-- input invalid;
-- lipsa documentelor;
-- acces nepermis;
-- duplicate și acțiuni proprii;
-- erori Firebase/network;
-- tranzițiile importante de stare.
-
-Testarea manuală minimă pentru prietenie:
-
-1. A îl caută pe B;
-2. A trimite cererea;
-3. documentul apare în `friendRequests`;
-4. A îl vede la „Trimise”, B la „Primite”;
-5. B acceptă;
-6. cererea dispare;
-7. documentul apare în `friendships`;
-8. A și B apar în liste;
-9. o nouă cerere este blocată;
-10. eliminarea prieteniei o șterge pentru amândoi.
-
-Testarea minimă pentru manager:
-
-1. A și B sunt prieteni;
-2. A îl propune pe B;
-3. B vede și acceptă cererea;
-4. apare `managerRelationships/{UID_A}`;
-5. `isManagerForUser(UID_B, UID_A)` întoarce `true`;
-6. A sau B elimină relația;
-7. verificarea întoarce `false`.
-
-## 16. Convenții pentru consistență
-
-- rutele și numele funcțiilor comune se schimbă numai după acordul echipei;
-- username-ul este normalizat și nu se schimbă în MVP;
 - UID-ul Firebase este identitatea reală, nu username-ul;
-- datele private nu se copiază în documente publice/sociale;
-- nu se accesează direct profilul privat al altui utilizator;
-- fiecare operație Firebase are un singur serviciu responsabil;
-- operațiile dependente se fac tranzacțional sau într-un batch când este posibil;
+- username-ul este normalizat cu `trim().toLowerCase()`;
+- parola nu se salvează în Firestore;
+- datele private nu se copiază în documente publice;
+- fiecare operație Firebase are un serviciu responsabil;
+- operațiile dependente folosesc tranzacții sau batch-uri când este posibil;
+- toate citirile unei tranzacții se fac înaintea scrierilor;
 - erorile nu se transformă în rezultate goale fără motiv explicit;
+- acțiunile asincrone au loading, empty state și mesaj de eroare;
+- butoanele sunt dezactivate cât timp acțiunea este în curs;
 - nu se folosesc date simulate în versiunea finală;
-- orice funcționalitate are loading, empty state și mesaj de eroare;
-- înainte de PR se rulează testele, TypeScript și lint;
-- după schimbarea regulilor/indexurilor se confirmă publicarea în Firebase;
-- README-ul se actualizează în același PR cu schimbarea arhitecturală.
-
-## 17. Starea actuală și pașii următori
-
-Implementat:
-
-- cont, login, logout și persistență;
-- creare, recuperare, vizualizare și editare profil;
-- profil public/privat;
-- căutare exactă și profil public;
-- trimitere, acceptare, refuz și anulare cereri;
-- listă și eliminare prieteni;
-- o singură propunere activă de manager pentru fiecare profil;
-- acceptare tranzacțională și eliminare manager;
-- lista profilurilor pentru care utilizatorul este manager;
-- username-uri sociale disponibile și pentru profilurile private;
-- interfață socială în limba română și navbar Profil/Prieteni;
-- tratarea erorilor recuperabile fără ecranul roșu de dezvoltare.
-
-Verificat automat:
-
-- testele aplicației, verificarea TypeScript și lint trec;
-- regulile Firestore acoperă profilurile, prieteniile, cererile și relațiile de manager;
-- erorile serviciului manager sunt afișate explicit, nu transformate în liste goale;
-- regulile și indexurile au fost publicate cu succes în proiectul Firebase `setitup-84173` pe 15 august 2026.
-
-De verificat înainte de închiderea Sprintului 2:
-
-- fluxul complet de prietenie funcționează cu două conturi reale;
-- după acceptare, prietenia apare pentru ambele conturi;
-- fluxul complet de manager funcționează după acceptarea prieteniei;
-- relația și lista profilurilor gestionate rămân corecte după închiderea și redeschiderea aplicației.
-
-Sprinturile următoare vor adăuga feedul, like/dislike, match, filtre, conversații, mesaje și block/unblock. Aceste funcții trebuie să folosească relația `managerRelationships/{ownerId}` pentru autorizarea managerului și să păstreze separarea dintre owner, manager și persoana din feed.
-
-## 18. Cum actualizăm acest document
-
-README-ul se actualizează când:
-
-- apare sau dispare o rută;
-- se adaugă o colecție ori se schimbă forma documentului;
-- se schimbă o regulă funcțională;
-- se introduce un serviciu sau un context;
-- un flux trece din „planificat” în „implementat”;
-- se descoperă o limitare importantă.
-
-La fiecare actualizare trebuie verificat că descrierea corespunde codului existent. Documentul nu trebuie să promită funcții care nu sunt încă implementate.
+- înainte de PR se rulează testele, TypeScript, lint și testele regulilor;
+- după schimbarea regulilor sau indexurilor se confirmă publicarea în Firebase;
+- README-ul se actualizează când se schimbă o rută, colecție, regulă de produs, limită, serviciu sau flux implementat.
