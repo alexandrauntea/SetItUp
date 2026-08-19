@@ -2,6 +2,7 @@ import { AppButton } from "@/components/AppButton";
 import { ScreenBackground } from "@/components/ScreenBackground";
 import { COLORS } from "@/constants/colors";
 import { GENDER_OPTIONS } from "@/constants/profileOptions";
+import { useAuth } from "@/contexts/AuthContext";
 import { getPublicProfileByUid } from "@/services/social/userSearchService";
 import type { PublicProfile } from "@/types/social";
 import { Ionicons } from "@expo/vector-icons";
@@ -22,6 +23,7 @@ import { SafeAreaView } from "react-native-safe-area-context";
 
 export default function PublicUserProfileScreen() {
   const router = useRouter();
+  const { user: currentUser } = useAuth();
   const { width } = useWindowDimensions();
   const isCompact = width < 380;
   const params = useLocalSearchParams<{ uid?: string | string[] }>();
@@ -41,7 +43,8 @@ export default function PublicUserProfileScreen() {
       }
 
       try {
-        const publicProfile = await getPublicProfileByUid(uid);
+        // Trimitem și ID-ul utilizatorului curent pentru a verifica relația de prietenie în servicii
+        const publicProfile = await getPublicProfileByUid(uid, currentUser?.uid);
         if (isActive) setProfile(publicProfile);
       } catch {
         if (isActive) setHasError(true);
@@ -54,7 +57,7 @@ export default function PublicUserProfileScreen() {
     return () => {
       isActive = false;
     };
-  }, [uid]);
+  }, [uid, currentUser?.uid]);
 
   function handleBack() {
     if (router.canGoBack()) {
