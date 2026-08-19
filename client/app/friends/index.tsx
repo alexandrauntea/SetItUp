@@ -185,7 +185,7 @@ export default function FriendsScreen() {
 
 const styles = StyleSheet.create({
   safeArea: { flex: 1 },
-  container: { padding: 20, paddingBottom: 120 },
+  container: { paddingHorizontal: 20, paddingBottom: 120 },
   containerCompact: { paddingHorizontal: 14 },
   content: { width: "100%", maxWidth: 430, alignSelf: "center", gap: 22 },
   shortcuts: { flexDirection: "row", gap: 10 },

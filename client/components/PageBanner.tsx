@@ -45,11 +45,12 @@ const styles = StyleSheet.create({
   banner: {
     width: "100%",
     maxWidth: 430,
-    minHeight: 104,
+    height: 104,
     alignSelf: "center",
     flexDirection: "row",
     alignItems: "center",
     gap: 12,
+    marginTop: 20,
     padding: 24,
     borderRadius: 24,
     shadowColor: COLORS.primaryPressed,

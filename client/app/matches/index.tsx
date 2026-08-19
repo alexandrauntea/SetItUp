@@ -225,7 +225,7 @@ export default function MatchesScreen() {
 
 const styles = StyleSheet.create({
   safeArea: { flex: 1 },
-  container: { flexGrow: 1, padding: 20, paddingBottom: 120 },
+  container: { flexGrow: 1, paddingHorizontal: 20, paddingBottom: 120 },
   containerCompact: { paddingHorizontal: 14 },
   content: { width: "100%", maxWidth: 430, alignSelf: "center", gap: 22 },
   matchesList: { gap: 14 },

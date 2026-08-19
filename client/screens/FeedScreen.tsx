@@ -24,6 +24,7 @@ import {
   StyleSheet,
   Text,
   TouchableOpacity,
+  useWindowDimensions,
   View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
@@ -46,6 +47,8 @@ function buildPreferences(
 }
 
 export function FeedScreen() {
+  const { width } = useWindowDimensions();
+  const isCompact = width < 380;
   const { user } = useAuth();
   const [managerRel, setManagerRel] = useState<ManagerRelationship | null>(null);
   const [isManagerChecked, setIsManagerChecked] = useState<boolean>(false);
@@ -168,7 +171,7 @@ export function FeedScreen() {
   return (
     <ScreenBackground>
       <SafeAreaView style={styles.safeArea}>
-        <View style={styles.container}>
+        <View style={[styles.container, isCompact && styles.containerCompact]}>
           {/* Top Header */}
           <PageBanner
             title="Feed Potriviri"
@@ -291,7 +294,9 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     paddingHorizontal: 20,
-    paddingTop: 20,
+  },
+  containerCompact: {
+    paddingHorizontal: 14,
   },
   filterButton: {
     width: 42,
