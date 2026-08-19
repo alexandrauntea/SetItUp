@@ -203,6 +203,43 @@ describe("feedService", () => {
     expect(page.profiles.every((item) => !item.matchesPreferences)).toBe(true);
   });
 
+  test("îl recomandă pe Bogdan lui Andrei când sunt gestionați de Denis și Eric", async () => {
+    const bogdan = profile("bogdan", {
+      username: "bogdan",
+      interests: ["Music"],
+    });
+
+    mockGetDoc.mockImplementation(async (reference: string) => {
+      if (reference === "doc:managerRelationships:andrei") {
+        return {
+          exists: () => true,
+          data: () => ({ ownerId: "andrei", managerId: "denis" }),
+        };
+      }
+      if (reference === "doc:managerRoles:bogdan") {
+        return {
+          exists: () => true,
+          data: () => ({ uid: "bogdan", role: "owner", counterpartId: "eric" }),
+        };
+      }
+      return { exists: () => false };
+    });
+    mockGetDocs.mockImplementation(async (reference: string) => {
+      if (reference === "collection:publicProfiles|isPrivate:==:false") {
+        return snapshot([bogdan]);
+      }
+      return snapshot([]);
+    });
+
+    const page = await getFeed({
+      ownerId: "andrei",
+      actorId: "denis",
+      preferences: { ...preferences, ownerId: "andrei" },
+    });
+
+    expect(page.profiles.map((item) => item.uid)).toEqual(["bogdan"]);
+  });
+
   test("rejects malformed cursors and unsafe page sizes", async () => {
     await expect(getFeed({
       ownerId: "owner",
