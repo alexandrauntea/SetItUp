@@ -5,13 +5,15 @@ import { FeedFilterModal } from "@/components/feed/FeedFilterModal";
 import { MatchModal } from "@/components/feed/MatchModal";
 import { COLORS } from "@/constants/colors";
 import { useAuth } from "@/contexts/AuthContext";
+import { getFeed } from "@/services/feed/feedService";
+import { saveReaction } from "@/services/feed/reactionService";
+import { getManagedProfiles } from "@/services/social/managerService";
 import {
-  dislikeProfile,
-  getFeedProfiles,
-  getManagedOwnerForManager,
-  likeProfile,
-} from "@/services/social/feedService";
-import { FeedCandidateProfile, FeedFilterPreferences, FeedItem } from "@/types/feed";
+  FeedCandidateProfile,
+  FeedFilterPreferences,
+  FeedItem,
+  FeedPreferences,
+} from "@/types/feed";
 import { ManagerRelationship } from "@/types/social";
 import { Ionicons } from "@expo/vector-icons";
 import React, { useCallback, useEffect, useState } from "react";
@@ -24,6 +26,23 @@ import {
   View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
+
+function buildPreferences(
+  ownerId: string,
+  selectedFilters: FeedFilterPreferences,
+): FeedPreferences {
+  return {
+    ownerId,
+    minAge: selectedFilters.minAge ?? 18,
+    maxAge: selectedFilters.maxAge ?? 100,
+    genders:
+      selectedFilters.gender && selectedFilters.gender !== "any"
+        ? [selectedFilters.gender]
+        : [],
+    interests: selectedFilters.interests ?? [],
+    updatedAt: new Date().toISOString(),
+  };
+}
 
 export function FeedScreen() {
   const { user } = useAuth();
@@ -49,7 +68,7 @@ export function FeedScreen() {
       setErrorMessage(null);
 
       try {
-        const rel = await getManagedOwnerForManager(user.uid);
+        const rel = (await getManagedProfiles(user.uid))[0] ?? null;
         setManagerRel(rel);
         setIsManagerChecked(true);
 
@@ -58,8 +77,21 @@ export function FeedScreen() {
           return;
         }
 
-        const items = await getFeedProfiles(user.uid, targetFilters ?? filters);
-        setFeedItems(items);
+        const page = await getFeed({
+          ownerId: rel.ownerId,
+          actorId: user.uid,
+          preferences: buildPreferences(
+            rel.ownerId,
+            targetFilters ?? filters,
+          ),
+        });
+        setFeedItems(
+          page.profiles.map((profile) => ({
+            profile,
+            commonFriendsCount: profile.mutualFriendsCount,
+            isPreferred: profile.matchesPreferences,
+          })),
+        );
         setCurrentIndex(0);
       } catch (err: any) {
         console.error("Error fetching feed:", err);
@@ -86,9 +118,15 @@ export function FeedScreen() {
     setActionLoading("like");
 
     try {
-      const result = await likeProfile(user.uid, currentItem.profile.uid);
-      if (result.isMatch) {
-        setMatchedProfile(result.matchedProfile || currentItem.profile);
+      if (!managerRel) return;
+      const result = await saveReaction({
+        ownerId: managerRel.ownerId,
+        actorId: user.uid,
+        targetId: currentItem.profile.uid,
+        value: "like",
+      });
+      if (result.match) {
+        setMatchedProfile(currentItem.profile);
         setMatchModalVisible(true);
       }
       setCurrentIndex((prev) => prev + 1);
@@ -105,7 +143,13 @@ export function FeedScreen() {
     setActionLoading("dislike");
 
     try {
-      await dislikeProfile(user.uid, currentItem.profile.uid);
+      if (!managerRel) return;
+      await saveReaction({
+        ownerId: managerRel.ownerId,
+        actorId: user.uid,
+        targetId: currentItem.profile.uid,
+        value: "dislike",
+      });
       setCurrentIndex((prev) => prev + 1);
     } catch (err) {
       console.error("Error disliking profile:", err);

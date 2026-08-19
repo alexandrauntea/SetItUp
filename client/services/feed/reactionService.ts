@@ -1,7 +1,7 @@
 import { db } from "@/services/firebase";
 import { createMatchId, createReactionId } from "@/services/social/socialIds";
 import type { Match, Reaction, SaveReactionInput } from "@/types/feed";
-import type { ManagerRelationship } from "@/types/social";
+import type { ManagerRelationship, ManagerRole } from "@/types/social";
 import { doc, runTransaction } from "firebase/firestore";
 
 export interface SaveReactionResult {
@@ -18,6 +18,7 @@ export const DISLIKE_COOLDOWN_DAYS = 30;
 const REACTIONS_COLLECTION = "reactions";
 const MATCHES_COLLECTION = "matches";
 const MANAGER_RELATIONSHIPS_COLLECTION = "managerRelationships";
+const MANAGER_ROLES_COLLECTION = "managerRoles";
 const DAY_IN_MILLISECONDS = 24 * 60 * 60 * 1_000;
 
 function validateInput(input: SaveReactionInput): void {
@@ -71,9 +72,9 @@ export const saveReaction: SaveReaction = async (
     MANAGER_RELATIONSHIPS_COLLECTION,
     input.ownerId,
   );
-  const targetRelationshipRef = doc(
+  const targetRoleRef = doc(
     db,
-    MANAGER_RELATIONSHIPS_COLLECTION,
+    MANAGER_ROLES_COLLECTION,
     input.targetId,
   );
   const now = Date.now();
@@ -82,13 +83,13 @@ export const saveReaction: SaveReaction = async (
   return runTransaction(db, async (transaction) => {
     const [
       ownerRelationshipSnapshot,
-      targetRelationshipSnapshot,
+      targetRoleSnapshot,
       reactionSnapshot,
       reverseReactionSnapshot,
       matchSnapshot,
     ] = await Promise.all([
       transaction.get(ownerRelationshipRef),
-      transaction.get(targetRelationshipRef),
+      transaction.get(targetRoleRef),
       transaction.get(reactionRef),
       transaction.get(reverseReactionRef),
       transaction.get(matchRef),
@@ -104,13 +105,15 @@ export const saveReaction: SaveReaction = async (
       throw new Error("REACTION_MANAGER_ONLY");
     }
 
-    if (!targetRelationshipSnapshot.exists()) {
+    if (!targetRoleSnapshot.exists()) {
       throw new Error("TARGET_HAS_NO_MANAGER");
     }
 
-    const targetRelationship =
-      targetRelationshipSnapshot.data() as ManagerRelationship;
-    if (targetRelationship.managerId === input.actorId) {
+    const targetRole = targetRoleSnapshot.data() as ManagerRole;
+    if (targetRole.role !== "owner") {
+      throw new Error("TARGET_HAS_NO_MANAGER");
+    }
+    if (targetRole.counterpartId === input.actorId) {
       throw new Error("SAME_MANAGER_NOT_ALLOWED");
     }
 

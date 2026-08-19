@@ -36,6 +36,15 @@ function activeRelationship(ownerId: string, managerId: string) {
   };
 }
 
+function ownerRole(ownerId: string, managerId: string) {
+  return {
+    uid: ownerId,
+    role: "owner",
+    counterpartId: managerId,
+    createdAt: "2026-08-01T10:00:00.000Z",
+  };
+}
+
 const input = {
   ownerId: "owner-a",
   actorId: "manager-a",
@@ -53,8 +62,8 @@ describe("reactionService", () => {
       activeRelationship("owner-a", "manager-a"),
     );
     documents.set(
-      "managerRelationships/owner-b",
-      activeRelationship("owner-b", "manager-b"),
+      "managerRoles/owner-b",
+      ownerRole("owner-b", "manager-b"),
     );
     mockTransactionGet.mockImplementation(async (reference: string) =>
       snapshot(documents.get(reference)),

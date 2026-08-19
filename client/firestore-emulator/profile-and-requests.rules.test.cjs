@@ -872,4 +872,109 @@ describe("Regulile datelor din feed", () => {
       where("memberIds", "array-contains", ALICE_UID),
     )));
   });
+
+  test("managerul poate salva reacția prin tranzacția folosită de feed", async () => {
+    await seedDocument(
+      "managerRelationships",
+      ALICE_UID,
+      managerRelationship(),
+    );
+    await seedDocument(
+      "managerRoles",
+      OUTSIDER_UID,
+      managerRole(OUTSIDER_UID, "owner", "candidate-manager"),
+    );
+    const bob = testEnv.authenticatedContext(BOB_UID);
+    const firestore = bob.firestore();
+    const reactionId = `${ALICE_UID}_${OUTSIDER_UID}`;
+    const reverseReactionId = `${OUTSIDER_UID}_${ALICE_UID}`;
+    const reactionRef = doc(firestore, "reactions", reactionId);
+    const reverseReactionRef = doc(
+      firestore,
+      "reactions",
+      reverseReactionId,
+    );
+    const matchRef = doc(firestore, "matches", reactionId);
+
+    await assertSucceeds(runTransaction(firestore, async (transaction) => {
+      await transaction.get(
+        doc(firestore, "managerRelationships", ALICE_UID),
+      );
+      await transaction.get(doc(firestore, "managerRoles", OUTSIDER_UID));
+      await transaction.get(reactionRef);
+      await transaction.get(reverseReactionRef);
+      await transaction.get(matchRef);
+      transaction.set(reactionRef, {
+        id: reactionId,
+        ownerId: ALICE_UID,
+        targetId: OUTSIDER_UID,
+        actorId: BOB_UID,
+        actorRole: "manager",
+        value: "dislike",
+        createdAt: "2026-08-19T12:00:00.000Z",
+        updatedAt: "2026-08-19T12:00:00.000Z",
+        expiresAt: "2026-09-18T12:00:00.000Z",
+      });
+    }));
+
+    expect((await getDoc(reactionRef)).exists()).toBe(true);
+  });
+
+  test("like-ul reciproc poate crea atomic un singur match", async () => {
+    await seedDocument(
+      "managerRelationships",
+      ALICE_UID,
+      managerRelationship(),
+    );
+    await seedDocument(
+      "managerRoles",
+      OUTSIDER_UID,
+      managerRole(OUTSIDER_UID, "owner", "candidate-manager"),
+    );
+    await seedDocument("reactions", `${OUTSIDER_UID}_${ALICE_UID}`, {
+      id: `${OUTSIDER_UID}_${ALICE_UID}`,
+      ownerId: OUTSIDER_UID,
+      targetId: ALICE_UID,
+      actorId: "candidate-manager",
+      actorRole: "manager",
+      value: "like",
+      createdAt: "2026-08-18T12:00:00.000Z",
+      updatedAt: "2026-08-18T12:00:00.000Z",
+    });
+    const bob = testEnv.authenticatedContext(BOB_UID);
+    const firestore = bob.firestore();
+    const reactionId = `${ALICE_UID}_${OUTSIDER_UID}`;
+    const reverseReactionId = `${OUTSIDER_UID}_${ALICE_UID}`;
+    const reactionRef = doc(firestore, "reactions", reactionId);
+    const matchRef = doc(firestore, "matches", reactionId);
+
+    await assertSucceeds(runTransaction(firestore, async (transaction) => {
+      await transaction.get(
+        doc(firestore, "managerRelationships", ALICE_UID),
+      );
+      await transaction.get(doc(firestore, "managerRoles", OUTSIDER_UID));
+      await transaction.get(reactionRef);
+      await transaction.get(
+        doc(firestore, "reactions", reverseReactionId),
+      );
+      await transaction.get(matchRef);
+      transaction.set(reactionRef, {
+        id: reactionId,
+        ownerId: ALICE_UID,
+        targetId: OUTSIDER_UID,
+        actorId: BOB_UID,
+        actorRole: "manager",
+        value: "like",
+        createdAt: "2026-08-19T12:00:00.000Z",
+        updatedAt: "2026-08-19T12:00:00.000Z",
+      });
+      transaction.set(matchRef, {
+        id: reactionId,
+        memberIds: [ALICE_UID, OUTSIDER_UID],
+        createdAt: "2026-08-19T12:00:00.000Z",
+      });
+    }));
+
+    expect((await getDoc(matchRef)).exists()).toBe(true);
+  });
 });

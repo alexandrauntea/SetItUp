@@ -80,6 +80,54 @@ service cloud.firestore {
         );
     }
 
+    function hasValidReactionData(data, reactionId) {
+      return data.keys().hasOnly([
+          'id',
+          'ownerId',
+          'targetId',
+          'actorId',
+          'actorRole',
+          'value',
+          'createdAt',
+          'updatedAt',
+          'expiresAt'
+        ])
+        && data.keys().hasAll([
+          'id',
+          'ownerId',
+          'targetId',
+          'actorId',
+          'actorRole',
+          'value',
+          'createdAt',
+          'updatedAt'
+        ])
+        && data.id == reactionId
+        && reactionId == data.ownerId + '_' + data.targetId
+        && data.ownerId is string
+        && data.targetId is string
+        && data.ownerId != data.targetId
+        && data.actorId == request.auth.uid
+        && data.actorRole == 'manager'
+        && data.value in ['like', 'dislike']
+        && data.createdAt is string
+        && data.updatedAt is string
+        && (
+          (data.value == 'like' && !('expiresAt' in data))
+          || (data.value == 'dislike' && data.expiresAt is string)
+        )
+        && isActiveManagerFor(data.ownerId)
+        && exists(
+          /databases/$(database)/documents/managerRoles/$(data.targetId)
+        )
+        && get(
+          /databases/$(database)/documents/managerRoles/$(data.targetId)
+        ).data.role == 'owner'
+        && get(
+          /databases/$(database)/documents/managerRoles/$(data.targetId)
+        ).data.counterpartId != request.auth.uid;
+    }
+
     function hasValidProfileFields() {
       return request.resource.data.keys().hasOnly([
           'uid',
@@ -586,17 +634,66 @@ service cloud.firestore {
     }
 
     match /reactions/{reactionId} {
-      allow get, list: if isSignedIn()
-        && isActiveManagerFor(resource.data.ownerId);
-      allow create, update, delete: if false;
+      allow get: if isActiveManager()
+        && (!exists(
+          /databases/$(database)/documents/reactions/$(reactionId)
+        )
+          || isActiveManagerFor(resource.data.ownerId)
+          || isActiveManagerFor(resource.data.targetId));
+      allow list: if isActiveManagerFor(resource.data.ownerId);
+
+      allow create: if hasValidReactionData(request.resource.data, reactionId);
+      allow update: if hasValidReactionData(request.resource.data, reactionId)
+        && resource.data.ownerId == request.resource.data.ownerId
+        && resource.data.targetId == request.resource.data.targetId
+        && resource.data.value == 'dislike';
+      allow delete: if false;
     }
 
     match /matches/{matchId} {
-      allow get, list: if isActiveManager()
+      allow get: if isActiveManager()
+        && (!exists(
+          /databases/$(database)/documents/matches/$(matchId)
+        ) || get(
+          /databases/$(database)/documents/managerRoles/$(request.auth.uid)
+        ).data.counterpartId in resource.data.memberIds);
+      allow list: if isActiveManager()
         && get(
           /databases/$(database)/documents/managerRoles/$(request.auth.uid)
         ).data.counterpartId in resource.data.memberIds;
-      allow create, update, delete: if false;
+      allow create: if isActiveManager()
+        && request.resource.data.keys().hasOnly([
+          'id',
+          'memberIds',
+          'createdAt'
+        ])
+        && request.resource.data.keys().hasAll([
+          'id',
+          'memberIds',
+          'createdAt'
+        ])
+        && request.resource.data.id == matchId
+        && request.resource.data.memberIds is list
+        && request.resource.data.memberIds.size() == 2
+        && request.resource.data.memberIds[0] is string
+        && request.resource.data.memberIds[1] is string
+        && request.resource.data.memberIds[0] != request.resource.data.memberIds[1]
+        && isPairId(
+          matchId,
+          request.resource.data.memberIds[0],
+          request.resource.data.memberIds[1]
+        )
+        && request.resource.data.createdAt is string
+        && get(
+          /databases/$(database)/documents/managerRoles/$(request.auth.uid)
+        ).data.counterpartId in request.resource.data.memberIds
+        && getAfter(
+          /databases/$(database)/documents/reactions/$(request.resource.data.memberIds[0] + '_' + request.resource.data.memberIds[1])
+        ).data.value == 'like'
+        && getAfter(
+          /databases/$(database)/documents/reactions/$(request.resource.data.memberIds[1] + '_' + request.resource.data.memberIds[0])
+        ).data.value == 'like';
+      allow update, delete: if false;
     }
 
     match /managerRoles/{uid} {
