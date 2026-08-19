@@ -235,7 +235,7 @@ Un candidat este eligibil dacă:
 - nu este ascuns de o reacție activă;
 - nu există deja o potrivire cu ownerul.
 
-Ordinea recomandărilor este stabilă pentru pagina curentă și se schimbă la o reîmprospătare nouă. Profilurile care respectă vârsta, genul și interesele sunt afișate primele. Dacă nu există niciun profil compatibil, aplicația afișează toate profilurile eligibile, astfel încât feedul să nu rămână gol.
+Ordinea recomandărilor este stabilă pentru pagina curentă și se schimbă la o reîmprospătare nouă. Lista urmărește aproximativ raportul 80/20: patru profiluri care respectă vârsta, genul și interesele sunt urmate de un profil eligibil care nu respectă toate filtrele. Dacă una dintre categorii nu are suficiente rezultate, lista este completată cu profilurile disponibile din cealaltă categorie, astfel încât feedul să nu rămână gol.
 
 Apăsările repetate și cererile identice sunt consolidate pentru a evita rezultate duplicate sau răspunsuri vechi care suprascriu starea curentă.
 
@@ -316,8 +316,8 @@ Interogările compuse pot necesita indexuri. O eroare Firestore care oferă un l
 1. două perechi owner–manager sunt active;
 2. managerul primei perechi vede ownerul celeilalte perechi;
 3. profilurile private, prietenii și profilurile deja procesate sunt excluse;
-4. dacă există profile compatibile, acestea au prioritate;
-5. dacă nu există, apar celelalte profiluri eligibile;
+4. când există suficiente rezultate, pagina respectă aproximativ raportul 80% compatibile și 20% din afara filtrelor;
+5. dacă o categorie este goală, apar profilurile eligibile din cealaltă categorie;
 6. două like-uri reciproce creează o singură potrivire;
 7. potrivirea apare pentru managerii ambelor profile.
 

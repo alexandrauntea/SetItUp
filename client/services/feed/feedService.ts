@@ -80,6 +80,46 @@ function seededOrder<T extends { uid: string }>(items: T[], seed: string): T[] {
   });
 }
 
+function mixPreferredProfiles(
+  preferredProfiles: FeedProfile[],
+  otherProfiles: FeedProfile[],
+): FeedProfile[] {
+  const mixedProfiles: FeedProfile[] = [];
+  let preferredIndex = 0;
+  let otherIndex = 0;
+
+  while (
+    preferredIndex < preferredProfiles.length
+    || otherIndex < otherProfiles.length
+  ) {
+    for (
+      let count = 0;
+      count < 4 && preferredIndex < preferredProfiles.length;
+      count += 1
+    ) {
+      mixedProfiles.push(preferredProfiles[preferredIndex]);
+      preferredIndex += 1;
+    }
+
+    if (otherIndex < otherProfiles.length) {
+      mixedProfiles.push(otherProfiles[otherIndex]);
+      otherIndex += 1;
+    }
+
+    if (preferredIndex >= preferredProfiles.length) {
+      mixedProfiles.push(...otherProfiles.slice(otherIndex));
+      break;
+    }
+
+    if (otherIndex >= otherProfiles.length) {
+      mixedProfiles.push(...preferredProfiles.slice(preferredIndex));
+      break;
+    }
+  }
+
+  return mixedProfiles;
+}
+
 export function matchesFeedPreferences(
   profile: PublicProfile,
   preferences: FeedPreferences,
@@ -227,9 +267,11 @@ export const getFeed: GetFeed = async (request) => {
     eligibleProfiles.filter((profile) => profile.matchesPreferences),
     `${cursor.seed}p`,
   );
-  const orderedProfiles = preferredProfiles.length > 0
-    ? preferredProfiles
-    : seededOrder(eligibleProfiles, `${cursor.seed}f`);
+  const otherProfiles = seededOrder(
+    eligibleProfiles.filter((profile) => !profile.matchesPreferences),
+    `${cursor.seed}o`,
+  );
+  const orderedProfiles = mixPreferredProfiles(preferredProfiles, otherProfiles);
   const profiles = orderedProfiles.slice(cursor.offset, cursor.offset + pageSize);
   const nextOffset = cursor.offset + profiles.length;
 

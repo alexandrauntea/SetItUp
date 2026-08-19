@@ -85,7 +85,7 @@ describe("feedService", () => {
     expect(mockGetDocs).not.toHaveBeenCalled();
   });
 
-  test("exclude profilurile neeligibile și afișează numai profilurile compatibile", async () => {
+  test("exclude profilurile neeligibile și amestecă recomandările în raport 80/20", async () => {
     const preferred = Array.from({ length: 10 }, (_, index) =>
       profile(`preferred-${index}`),
     );
@@ -151,7 +151,20 @@ describe("feedService", () => {
     });
 
     expect(firstPage.profiles).toHaveLength(10);
-    expect(firstPage.profiles.every((item) => item.matchesPreferences)).toBe(true);
+    expect(firstPage.profiles.filter((item) => item.matchesPreferences)).toHaveLength(8);
+    expect(firstPage.profiles.filter((item) => !item.matchesPreferences)).toHaveLength(2);
+    expect(firstPage.profiles.map((item) => item.matchesPreferences)).toEqual([
+      true,
+      true,
+      true,
+      true,
+      false,
+      true,
+      true,
+      true,
+      true,
+      false,
+    ]);
     expect(firstPage.profiles.map((item) => item.uid)).not.toEqual(
       expect.arrayContaining([
         "owner",
@@ -164,7 +177,7 @@ describe("feedService", () => {
         "private",
       ]),
     );
-    expect(firstPage.nextCursor).toBeNull();
+    expect(firstPage.nextCursor).not.toBeNull();
   });
 
   test("afișează toate profilurile eligibile ca rezervă când niciunul nu respectă filtrele", async () => {
