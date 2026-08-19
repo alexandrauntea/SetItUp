@@ -7,6 +7,7 @@ type AppButtonProps = {
   disabled?: boolean;
   loading?: boolean;
   variant?: "primary" | "outline";
+  testID?: string;
 };
 
 export function AppButton({
@@ -15,6 +16,7 @@ export function AppButton({
   disabled = false,
   loading = false,
   variant = "primary",
+  testID,
 }: AppButtonProps) {
   const isDisabled = disabled || loading;
 
@@ -25,6 +27,7 @@ export function AppButton({
       accessibilityState={{ disabled: isDisabled, busy: loading }}
       onPress={onPress}
       disabled={isDisabled}
+      testID={testID}
       style={({ pressed }) => [
         styles.button,
         variant === "outline" && styles.outlineButton,

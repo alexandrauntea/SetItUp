@@ -1,4 +1,5 @@
 export type FriendRequestStatus = "pending";
+export type Gender = "female" | "male" | "other";
 export type RelationshipState = "none" | "request-sent" | "request-received" | "friends";
 
 export interface UsernameDirectoryEntry {

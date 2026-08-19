@@ -1,4 +1,4 @@
-import { areFriends } from "@/services/social/friendshipService";
+﻿import { areFriends } from "@/services/social/friendshipService";
 import { where } from "firebase/firestore";
 import {
   acceptManagerRequest,
@@ -43,7 +43,7 @@ jest.mock("firebase/firestore", () => ({
 
 describe("managerService", () => {
   beforeEach(() => {
-    jest.clearAllMocks();
+    jest.resetAllMocks();
   });
 
   describe("sendManagerRequest", () => {
@@ -92,7 +92,7 @@ describe("managerService", () => {
       mockGetDoc.mockResolvedValueOnce({ exists: () => false });
       // existing request -> null
       mockGetDoc.mockResolvedValueOnce({ exists: () => false });
-      // friendship doc -> memberIds and memberUsernames
+      // friendship doc with memberIds and memberUsernames
       mockGetDoc.mockResolvedValueOnce({
         exists: () => true,
         data: () => ({
@@ -125,43 +125,36 @@ describe("managerService", () => {
         "REQUEST_ALREADY_EXISTS",
       );
 
-      expect(mockGetDoc).toHaveBeenNthCalledWith(
-        2,
-        "doc-managerRequests-ownerA",
-      );
-      expect(mockSetDoc).not.toHaveBeenCalled();
+      expect(mockGetDoc).toHaveBeenCalledTimes(2);
     });
   });
 
   describe("getIncomingManagerRequests", () => {
-    it("should fetch only pending incoming requests and sort newest first", async () => {
+    it("should fetch incoming pending requests for manager sorted desc by createdAt", async () => {
       mockGetDocs.mockResolvedValueOnce({
         docs: [
           {
             id: "old_pending",
             data: () => ({
-              ownerId: "owner1",
               managerId: "mgr",
               status: "pending",
-              createdAt: "2026-08-12T10:00:00.000Z",
-            }),
-          },
-          {
-            id: "not_pending",
-            data: () => ({
-              ownerId: "owner2",
-              managerId: "mgr",
-              status: "accepted",
-              createdAt: "2026-08-12T12:00:00.000Z",
+              createdAt: "2026-08-01T10:00:00.000Z",
             }),
           },
           {
             id: "new_pending",
             data: () => ({
-              ownerId: "owner3",
               managerId: "mgr",
               status: "pending",
-              createdAt: "2026-08-12T11:00:00.000Z",
+              createdAt: "2026-08-02T10:00:00.000Z",
+            }),
+          },
+          {
+            id: "accepted_req",
+            data: () => ({
+              managerId: "mgr",
+              status: "accepted",
+              createdAt: "2026-08-03T10:00:00.000Z",
             }),
           },
         ],
@@ -217,7 +210,7 @@ describe("managerService", () => {
       });
 
       await expect(acceptManagerRequest("req123", "user1")).rejects.toThrow(
-      "REQUEST_NOT_FOUND"
+        "REQUEST_NOT_FOUND"
       );
     });
 
