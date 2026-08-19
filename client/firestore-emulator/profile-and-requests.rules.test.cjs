@@ -469,9 +469,13 @@ describe("Regulile managerului", () => {
       runTransaction(firestore, async (transaction) => {
         const requestSnapshot = await transaction.get(requestRef);
         const relationshipSnapshot = await transaction.get(relationshipRef);
+        const ownerRoleSnapshot = await transaction.get(ownerRoleRef);
+        const managerRoleSnapshot = await transaction.get(managerRoleRef);
 
         expect(requestSnapshot.exists()).toBe(true);
         expect(relationshipSnapshot.exists()).toBe(false);
+        expect(ownerRoleSnapshot.exists()).toBe(false);
+        expect(managerRoleSnapshot.exists()).toBe(false);
 
         transaction.set(relationshipRef, managerRelationship());
         transaction.set(
@@ -513,6 +517,8 @@ describe("Regulile managerului", () => {
       runTransaction(firestore, async (transaction) => {
         await transaction.get(requestRef);
         await transaction.get(relationshipRef);
+        await transaction.get(ownerRoleRef);
+        await transaction.get(managerRoleRef);
         transaction.set(relationshipRef, managerRelationship());
         transaction.set(
           ownerRoleRef,

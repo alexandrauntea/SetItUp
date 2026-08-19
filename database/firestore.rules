@@ -56,6 +56,30 @@ service cloud.firestore {
         );
     }
 
+    function pendingManagerRequestExists(ownerId, managerId) {
+      return (
+          exists(
+            /databases/$(database)/documents/managerRequests/$(ownerId)
+          )
+          && get(
+            /databases/$(database)/documents/managerRequests/$(ownerId)
+          ).data.managerId == managerId
+          && get(
+            /databases/$(database)/documents/managerRequests/$(ownerId)
+          ).data.status == 'pending'
+        ) || (
+          exists(
+            /databases/$(database)/documents/managerRequests/$(ownerId + '_' + managerId)
+          )
+          && get(
+            /databases/$(database)/documents/managerRequests/$(ownerId + '_' + managerId)
+          ).data.managerId == managerId
+          && get(
+            /databases/$(database)/documents/managerRequests/$(ownerId + '_' + managerId)
+          ).data.status == 'pending'
+        );
+    }
+
     function hasValidProfileFields() {
       return request.resource.data.keys().hasOnly([
           'uid',
@@ -577,7 +601,11 @@ service cloud.firestore {
 
     match /managerRoles/{uid} {
       allow get: if isSignedIn()
-        && (request.auth.uid == uid || isActiveManager());
+        && (request.auth.uid == uid
+          || isActiveManager()
+          // Managerul invitat trebuie să poată verifica dacă ownerul are deja
+          // un rol înainte de scrierile atomice din tranzacția de acceptare.
+          || pendingManagerRequestExists(uid, request.auth.uid));
       allow list: if false;
 
       allow create: if isSignedIn()
