@@ -1,4 +1,4 @@
-import { fireEvent, render, screen, waitFor } from "@testing-library/react-native";
+import { render, screen, waitFor } from "@testing-library/react-native";
 import { Image as mockImage } from "react-native";
 
 import { ProfilePhotoGallery } from "@/components/ProfilePhotoGallery";
@@ -24,8 +24,8 @@ describe("ProfilePhotoGallery", () => {
     );
   });
 
-  test("nu dublează fotografia profilului când există o singură fotografie", async () => {
-    const result = await render(
+  test("afișează galeria și când există o singură fotografie", async () => {
+    await render(
       <ProfilePhotoGallery
         name="Anca Popescu"
         photoPaths={["profilePhotos/user/primary.jpg"]}
@@ -34,11 +34,20 @@ describe("ProfilePhotoGallery", () => {
       />,
     );
 
-    expect(result.queryByText("Fotografii")).toBeNull();
+    await waitFor(() => {
+      expect(screen.getByText("Fotografii")).toBeTruthy();
+      expect(screen.getByText("1 fotografie")).toBeTruthy();
+      expect(
+        screen.getByLabelText(
+          "Fotografia 1 din 1 a profilului Anca Popescu",
+        ),
+      ).toBeTruthy();
+    });
+    expect(screen.getByText("Principală")).toBeTruthy();
     expect(mockedGetPhotoDownloadUrl).not.toHaveBeenCalled();
   });
 
-  test("afișează fotografia principală prima și permite alegerea unei miniaturi", async () => {
+  test("afișează fotografiile una sub alta, cu fotografia principală prima", async () => {
     await render(
       <ProfilePhotoGallery
         name="Anca Popescu"
@@ -60,23 +69,18 @@ describe("ProfilePhotoGallery", () => {
     });
 
     expect(screen.getByText("Principală")).toBeTruthy();
-    expect(screen.getByText("1 din 2")).toBeTruthy();
+    expect(screen.getByText("2 fotografii")).toBeTruthy();
+    expect(
+      screen.getByLabelText("Fotografia 2 din 2 a profilului Anca Popescu"),
+    ).toBeTruthy();
     expect(mockedGetPhotoDownloadUrl).toHaveBeenCalledTimes(1);
     expect(mockedGetPhotoDownloadUrl).toHaveBeenCalledWith(
       "profilePhotos/user/secondary.jpg",
     );
 
-    fireEvent.press(
-      screen.getByRole("button", { name: "Afișează fotografia 2" }),
-    );
-
-    await waitFor(() => {
-      expect(
-        screen.getByLabelText("Fotografia 2 din 2 a profilului Anca Popescu"),
-      ).toBeTruthy();
-    });
-    expect(screen.queryByText("Principală")).toBeNull();
-    expect(screen.getByText("2 din 2")).toBeTruthy();
+    expect(
+      screen.queryByRole("button", { name: "Afișează fotografia 2" }),
+    ).toBeNull();
   });
 
   test("păstrează în galerie fotografiile care pot fi încărcate", async () => {
@@ -95,7 +99,7 @@ describe("ProfilePhotoGallery", () => {
     );
 
     await waitFor(() => {
-      expect(screen.getByText("1 din 1")).toBeTruthy();
+      expect(screen.getByText("1 fotografie")).toBeTruthy();
     });
     expect(
       screen.getByLabelText("Fotografia 1 din 1 a profilului Anca Popescu"),

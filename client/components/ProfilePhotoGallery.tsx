@@ -5,8 +5,6 @@ import { Image } from "expo-image";
 import { useEffect, useMemo, useState } from "react";
 import {
   ActivityIndicator,
-  Pressable,
-  ScrollView,
   StyleSheet,
   Text,
   View,
@@ -54,15 +52,13 @@ export function ProfilePhotoGallery({
     [photoPaths, primaryPhotoPath],
   );
   const [photos, setPhotos] = useState<GalleryPhoto[]>([]);
-  const [selectedPath, setSelectedPath] = useState<string>();
   const [isLoading, setIsLoading] = useState(false);
 
   useEffect(() => {
     let isActive = true;
 
-    if (orderedPaths.length < 2) {
+    if (orderedPaths.length === 0) {
       setPhotos([]);
-      setSelectedPath(undefined);
       setIsLoading(false);
       return () => {
         isActive = false;
@@ -95,11 +91,6 @@ export function ProfilePhotoGallery({
         (photo): photo is GalleryPhoto => photo !== null,
       );
       setPhotos(availablePhotos);
-      setSelectedPath((currentPath) =>
-        availablePhotos.some((photo) => photo.storagePath === currentPath)
-          ? currentPath
-          : availablePhotos[0]?.storagePath,
-      );
       setIsLoading(false);
     });
 
@@ -108,13 +99,7 @@ export function ProfilePhotoGallery({
     };
   }, [orderedPaths, primaryPhotoPath, primaryPhotoUrl]);
 
-  if (orderedPaths.length < 2) return null;
-
-  const selectedIndex = Math.max(
-    0,
-    photos.findIndex((photo) => photo.storagePath === selectedPath),
-  );
-  const selectedPhoto = photos[selectedIndex];
+  if (orderedPaths.length === 0) return null;
 
   return (
     <View style={styles.section}>
@@ -122,7 +107,7 @@ export function ProfilePhotoGallery({
         <Text style={styles.title}>Fotografii</Text>
         {!isLoading && photos.length > 0 ? (
           <Text style={styles.counter}>
-            {selectedIndex + 1} din {photos.length}
+            {photos.length} {photos.length === 1 ? "fotografie" : "fotografii"}
           </Text>
         ) : null}
       </View>
@@ -135,55 +120,25 @@ export function ProfilePhotoGallery({
             color={COLORS.primary}
           />
         </View>
-      ) : selectedPhoto ? (
-        <>
-          <View style={styles.previewContainer}>
-            <Image
-              accessibilityLabel={`Fotografia ${selectedIndex + 1} din ${photos.length} a profilului ${name}`}
-              contentFit="cover"
-              source={{ uri: selectedPhoto.uri }}
-              style={styles.preview}
-              transition={150}
-            />
-            {selectedPhoto.isPrimary ? (
-              <View style={styles.primaryBadge}>
-                <Text style={styles.primaryBadgeText}>Principală</Text>
-              </View>
-            ) : null}
-          </View>
-
-          <ScrollView
-            contentContainerStyle={styles.thumbnailList}
-            horizontal
-            showsHorizontalScrollIndicator={false}
-          >
-            {photos.map((photo, index) => {
-              const isSelected = photo.storagePath === selectedPhoto.storagePath;
-
-              return (
-                <Pressable
-                  accessibilityLabel={`Afișează fotografia ${index + 1}`}
-                  accessibilityRole="button"
-                  accessibilityState={{ selected: isSelected }}
-                  key={photo.storagePath}
-                  onPress={() => setSelectedPath(photo.storagePath)}
-                  style={({ pressed }) => [
-                    styles.thumbnailButton,
-                    isSelected && styles.thumbnailButtonSelected,
-                    pressed && styles.thumbnailButtonPressed,
-                  ]}
-                >
-                  <Image
-                    accessibilityIgnoresInvertColors
-                    contentFit="cover"
-                    source={{ uri: photo.uri }}
-                    style={styles.thumbnail}
-                  />
-                </Pressable>
-              );
-            })}
-          </ScrollView>
-        </>
+      ) : photos.length > 0 ? (
+        <View style={styles.photoList}>
+          {photos.map((photo, index) => (
+            <View key={photo.storagePath} style={styles.photoContainer}>
+              <Image
+                accessibilityLabel={`Fotografia ${index + 1} din ${photos.length} a profilului ${name}`}
+                contentFit="cover"
+                source={{ uri: photo.uri }}
+                style={styles.photo}
+                transition={150}
+              />
+              {photo.isPrimary ? (
+                <View style={styles.primaryBadge}>
+                  <Text style={styles.primaryBadgeText}>Principală</Text>
+                </View>
+              ) : null}
+            </View>
+          ))}
+        </View>
       ) : (
         <Text style={styles.errorText}>
           Fotografiile nu au putut fi încărcate.
@@ -224,7 +179,10 @@ const styles = StyleSheet.create({
     borderRadius: 16,
     backgroundColor: COLORS.surface,
   },
-  previewContainer: {
+  photoList: {
+    gap: 14,
+  },
+  photoContainer: {
     overflow: "hidden",
     position: "relative",
     width: "100%",
@@ -232,7 +190,7 @@ const styles = StyleSheet.create({
     borderRadius: 18,
     backgroundColor: COLORS.surface,
   },
-  preview: {
+  photo: {
     width: "100%",
     height: "100%",
   },
@@ -249,31 +207,6 @@ const styles = StyleSheet.create({
     color: COLORS.background,
     fontSize: 12,
     fontWeight: "700",
-  },
-  thumbnailList: {
-    gap: 10,
-    paddingVertical: 2,
-  },
-  thumbnailButton: {
-    overflow: "hidden",
-    width: 68,
-    height: 68,
-    padding: 2,
-    borderWidth: 2,
-    borderColor: "transparent",
-    borderRadius: 14,
-  },
-  thumbnailButtonSelected: {
-    borderColor: COLORS.primary,
-  },
-  thumbnailButtonPressed: {
-    opacity: 0.72,
-  },
-  thumbnail: {
-    width: "100%",
-    height: "100%",
-    borderRadius: 10,
-    backgroundColor: COLORS.surface,
   },
   errorText: {
     paddingVertical: 24,
