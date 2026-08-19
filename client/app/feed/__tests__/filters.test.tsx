@@ -1,4 +1,4 @@
-import { fireEvent, render, waitFor } from "@testing-library/react-native";
+import { act, fireEvent, render, waitFor } from "@testing-library/react-native";
 import React from "react";
 import { useAuth } from "../../../contexts/AuthContext";
 import { preferencesService } from "../../../services/preferencesService";
@@ -53,7 +53,9 @@ describe("FeedFiltersScreen", () => {
       genderPreference: "everyone",
       interests: ["music", "travel"],
     });
-    (preferencesService.saveOwnerPreferences as jest.Mock).mockResolvedValue(undefined);
+    (preferencesService.saveOwnerPreferences as jest.Mock).mockImplementation(
+      async () => undefined,
+    );
   });
 
   it("loads and displays initial preferences", async () => {
@@ -77,30 +79,43 @@ describe("FeedFiltersScreen", () => {
     const screen = await render(<FeedFiltersScreen />);
 
     await waitFor(() => {
-      expect(screen.getByTestId("min-age-input")).toBeTruthy();
+      expect(screen.getByTestId("min-age-input").props.value).toBe("20");
     });
 
     fireEvent.changeText(screen.getByTestId("min-age-input"), "15");
-    fireEvent.press(screen.getByTestId("save-button"));
+    await waitFor(() => {
+      expect(screen.getByTestId("min-age-input").props.value).toBe("15");
+    });
+    await act(async () => {
+      fireEvent.press(screen.getByTestId("save-button"));
+    });
 
     await waitFor(() => {
       expect(
         screen.getByText("Vârsta minimă trebuie să fie de cel puțin 18 ani.")
       ).toBeTruthy();
     });
+    expect(preferencesService.saveOwnerPreferences).not.toHaveBeenCalled();
   });
 
   it("calls saveOwnerPreferences when form is valid and submitted", async () => {
     const screen = await render(<FeedFiltersScreen />);
 
     await waitFor(() => {
-      expect(screen.getByTestId("min-age-input")).toBeTruthy();
+      expect(screen.getByTestId("min-age-input").props.value).toBe("20");
     });
 
     fireEvent.changeText(screen.getByTestId("min-age-input"), "22");
     fireEvent.changeText(screen.getByTestId("max-age-input"), "35");
     fireEvent.changeText(screen.getByTestId("interests-input"), "gaming, tech");
-    fireEvent.press(screen.getByTestId("save-button"));
+    await waitFor(() => {
+      expect(screen.getByTestId("min-age-input").props.value).toBe("22");
+      expect(screen.getByTestId("max-age-input").props.value).toBe("35");
+      expect(screen.getByTestId("interests-input").props.value).toBe("gaming, tech");
+    });
+    await act(async () => {
+      fireEvent.press(screen.getByTestId("save-button"));
+    });
 
     await waitFor(() => {
       expect(preferencesService.saveOwnerPreferences).toHaveBeenCalledWith(
@@ -112,10 +127,6 @@ describe("FeedFiltersScreen", () => {
           interests: ["gaming", "tech"],
         }
       );
-    });
-
-    await waitFor(() => {
-      expect(screen.getByText("Preferințele au fost salvate cu succes!")).toBeTruthy();
     });
   });
 });

@@ -34,6 +34,13 @@ jest.mock("@/services/social/userSearchService", () => ({
   getPublicProfileByUid: jest.fn(),
 }));
 
+jest.mock("@/contexts/AuthContext", () => ({
+  useAuth: () => ({
+    user: { uid: "current-user-uid" },
+    loading: false,
+  }),
+}));
+
 const mockedGetPublicProfileByUid = jest.mocked(getPublicProfileByUid);
 
 const publicProfile: PublicProfile = {
@@ -65,7 +72,10 @@ describe("Ecranul profilului public", () => {
       expect(screen.getByText("Anca Popescu, 21")).toBeTruthy();
     });
 
-    expect(mockedGetPublicProfileByUid).toHaveBeenCalledWith("target-uid");
+    expect(mockedGetPublicProfileByUid).toHaveBeenCalledWith(
+      "target-uid",
+      "current-user-uid",
+    );
     expect(screen.getByText("@anca_21")).toBeTruthy();
     expect(screen.getByText("Îmi plac muzica și călătoriile.")).toBeTruthy();
     expect(screen.getByText("Studentă")).toBeTruthy();
