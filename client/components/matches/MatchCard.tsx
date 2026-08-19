@@ -1,8 +1,8 @@
 import { AppButton } from "@/components/AppButton";
+import { ProfileImage } from "@/components/ProfileImage";
 import { COLORS } from "@/constants/colors";
 import type { PublicProfile } from "@/types/social";
 import { Ionicons } from "@expo/vector-icons";
-import { Image } from "expo-image";
 import { StyleSheet, Text, View } from "react-native";
 
 type MatchCardProps = {
@@ -29,25 +29,11 @@ export function MatchCard({
   const fullName = profile
     ? `${profile.firstName} ${profile.lastName}`.trim()
     : "Profil indisponibil";
-  const initials = profile
-    ? `${profile.firstName.charAt(0)}${profile.lastName.charAt(0)}`.toUpperCase()
-    : "?";
 
   return (
     <View style={styles.card}>
       <View style={styles.header}>
-        <View style={styles.avatar}>
-          {profile?.photoUrl ? (
-            <Image
-              accessibilityLabel={`Fotografia lui ${fullName}`}
-              contentFit="cover"
-              source={{ uri: profile.photoUrl }}
-              style={styles.photo}
-            />
-          ) : (
-            <Text style={styles.initials}>{initials}</Text>
-          )}
-        </View>
+        <ProfileImage name={fullName} size={60} uri={profile?.photoUrl} />
 
         <View style={styles.identity}>
           <Text style={styles.name}>{fullName}</Text>
@@ -94,17 +80,6 @@ const styles = StyleSheet.create({
     alignItems: "center",
     gap: 12,
   },
-  avatar: {
-    width: 60,
-    height: 60,
-    alignItems: "center",
-    justifyContent: "center",
-    overflow: "hidden",
-    borderRadius: 30,
-    backgroundColor: COLORS.primarySoft,
-  },
-  photo: { width: "100%", height: "100%" },
-  initials: { color: COLORS.primary, fontSize: 20, fontWeight: "800" },
   identity: { flex: 1, minWidth: 0, gap: 4 },
   name: { color: COLORS.text, fontSize: 18, fontWeight: "800" },
   username: { color: COLORS.textSecondary, fontSize: 14 },
