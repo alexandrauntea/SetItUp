@@ -1,10 +1,12 @@
-import { fireEvent, render, screen, waitFor } from "@testing-library/react-native";
+﻿import { fireEvent, render, screen, waitFor } from "@testing-library/react-native";
 import { Alert } from "react-native";
 
 import EditProfileScreen from "@/app/profile/edit";
 import { useAuth } from "@/contexts/AuthContext";
 import { useProfile } from "@/contexts/ProfileContext";
 import { uploadProfilePhoto } from "@/services/profileImageService";
+import { getManagerRelationship } from "@/services/social/managerService";
+import { requestConfirmation } from "@/utils/platformAlert";
 
 const mockReplace = jest.fn();
 
@@ -26,6 +28,14 @@ jest.mock("@/contexts/ProfileContext", () => ({
 
 jest.mock("@/services/profileImageService", () => ({
   uploadProfilePhoto: jest.fn(),
+}));
+
+jest.mock("@/services/social/managerService", () => ({
+  getManagerRelationship: jest.fn(),
+}));
+
+jest.mock("@/utils/platformAlert", () => ({
+  requestConfirmation: jest.fn(),
 }));
 
 jest.mock("@/components/ProfilePhotoPicker", () => ({
@@ -58,6 +68,8 @@ jest.mock("@/components/ProfilePhotoPicker", () => ({
 const mockedUseAuth = jest.mocked(useAuth);
 const mockedUseProfile = jest.mocked(useProfile);
 const mockedUploadProfilePhoto = jest.mocked(uploadProfilePhoto);
+const mockedGetManagerRelationship = jest.mocked(getManagerRelationship);
+const mockedRequestConfirmation = jest.mocked(requestConfirmation);
 const updateProfile = jest.fn();
 
 const savedProfile = {
@@ -88,6 +100,7 @@ describe("Ecranul de editare a profilului", () => {
       profile: savedProfile,
       updateProfile,
     } as never);
+    mockedGetManagerRelationship.mockResolvedValue(null);
     updateProfile.mockResolvedValue(undefined);
     mockedUploadProfilePhoto.mockResolvedValue(
       "https://exemplu.ro/poza-noua.jpg",
@@ -151,6 +164,46 @@ describe("Ecranul de editare a profilului", () => {
     expect(mockReplace).toHaveBeenCalledWith("/profile/view");
   });
 
+  test("solicită confirmare la comutarea pe privat dacă utilizatorul are un manager", async () => {
+    mockedGetManagerRelationship.mockResolvedValueOnce({
+      ownerId: "user-123",
+      ownerUsername: "andrei",
+      managerId: "mgr-1",
+      managerUsername: "manager1",
+      memberIds: ["user-123", "mgr-1"],
+      createdAt: "2026-08-01",
+    });
+
+    mockedRequestConfirmation.mockResolvedValueOnce(false);
+
+    await render(<EditProfileScreen />);
+
+    await waitFor(() => {
+      expect(mockedGetManagerRelationship).toHaveBeenCalledWith("user-123");
+    });
+
+    await fireEvent.press(screen.getByText("Privat"));
+
+    expect(mockedRequestConfirmation).toHaveBeenCalledWith({
+      title: "Schimbi profilul în privat?",
+      message:
+        "Ești sigur că vrei să îți faci contul privat? Managerul tău nu îți va putea căuta match-uri în continuare.",
+      cancelText: "Anulează",
+      confirmText: "Da, continuă",
+      destructive: true,
+    });
+
+    await fireEvent.press(screen.getByText("Salvează"));
+
+    await waitFor(() => {
+      expect(updateProfile).toHaveBeenCalledWith(
+        expect.objectContaining({
+          isPrivate: false,
+        })
+      );
+    });
+  });
+
   test("încarcă o fotografie nouă înainte de salvare", async () => {
     await render(<EditProfileScreen />);
 
@@ -190,7 +243,7 @@ describe("Ecranul de editare a profilului", () => {
 
     expect(
       await screen.findByText(
-        "Fotografia sau modificările nu au putut fi salvate.",
+        "A apărut o problemă. Încearcă din nou.",
       ),
     ).toBeTruthy();
     expect(Alert.alert).not.toHaveBeenCalled();

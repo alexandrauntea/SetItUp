@@ -11,6 +11,7 @@ import {
   getManagedOwnerForManager,
   likeProfile,
 } from "@/services/social/feedService";
+import { getPublicProfileByUid } from "@/services/social/userSearchService";
 import { FeedCandidateProfile, FeedFilterPreferences, FeedItem } from "@/types/feed";
 import { ManagerRelationship } from "@/types/social";
 import { Ionicons } from "@expo/vector-icons";
@@ -29,6 +30,7 @@ export function FeedScreen() {
   const { user } = useAuth();
   const [managerRel, setManagerRel] = useState<ManagerRelationship | null>(null);
   const [isManagerChecked, setIsManagerChecked] = useState<boolean>(false);
+  const [isOwnerPrivate, setIsOwnerPrivate] = useState<boolean>(false);
 
   const [feedItems, setFeedItems] = useState<FeedItem[]>([]);
   const [currentIndex, setCurrentIndex] = useState<number>(0);
@@ -58,15 +60,20 @@ export function FeedScreen() {
           return;
         }
 
+        try {
+          const ownerProfile = await getPublicProfileByUid(rel.ownerId);
+          setIsOwnerPrivate(ownerProfile?.isPrivate ?? false);
+        } catch (e) {
+          console.info("Nu s-a putut verifica profilul privat al ownerului:", e);
+        }
+
         const items = await getFeedProfiles(user.uid, targetFilters ?? filters);
         setFeedItems(items);
         setCurrentIndex(0);
       } catch (err: any) {
         console.error("Error fetching feed:", err);
         setErrorMessage(
-          err.message === "NOT_A_MANAGER"
-            ? "Nu ești manager pentru niciun utilizator."
-            : "Nu am putut încărca profilurile din feed. Verifică conexiunea și încearcă din nou."
+          "Nu am putut încărca profilurile din feed. Verifică conexiunea și încearcă din nou."
         );
       } finally {
         setIsLoading(false);
@@ -76,8 +83,32 @@ export function FeedScreen() {
   );
 
   useEffect(() => {
-    void fetchFeed();
-  }, [fetchFeed]);
+    async function checkRole() {
+      if (!user?.uid) {
+        setIsManagerChecked(true);
+        setIsLoading(false);
+        return;
+      }
+
+      try {
+        const rel = await getManagedOwnerForManager(user.uid);
+        setManagerRel(rel);
+        setIsManagerChecked(true);
+
+        if (!rel) {
+          setIsLoading(false);
+        } else {
+          void fetchFeed();
+        }
+      } catch (err) {
+        console.error("Error checking manager role:", err);
+        setErrorMessage("Nu s-a putut verifica rolul de manager. Încearcă din nou.");
+        setIsLoading(false);
+      }
+    }
+
+    void checkRole();
+  }, [user?.uid, fetchFeed]);
 
   const currentItem = feedItems[currentIndex];
 
@@ -153,6 +184,16 @@ export function FeedScreen() {
             contentContainerStyle={styles.scrollContent}
             showsVerticalScrollIndicator={false}
           >
+            {/* Warning Banner if Managed Owner Profile is Private */}
+            {!isLoading && !errorMessage && managerRel && isOwnerPrivate && (
+              <View style={styles.warningBanner} testID="feed-owner-private-warning">
+                <Ionicons name="warning-outline" size={24} color={COLORS.error} />
+                <Text style={styles.warningBannerText}>
+                  Ownerul contului (@{managerRel.ownerUsername}) are profilul privat, deci nu va apărea în feed-ul altor utilizatori.
+                </Text>
+              </View>
+            )}
+
             {/* 1. Loading State */}
             {isLoading && (
               <View style={styles.centerCard} testID="feed-loading-container">
@@ -293,6 +334,26 @@ const styles = StyleSheet.create({
   cardWrapper: {
     width: "100%",
     maxWidth: 440,
+  },
+  warningBanner: {
+    width: "100%",
+    maxWidth: 440,
+    backgroundColor: COLORS.errorBackground,
+    borderWidth: 1,
+    borderColor: COLORS.error,
+    borderRadius: 16,
+    padding: 14,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 12,
+    marginBottom: 14,
+  },
+  warningBannerText: {
+    flex: 1,
+    color: COLORS.error,
+    fontSize: 13,
+    fontWeight: "600",
+    lineHeight: 18,
   },
   centerCard: {
     padding: 32,

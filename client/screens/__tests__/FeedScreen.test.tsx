@@ -5,6 +5,7 @@ import {
   getManagedOwnerForManager,
   likeProfile,
 } from "@/services/social/feedService";
+import { getPublicProfileByUid } from "@/services/social/userSearchService";
 import { FeedItem } from "@/types/feed";
 import { act, fireEvent, render, screen, waitFor } from "@testing-library/react-native";
 import React from "react";
@@ -21,6 +22,10 @@ jest.mock("@/services/social/feedService", () => ({
   dislikeProfile: jest.fn(),
 }));
 
+jest.mock("@/services/social/userSearchService", () => ({
+  getPublicProfileByUid: jest.fn(),
+}));
+
 const mockUseAuth = useAuth as jest.MockedFunction<typeof useAuth>;
 const mockGetManagedOwnerForManager = getManagedOwnerForManager as jest.MockedFunction<
   typeof getManagedOwnerForManager
@@ -29,6 +34,9 @@ const mockGetFeedProfiles = getFeedProfiles as jest.MockedFunction<
   typeof getFeedProfiles
 >;
 const mockLikeProfile = likeProfile as jest.MockedFunction<typeof likeProfile>;
+const mockGetPublicProfileByUid = getPublicProfileByUid as jest.MockedFunction<
+  typeof getPublicProfileByUid
+>;
 
 describe("FeedScreen", () => {
   const sampleFeedItem: FeedItem = {
@@ -48,7 +56,10 @@ describe("FeedScreen", () => {
   };
 
   beforeEach(() => {
-    jest.resetAllMocks();
+    mockGetManagedOwnerForManager.mockReset();
+    mockGetFeedProfiles.mockReset();
+    mockLikeProfile.mockReset();
+    mockGetPublicProfileByUid.mockReset();
     mockUseAuth.mockReturnValue({
       user: { uid: "mgr1" } as any,
       isLoading: false,
@@ -102,7 +113,7 @@ describe("FeedScreen", () => {
   });
 
   it("renders empty feed container when feed list is empty", async () => {
-    mockGetManagedOwnerForManager.mockResolvedValueOnce({
+    mockGetManagedOwnerForManager.mockResolvedValue({
       ownerId: "owner1",
       ownerUsername: "owner_user",
       managerId: "mgr1",
@@ -120,6 +131,45 @@ describe("FeedScreen", () => {
     });
 
     expect(screen.getByText("Nu mai sunt profiluri")).toBeTruthy();
+  });
+
+  it("renders owner private warning banner when managed owner profile is private", async () => {
+    mockGetManagedOwnerForManager.mockResolvedValue({
+      ownerId: "owner1",
+      ownerUsername: "owner_user",
+      managerId: "mgr1",
+      managerUsername: "mgr_user",
+      memberIds: ["owner1", "mgr1"],
+      createdAt: "2026-08-01",
+    });
+
+    mockGetPublicProfileByUid.mockResolvedValue({
+      uid: "owner1",
+      username: "owner_user",
+      firstName: "Ion",
+      lastName: "Popa",
+      occupation: "Inginer",
+      gender: "male",
+      description: "Test",
+      interests: ["Tech"],
+      age: 30,
+      isPrivate: true,
+      updatedAt: "2026-08-01",
+    });
+
+    mockGetFeedProfiles.mockResolvedValueOnce([]);
+
+    await render(<FeedScreen />);
+
+    await waitFor(() => {
+      expect(screen.getByTestId("feed-owner-private-warning")).toBeTruthy();
+    });
+
+    expect(
+      screen.getByText(
+        "Ownerul contului (@owner_user) are profilul privat, deci nu va apărea în feed-ul altor utilizatori."
+      )
+    ).toBeTruthy();
   });
 
   it("renders candidate card and opens MatchModal on mutual like", async () => {
