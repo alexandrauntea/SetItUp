@@ -2,6 +2,7 @@ import { fireEvent, render, screen, waitFor } from "@testing-library/react-nativ
 
 import FriendsScreen from "@/app/friends";
 import { getFriends, removeFriend } from "@/services/social/friendshipService";
+import { getPublicProfileByUid } from "@/services/social/userSearchService";
 import { requestConfirmation } from "@/utils/platformAlert";
 
 const mockPush = jest.fn();
@@ -28,6 +29,14 @@ jest.mock("@/services/social/friendshipService", () => ({
   removeFriend: jest.fn(),
 }));
 
+jest.mock("@/services/social/userSearchService", () => ({
+  getPublicProfileByUid: jest.fn(),
+}));
+
+jest.mock("expo-image", () => ({
+  Image: require("react-native").Image,
+}));
+
 jest.mock("@/utils/platformAlert", () => ({
   requestConfirmation: jest.fn(),
   showPlatformAlert: jest.fn(),
@@ -36,6 +45,7 @@ jest.mock("@/utils/platformAlert", () => ({
 const mockedGetFriends = jest.mocked(getFriends);
 const mockedRemoveFriend = jest.mocked(removeFriend);
 const mockedRequestConfirmation = jest.mocked(requestConfirmation);
+const mockedGetPublicProfile = jest.mocked(getPublicProfileByUid);
 
 const friendship = {
   id: "current-user_friend-user",
@@ -48,6 +58,7 @@ describe("Ecranul listei de prieteni", () => {
   beforeEach(() => {
     jest.clearAllMocks();
     mockedGetFriends.mockResolvedValue([friendship]);
+    mockedGetPublicProfile.mockResolvedValue(null);
   });
 
   test("afișează prietenii încărcați și deschide profilul selectat", async () => {
@@ -55,6 +66,7 @@ describe("Ecranul listei de prieteni", () => {
 
     expect(await screen.findByText("@anca_21")).toBeTruthy();
     expect(screen.getByText("1")).toBeTruthy();
+    expect(mockedGetPublicProfile).toHaveBeenCalledWith("friend-user", "current-user");
 
     await fireEvent.press(screen.getByText("Vezi profilul"));
 

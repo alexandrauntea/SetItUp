@@ -1,7 +1,7 @@
 import { COLORS } from "@/constants/colors";
+import { ProfileImage } from "@/components/ProfileImage";
 import { FeedItem } from "@/types/feed";
 import { Ionicons } from "@expo/vector-icons";
-import { Image } from "expo-image";
 import React from "react";
 import {
   ActivityIndicator,
@@ -33,18 +33,12 @@ export function FeedCard({
     <View style={styles.card}>
       {/* Profile Image / Fallback Avatar */}
       <View style={styles.imageContainer}>
-        {profile.photoUrl ? (
-          <Image
-            source={{ uri: profile.photoUrl }}
-            style={styles.image}
-            contentFit="cover"
-            accessibilityLabel={`Fotografia lui ${profile.firstName}`}
-          />
-        ) : (
-          <View style={styles.placeholderAvatar}>
-            <Ionicons name="person" size={72} color={COLORS.primary} />
-          </View>
-        )}
+        <ProfileImage
+          borderRadius={0}
+          name={`${profile.firstName} ${profile.lastName}`}
+          size="fill"
+          uri={profile.photoUrl}
+        />
 
         {/* Common Friends Badge (Only rendered if > 0) */}
         {commonFriendsCount > 0 && (
@@ -155,18 +149,6 @@ const styles = StyleSheet.create({
     position: "relative",
     justifyContent: "center",
     alignItems: "center",
-  },
-  image: {
-    width: "100%",
-    height: "100%",
-  },
-  placeholderAvatar: {
-    width: 120,
-    height: 120,
-    borderRadius: 60,
-    backgroundColor: COLORS.primarySoft,
-    alignItems: "center",
-    justifyContent: "center",
   },
   commonFriendsBadge: {
     position: "absolute",

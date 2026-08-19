@@ -1,9 +1,12 @@
 import { COLORS } from "@/constants/colors";
+import { ProfileImage } from "@/components/ProfileImage";
 import { Ionicons } from "@expo/vector-icons";
 import { ActivityIndicator, Pressable, StyleSheet, Text, View } from "react-native";
 
 type FriendsCardProps = {
   username: string;
+  photoUrl?: string;
+  displayName?: string;
   isRemoving?: boolean;
   onOpenProfile: () => void;
   onRemove: () => void;
@@ -11,6 +14,8 @@ type FriendsCardProps = {
 
 export function FriendsCard({
   username,
+  photoUrl,
+  displayName,
   isRemoving = false,
   onOpenProfile,
   onRemove,
@@ -22,9 +27,7 @@ export function FriendsCard({
         onPress={onOpenProfile}
         style={({ pressed }) => [styles.identity, pressed && styles.pressed]}
       >
-        <View style={styles.avatar}>
-          <Text style={styles.initials}>{username.slice(0, 2).toUpperCase()}</Text>
-        </View>
+        <ProfileImage name={displayName || username} size={50} uri={photoUrl} />
         <View style={styles.details}>
           <Text numberOfLines={1} style={styles.username}>@{username}</Text>
           <Text style={styles.hint}>Vezi profilul</Text>
@@ -61,15 +64,6 @@ const styles = StyleSheet.create({
     backgroundColor: COLORS.background,
   },
   identity: { flexDirection: "row", alignItems: "center", gap: 12 },
-  avatar: {
-    width: 50,
-    height: 50,
-    alignItems: "center",
-    justifyContent: "center",
-    borderRadius: 25,
-    backgroundColor: COLORS.primarySoft,
-  },
-  initials: { color: COLORS.primary, fontSize: 17, fontWeight: "800" },
   details: { flex: 1, gap: 3 },
   username: { color: COLORS.text, fontSize: 17, fontWeight: "700" },
   hint: { color: COLORS.textSecondary, fontSize: 13 },

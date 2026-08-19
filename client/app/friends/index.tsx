@@ -4,7 +4,8 @@ import { FriendsCard } from "@/components/social/FriendsCard";
 import { COLORS } from "@/constants/colors";
 import { useAuth } from "@/contexts/AuthContext";
 import { getFriends, removeFriend } from "@/services/social/friendshipService";
-import type { Friendship } from "@/types/social";
+import { getPublicProfileByUid } from "@/services/social/userSearchService";
+import type { Friendship, PublicProfile } from "@/types/social";
 import {
   requestConfirmation,
   showPlatformAlert,
@@ -30,6 +31,15 @@ type ShortcutProps = {
   onPress: () => void;
 };
 
+function getFriendFromRelationship(friendship: Friendship, currentUid?: string) {
+  const ownIndex = friendship.memberIds[0] === currentUid ? 0 : 1;
+  const friendIndex = ownIndex === 0 ? 1 : 0;
+  return {
+    uid: friendship.memberIds[friendIndex],
+    username: friendship.memberUsernames[friendIndex],
+  };
+}
+
 function Shortcut({ icon, label, onPress }: ShortcutProps) {
   return (
     <Pressable
@@ -51,6 +61,7 @@ export default function FriendsScreen() {
   const isCompact = width < 380;
   const { user } = useAuth();
   const [friends, setFriends] = useState<Friendship[]>([]);
+  const [friendProfiles, setFriendProfiles] = useState<Record<string, PublicProfile | null>>({});
   const [isLoading, setIsLoading] = useState(true);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [removingUid, setRemovingUid] = useState<string | null>(null);
@@ -60,7 +71,15 @@ export default function FriendsScreen() {
     if (!user) return;
     setErrorMessage("");
     try {
-      setFriends(await getFriends(user.uid));
+      const loadedFriends = await getFriends(user.uid);
+      const profiles = await Promise.all(
+        loadedFriends.map(async (friendship) => {
+          const friend = getFriendFromRelationship(friendship, user.uid);
+          return [friend.uid, await getPublicProfileByUid(friend.uid, user.uid)] as const;
+        }),
+      );
+      setFriends(loadedFriends);
+      setFriendProfiles(Object.fromEntries(profiles));
     } catch (error) {
       console.info("Nu am putut încărca lista de prieteni:", error);
       setErrorMessage("Lista de prieteni nu a putut fi încărcată.");
@@ -74,18 +93,9 @@ export default function FriendsScreen() {
     void loadFriends();
   }, [loadFriends]);
 
-  function getFriend(friendship: Friendship) {
-    const ownIndex = friendship.memberIds[0] === user?.uid ? 0 : 1;
-    const friendIndex = ownIndex === 0 ? 1 : 0;
-    return {
-      uid: friendship.memberIds[friendIndex],
-      username: friendship.memberUsernames[friendIndex],
-    };
-  }
-
   async function confirmRemove(friendship: Friendship) {
     if (!user) return;
-    const friend = getFriend(friendship);
+    const friend = getFriendFromRelationship(friendship, user.uid);
     const confirmed = await requestConfirmation({
       title: "Elimini prietenul?",
       message: `@${friend.username} va fi eliminat din lista ta. Orice relație de manager dintre voi va fi eliminată.`,
@@ -161,11 +171,14 @@ export default function FriendsScreen() {
             ) : (
               <View style={styles.list}>
                 {friends.map((friendship) => {
-                  const friend = getFriend(friendship);
+                  const friend = getFriendFromRelationship(friendship, user?.uid);
+                  const profile = friendProfiles[friend.uid];
                   return (
                     <FriendsCard
                       key={friendship.id}
                       username={friend.username}
+                      displayName={profile ? `${profile.firstName} ${profile.lastName}` : undefined}
+                      photoUrl={profile?.photoUrl}
                       isRemoving={removingUid === friend.uid}
                       onOpenProfile={() => router.push({ pathname: "/users/[uid]", params: { uid: friend.uid } })}
                       onRemove={() => {
