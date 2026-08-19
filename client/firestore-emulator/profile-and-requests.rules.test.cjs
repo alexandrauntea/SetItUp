@@ -237,6 +237,85 @@ describe("Regulile profilului", () => {
     );
     await assertFails(updateDoc(ref, { email: "changed@example.com" }));
   });
+
+  test("ownerul poate salva cel mult șase fotografii valide", async () => {
+    await seedDocument(
+      "users",
+      ALICE_UID,
+      privateProfile(ALICE_UID, "alice", "alice@example.com"),
+    );
+    const alice = testEnv.authenticatedContext(ALICE_UID);
+    const paths = Array.from(
+      { length: 6 },
+      (_, index) => `profilePhotos/${ALICE_UID}/photo-${index}.jpg`,
+    );
+
+    await assertSucceeds(
+      updateDoc(doc(alice.firestore(), "users", ALICE_UID), {
+        photoPaths: paths,
+        primaryPhotoPath: paths[0],
+        photoUrl: "https://example.com/photo-0.jpg",
+        updatedAt: "2026-08-12T11:00:00.000Z",
+      }),
+    );
+  });
+
+  test("regulile refuză peste șase fotografii, duplicate și căi străine", async () => {
+    await seedDocument(
+      "users",
+      ALICE_UID,
+      privateProfile(ALICE_UID, "alice", "alice@example.com"),
+    );
+    const alice = testEnv.authenticatedContext(ALICE_UID);
+    const profileRef = doc(alice.firestore(), "users", ALICE_UID);
+    const sevenPaths = Array.from(
+      { length: 7 },
+      (_, index) => `profilePhotos/${ALICE_UID}/photo-${index}.jpg`,
+    );
+
+    await assertFails(
+      updateDoc(profileRef, {
+        photoPaths: sevenPaths,
+        primaryPhotoPath: sevenPaths[0],
+        photoUrl: "https://example.com/photo.jpg",
+        updatedAt: "2026-08-12T11:00:00.000Z",
+      }),
+    );
+    await assertFails(
+      updateDoc(profileRef, {
+        photoPaths: [sevenPaths[0], sevenPaths[0]],
+        primaryPhotoPath: sevenPaths[0],
+        photoUrl: "https://example.com/photo.jpg",
+        updatedAt: "2026-08-12T11:00:00.000Z",
+      }),
+    );
+    await assertFails(
+      updateDoc(profileRef, {
+        photoPaths: [`profilePhotos/${BOB_UID}/photo.jpg`],
+        primaryPhotoPath: `profilePhotos/${BOB_UID}/photo.jpg`,
+        photoUrl: "https://example.com/photo.jpg",
+        updatedAt: "2026-08-12T11:00:00.000Z",
+      }),
+    );
+  });
+
+  test("fotografia principală trebuie să se afle în lista profilului", async () => {
+    await seedDocument(
+      "users",
+      ALICE_UID,
+      privateProfile(ALICE_UID, "alice", "alice@example.com"),
+    );
+    const alice = testEnv.authenticatedContext(ALICE_UID);
+
+    await assertFails(
+      updateDoc(doc(alice.firestore(), "users", ALICE_UID), {
+        photoPaths: [`profilePhotos/${ALICE_UID}/photo-1.jpg`],
+        primaryPhotoPath: `profilePhotos/${ALICE_UID}/photo-2.jpg`,
+        photoUrl: "https://example.com/photo-2.jpg",
+        updatedAt: "2026-08-12T11:00:00.000Z",
+      }),
+    );
+  });
 });
 
 describe("Regulile cererii de prietenie", () => {

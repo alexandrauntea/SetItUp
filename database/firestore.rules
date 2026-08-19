@@ -182,12 +182,45 @@ service cloud.firestore {
         && request.resource.data.profileCompleted is bool
         && request.resource.data.createdAt is string
         && request.resource.data.updatedAt is string
-        && (!('photoUrl' in request.resource.data)
-          || request.resource.data.photoUrl is string)
-        && (!('photoPaths' in request.resource.data)
-          || request.resource.data.photoPaths is list)
-        && (!('primaryPhotoPath' in request.resource.data)
-          || request.resource.data.primaryPhotoPath is string);
+        && hasValidPhotoFields(request.resource.data, request.resource.data.uid);
+    }
+
+    function hasValidPhotoFields(data, userId) {
+      return (!('photoUrl' in data) || data.photoUrl is string)
+        && (!('primaryPhotoPath' in data) || data.primaryPhotoPath is string)
+        && (!('photoPaths' in data) || (
+          data.photoPaths is list
+          && data.photoPaths.size() <= 6
+          && data.photoPaths.toSet().size() == data.photoPaths.size()
+          && (data.photoPaths.size() < 1 || (
+            data.photoPaths[0] is string
+            && data.photoPaths[0].matches('^profilePhotos/' + userId + '/[^/]+$')
+          ))
+          && (data.photoPaths.size() < 2 || (
+            data.photoPaths[1] is string
+            && data.photoPaths[1].matches('^profilePhotos/' + userId + '/[^/]+$')
+          ))
+          && (data.photoPaths.size() < 3 || (
+            data.photoPaths[2] is string
+            && data.photoPaths[2].matches('^profilePhotos/' + userId + '/[^/]+$')
+          ))
+          && (data.photoPaths.size() < 4 || (
+            data.photoPaths[3] is string
+            && data.photoPaths[3].matches('^profilePhotos/' + userId + '/[^/]+$')
+          ))
+          && (data.photoPaths.size() < 5 || (
+            data.photoPaths[4] is string
+            && data.photoPaths[4].matches('^profilePhotos/' + userId + '/[^/]+$')
+          ))
+          && (data.photoPaths.size() < 6 || (
+            data.photoPaths[5] is string
+            && data.photoPaths[5].matches('^profilePhotos/' + userId + '/[^/]+$')
+          ))
+          && (data.photoPaths.size() == 0
+            ? (!('primaryPhotoPath' in data) || data.primaryPhotoPath == '')
+            : data.primaryPhotoPath in data.photoPaths)
+          && (data.photoPaths.size() == 0 || 'photoUrl' in data)
+        ));
     }
 
     function hasValidPublicProfileFields() {
@@ -233,12 +266,7 @@ service cloud.firestore {
         && request.resource.data.age >= 0
         && request.resource.data.isPrivate is bool
         && request.resource.data.updatedAt is string
-        && (!('photoUrl' in request.resource.data)
-          || request.resource.data.photoUrl is string)
-        && (!('photoPaths' in request.resource.data)
-          || request.resource.data.photoPaths is list)
-        && (!('primaryPhotoPath' in request.resource.data)
-          || request.resource.data.primaryPhotoPath is string);
+        && hasValidPhotoFields(request.resource.data, request.resource.data.uid);
     }
 
     match /users/{userId} {

@@ -118,6 +118,32 @@ describe("useProfilePhotoManagement", () => {
     expect(result.current.operation).toBeNull();
   });
 
+  test("refuză adăugarea unei fotografii peste limita de șase", async () => {
+    mockedUseProfile.mockReturnValue({
+      profile: {
+        ...savedProfile,
+        photoPaths: Array.from(
+          { length: 6 },
+          (_, index) => `profilePhotos/user-123/photo-${index}.jpg`,
+        ),
+        primaryPhotoPath: "profilePhotos/user-123/photo-0.jpg",
+      },
+      refreshProfile,
+      updateProfile,
+    } as never);
+    const { result } = await renderHook(() => useProfilePhotoManagement());
+
+    await waitFor(() => expect(result.current.photos).toHaveLength(6));
+
+    await expect(
+      result.current.onAddPhoto({
+        uri: "file:///seventh.jpg",
+        mimeType: "image/jpeg",
+      }),
+    ).rejects.toThrow("PHOTO_LIMIT_REACHED");
+    expect(mockedUploadProfilePhoto).not.toHaveBeenCalled();
+  });
+
   test("înlocuiește fotografia indicată prin calea ei Storage", async () => {
     mockedReplaceProfilePhoto.mockResolvedValue({
       photo: {

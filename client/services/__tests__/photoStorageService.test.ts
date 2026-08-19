@@ -146,6 +146,42 @@ describe("Serviciul pentru stocarea fotografiilor de profil (photoStorageService
         uploadProfilePhoto("user1", "file:///local/photo.jpg"),
       ).rejects.toThrow("PROFILE_NOT_FOUND");
     });
+
+    test("refuză a șaptea fotografie și curăță fișierul încărcat", async () => {
+      const blob = { type: "image/jpeg" } as Blob;
+      mockedFetch.mockResolvedValue({
+        ok: true,
+        blob: jest.fn().mockResolvedValue(blob),
+      });
+      const userDocData = {
+        photoPaths: Array.from(
+          { length: 6 },
+          (_, index) => `profilePhotos/user1/photo-${index}.jpg`,
+        ),
+        primaryPhotoPath: "profilePhotos/user1/photo-0.jpg",
+      };
+      const mockTransaction = {
+        get: jest.fn().mockResolvedValue({
+          exists: () => true,
+          data: () => userDocData,
+        }),
+        update: jest.fn(),
+      };
+      mockedRunTransaction.mockImplementation(async (_db, cb) =>
+        cb(mockTransaction as never),
+      );
+
+      await expect(
+        uploadProfilePhoto(
+          "user1",
+          "file:///local/seventh.jpg",
+          "image/jpeg",
+        ),
+      ).rejects.toThrow("PHOTO_LIMIT_REACHED");
+
+      expect(mockTransaction.update).not.toHaveBeenCalled();
+      expect(mockedDeleteObject).toHaveBeenCalledTimes(1);
+    });
   });
 
   describe("deleteProfilePhoto", () => {

@@ -176,6 +176,22 @@ describe("Administrarea fotografiilor de profil", () => {
     expect(screen.getByText("Se încarcă fotografia… 42%")).toBeTruthy();
   });
 
+  test("dezactivează adăugarea când profilul are șase fotografii", async () => {
+    const sixPhotos = Array.from({ length: 6 }, (_, index) => ({
+      id: `photo-${index}`,
+      storagePath: `profilePhotos/user-123/photo-${index}.jpg`,
+      position: index,
+      isPrimary: index === 0,
+      previewUri: `https://exemplu.ro/photo-${index}.jpg`,
+    }));
+
+    await renderManager({ photos: sixPhotos });
+
+    const addButton = screen.getByLabelText("Adaugă o fotografie de profil");
+    expect(addButton.props.accessibilityState.disabled).toBe(true);
+    expect(screen.getByText("Ai atins limita de 6 fotografii")).toBeTruthy();
+  });
+
   test("afișează eroarea primită de la serviciu", async () => {
     const consoleSpy = jest.spyOn(console, "info").mockImplementation();
     onSetPrimaryPhoto.mockRejectedValueOnce({

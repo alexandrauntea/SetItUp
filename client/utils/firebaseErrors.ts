@@ -24,6 +24,7 @@ const LOCAL_ERROR_MESSAGES: Record<string, string> = {
   PHOTO_READ_FAILED: "Fotografia nu a putut fi citită de pe dispozitiv.",
   PHOTO_TYPE_NOT_SUPPORTED: "Formatul fotografiei nu este acceptat.",
   PHOTO_ACCESS_DENIED: "Fotografia nu aparține profilului autentificat.",
+  PHOTO_LIMIT_REACHED: "Poți avea maximum 6 fotografii în profil.",
   PROFILE_NOT_FOUND: "Profilul nu a fost găsit.",
 };
 

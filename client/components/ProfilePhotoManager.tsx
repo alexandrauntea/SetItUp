@@ -10,7 +10,7 @@ import {
 } from "react-native";
 
 import { COLORS } from "@/constants/colors";
-import type { ProfilePhoto } from "@/types/photo";
+import { MAX_PROFILE_PHOTOS, type ProfilePhoto } from "@/types/photo";
 import { getFirebaseErrorMessage } from "@/utils/firebaseErrors";
 import { requestConfirmation } from "@/utils/platformAlert";
 import {
@@ -74,6 +74,7 @@ export function ProfilePhotoManager({
     [photos],
   );
   const isBusy = disabled || isSelecting || operation !== null;
+  const hasReachedLimit = photos.length >= MAX_PROFILE_PHOTOS;
 
   async function runAction(
     action: () => Promise<void> | void,
@@ -139,8 +140,8 @@ export function ProfilePhotoManager({
       <View style={styles.heading}>
         <Text style={styles.title}>Fotografiile profilului</Text>
         <Text style={styles.helperText}>
-          Alege imagini JPG, PNG sau WebP de maximum 5 MB. Fotografia
-          principală apare prima în profil.
+          Poți adăuga maximum {MAX_PROFILE_PHOTOS} imagini JPG, PNG sau WebP,
+          fiecare de cel mult 5 MB. Fotografia principală apare prima.
         </Text>
       </View>
 
@@ -267,7 +268,7 @@ export function ProfilePhotoManager({
       <Pressable
         accessibilityRole="button"
         accessibilityLabel="Adaugă o fotografie de profil"
-        disabled={isBusy}
+        disabled={isBusy || hasReachedLimit}
         onPress={() =>
           void choosePhoto(
             onAddPhoto,
@@ -277,7 +278,7 @@ export function ProfilePhotoManager({
         style={({ pressed }) => [
           styles.addButton,
           pressed && styles.addButtonPressed,
-          isBusy && styles.disabled,
+          (isBusy || hasReachedLimit) && styles.disabled,
         ]}
       >
         {isSelecting ? (
@@ -285,7 +286,11 @@ export function ProfilePhotoManager({
         ) : (
           <Ionicons name="add" size={20} color={COLORS.background} />
         )}
-        <Text style={styles.addButtonText}>Adaugă fotografie</Text>
+        <Text style={styles.addButtonText}>
+          {hasReachedLimit
+            ? `Ai atins limita de ${MAX_PROFILE_PHOTOS} fotografii`
+            : `Adaugă fotografie (${photos.length}/${MAX_PROFILE_PHOTOS})`}
+        </Text>
       </Pressable>
 
       {operation ? (

@@ -11,7 +11,10 @@ import {
   runTransaction,
 } from "firebase/firestore";
 import { storage, db } from "./firebase";
-import type { PhotoUploadResult } from "@/types/photo";
+import {
+  MAX_PROFILE_PHOTOS,
+  type PhotoUploadResult,
+} from "@/types/photo";
 
 function generatePhotoId(): string {
   return `${Date.now()}_${Math.random().toString(36).substring(2, 9)}`;
@@ -115,6 +118,9 @@ export async function uploadProfilePhoto(
       const existingPaths: string[] = Array.isArray(data.photoPaths)
         ? data.photoPaths
         : [];
+      if (existingPaths.length >= MAX_PROFILE_PHOTOS) {
+        throw new Error("PHOTO_LIMIT_REACHED");
+      }
       const updatedPaths = [...existingPaths, storagePath];
       finalPosition = existingPaths.length;
 

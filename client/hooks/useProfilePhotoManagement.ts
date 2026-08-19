@@ -12,7 +12,7 @@ import {
   replaceProfilePhoto,
   uploadProfilePhoto,
 } from "@/services/photoStorageService";
-import type { ProfilePhoto } from "@/types/photo";
+import { MAX_PROFILE_PHOTOS, type ProfilePhoto } from "@/types/photo";
 import type { SelectedProfilePhoto } from "@/utils/profilePhotoSelection";
 
 function photoIdFromStoragePath(storagePath: string) {
@@ -151,6 +151,9 @@ export function useProfilePhotoManagement() {
   const onAddPhoto = useCallback(
     async (selectedPhoto: SelectedProfilePhoto) => {
       if (!user) throw new Error("AUTH_REQUIRED");
+      if (photos.length >= MAX_PROFILE_PHOTOS) {
+        throw new Error("PHOTO_LIMIT_REACHED");
+      }
 
       await runOperation({ kind: "upload" }, async () => {
         const result = await uploadProfilePhoto(

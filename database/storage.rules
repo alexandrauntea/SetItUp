@@ -7,6 +7,7 @@ service firebase.storage {
 
       allow create, update: if request.auth != null
         && request.auth.uid == userId
+        && fileName.matches('^[A-Za-z0-9_-]+[.](jpg|png|webp)$')
         && request.resource.size <= 5 * 1024 * 1024
         && request.resource.contentType in [
           'image/jpeg',
