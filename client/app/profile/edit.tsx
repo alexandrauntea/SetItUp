@@ -1,17 +1,14 @@
-﻿import { AppButton } from "@/components/AppButton";
+import { AppButton } from "@/components/AppButton";
 import { AppInput } from "@/components/AppInput";
 import { FormError } from "@/components/FormError";
 import { InterestSelector } from "@/components/InterestSelector";
-import {
-  ProfilePhotoPicker,
-  type SelectedProfilePhoto,
-} from "@/components/ProfilePhotoPicker";
+import { ProfilePhotoManager } from "@/components/ProfilePhotoManager";
 import { ScreenBackground } from "@/components/ScreenBackground";
 import { COLORS } from "@/constants/colors";
 import { GENDER_OPTIONS } from "@/constants/profileOptions";
 import { useAuth } from "@/contexts/AuthContext";
 import { useProfile } from "@/contexts/ProfileContext";
-import { uploadProfilePhoto } from "@/services/profileImageService";
+import { useProfilePhotoManagement } from "@/hooks/useProfilePhotoManagement";
 import { getManagerRelationship } from "@/services/social/managerService";
 import { getFirebaseErrorMessage } from "@/utils/firebaseErrors";
 import { requestConfirmation } from "@/utils/platformAlert";
@@ -33,6 +30,7 @@ export default function EditProfileScreen() {
   const router = useRouter();
   const { user } = useAuth();
   const { profile, updateProfile } = useProfile();
+  const photoManagement = useProfilePhotoManagement();
 
   const [firstName, setFirstName] = useState(profile?.firstName ?? "");
   const [lastName, setLastName] = useState(profile?.lastName ?? "");
@@ -42,8 +40,6 @@ export default function EditProfileScreen() {
   const [interests, setInterests] = useState<string[]>(profile?.interests ?? []);
   const [isPrivate, setIsPrivate] = useState(profile?.isPrivate ?? false);
   const [hasManager, setHasManager] = useState(false);
-  const [selectedPhoto, setSelectedPhoto] =
-    useState<SelectedProfilePhoto | null>(null);
   const [formError, setFormError] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -126,14 +122,6 @@ export default function EditProfileScreen() {
         throw new Error("AUTH_REQUIRED");
       }
 
-      const photoUrl = selectedPhoto
-        ? await uploadProfilePhoto(
-            user.uid,
-            selectedPhoto.uri,
-            selectedPhoto.mimeType,
-          )
-        : profile?.photoUrl;
-
       await updateProfile({
         firstName: firstName.trim(),
         lastName: lastName.trim(),
@@ -142,7 +130,6 @@ export default function EditProfileScreen() {
         gender,
         interests,
         isPrivate,
-        ...(photoUrl ? { photoUrl } : {}),
       });
 
       Alert.alert("SetItUp", "Profilul a fost actualizat.", [
@@ -174,11 +161,10 @@ export default function EditProfileScreen() {
                 <Text style={styles.title}>Editează profilul</Text>
               </View>
 
-              <ProfilePhotoPicker
+              <ProfilePhotoManager
                 initials={`${firstName.trim().slice(0, 1)}${lastName.trim().slice(0, 1)}`}
-                photoUri={selectedPhoto?.uri ?? profile?.photoUrl}
-                onPhotoSelected={setSelectedPhoto}
                 disabled={isSubmitting}
+                {...photoManagement}
               />
 
               <View style={styles.form}>

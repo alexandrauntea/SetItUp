@@ -1,16 +1,14 @@
 import { Ionicons } from "@expo/vector-icons";
 import { Image } from "expo-image";
-import * as ImagePicker from "expo-image-picker";
-import { Alert, Platform, Pressable, StyleSheet, Text, View } from "react-native";
+import { Alert, Pressable, StyleSheet, Text, View } from "react-native";
 
 import { COLORS } from "@/constants/colors";
+import {
+  selectProfilePhotoFromLibrary,
+  type SelectedProfilePhoto,
+} from "@/utils/profilePhotoSelection";
 
-const MAX_PHOTO_SIZE = 5 * 1024 * 1024;
-
-export type SelectedProfilePhoto = {
-  uri: string;
-  mimeType?: string | null;
-};
+export type { SelectedProfilePhoto } from "@/utils/profilePhotoSelection";
 
 type ProfilePhotoPickerProps = {
   initials: string;
@@ -26,41 +24,16 @@ export function ProfilePhotoPicker({
   disabled = false,
 }: ProfilePhotoPickerProps) {
   async function handleChoosePhoto() {
-    if (Platform.OS !== "web") {
-      const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
+    const selection = await selectProfilePhotoFromLibrary();
 
-      if (!permission.granted) {
-        Alert.alert(
-          "Acces la fotografii",
-          "Permite accesul la fotografii ca să poți alege o poză de profil.",
-        );
-        return;
-      }
-    }
-
-    const result = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: ["images"],
-      allowsEditing: true,
-      aspect: [1, 1],
-      quality: 0.75,
-    });
-
-    if (result.canceled) return;
-
-    const photo = result.assets[0];
-
-    if (photo.fileSize && photo.fileSize > MAX_PHOTO_SIZE) {
-      Alert.alert(
-        "Fotografia este prea mare",
-        "Alege o fotografie mai mică de 5 MB.",
-      );
+    if (selection.status === "error") {
+      Alert.alert(selection.title, selection.message);
       return;
     }
 
-    onPhotoSelected({
-      uri: photo.uri,
-      mimeType: photo.mimeType,
-    });
+    if (selection.status === "selected") {
+      onPhotoSelected(selection.photo);
+    }
   }
 
   return (
@@ -90,7 +63,7 @@ export function ProfilePhotoPicker({
       <Text style={styles.actionText}>
         {photoUri ? "Schimbă poza" : "Alege o poză"}
       </Text>
-      <Text style={styles.helperText}>JPG sau PNG, maximum 5 MB</Text>
+      <Text style={styles.helperText}>JPG, PNG sau WebP, maximum 5 MB</Text>
     </Pressable>
   );
 }

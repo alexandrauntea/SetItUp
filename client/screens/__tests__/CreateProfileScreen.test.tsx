@@ -4,7 +4,7 @@ import { Alert } from "react-native";
 import CreateProfileScreen from "@/app/profile/create";
 import { useAuth } from "@/contexts/AuthContext";
 import { useProfile } from "@/contexts/ProfileContext";
-import { uploadProfilePhoto } from "@/services/profileImageService";
+import { useProfilePhotoManagement } from "@/hooks/useProfilePhotoManagement";
 
 const mockReplace = jest.fn();
 
@@ -24,15 +24,15 @@ jest.mock("@/contexts/ProfileContext", () => ({
   useProfile: jest.fn(),
 }));
 
-jest.mock("@/services/profileImageService", () => ({
-  uploadProfilePhoto: jest.fn(),
+jest.mock("@/hooks/useProfilePhotoManagement", () => ({
+  useProfilePhotoManagement: jest.fn(),
 }));
 
-jest.mock("@/components/ProfilePhotoPicker", () => ({
-  ProfilePhotoPicker: ({
-    onPhotoSelected,
+jest.mock("@/components/ProfilePhotoManager", () => ({
+  ProfilePhotoManager: ({
+    onAddPhoto,
   }: {
-    onPhotoSelected: (photo: {
+    onAddPhoto: (photo: {
       uri: string;
       mimeType: string;
     }) => void;
@@ -43,7 +43,7 @@ jest.mock("@/components/ProfilePhotoPicker", () => ({
       <Pressable
         accessibilityRole="button"
         onPress={() =>
-          onPhotoSelected({
+          onAddPhoto({
             uri: "file:///poza-profil.jpg",
             mimeType: "image/jpeg",
           })
@@ -57,8 +57,11 @@ jest.mock("@/components/ProfilePhotoPicker", () => ({
 
 const mockedUseAuth = jest.mocked(useAuth);
 const mockedUseProfile = jest.mocked(useProfile);
-const mockedUploadProfilePhoto = jest.mocked(uploadProfilePhoto);
+const mockedUseProfilePhotoManagement = jest.mocked(
+  useProfilePhotoManagement,
+);
 const updateProfile = jest.fn();
+const onAddPhoto = jest.fn();
 
 async function completeStepOne() {
   await fireEvent.changeText(
@@ -105,10 +108,17 @@ describe("Ecranul de creare a profilului", () => {
       profile: null,
       updateProfile,
     } as never);
+    mockedUseProfilePhotoManagement.mockReturnValue({
+      photos: [],
+      operation: null,
+      errorMessage: "",
+      onAddPhoto,
+      onReplacePhoto: jest.fn(),
+      onRemovePhoto: jest.fn(),
+      onSetPrimaryPhoto: jest.fn(),
+    });
     updateProfile.mockResolvedValue(undefined);
-    mockedUploadProfilePhoto.mockResolvedValue(
-      "https://exemplu.ro/poza-profil.jpg",
-    );
+    onAddPhoto.mockResolvedValue(undefined);
   });
 
   afterEach(() => {
@@ -207,7 +217,7 @@ describe("Ecranul de creare a profilului", () => {
     expect(mockReplace).toHaveBeenCalledWith("/profile/view");
   });
 
-  test("încarcă fotografia aleasă și salvează adresa ei", async () => {
+  test("trimite fotografia aleasă către managerul de fotografii", async () => {
     await render(<CreateProfileScreen />);
 
     await fireEvent.press(screen.getByText("Alege poza test"));
@@ -216,20 +226,15 @@ describe("Ecranul de creare a profilului", () => {
     await fireEvent.press(screen.getByText("Creează profilul"));
 
     await waitFor(() => {
-      expect(mockedUploadProfilePhoto).toHaveBeenCalledWith(
-        "user-123",
-        "file:///poza-profil.jpg",
-        "image/jpeg",
-      );
-      expect(updateProfile).toHaveBeenCalledWith(
-        expect.objectContaining({
-          photoUrl: "https://exemplu.ro/poza-profil.jpg",
-        }),
-      );
+      expect(onAddPhoto).toHaveBeenCalledWith({
+        uri: "file:///poza-profil.jpg",
+        mimeType: "image/jpeg",
+      });
+      expect(updateProfile).toHaveBeenCalled();
     });
   });
 
-  test("păstrează fotografia existentă dacă utilizatorul nu alege alta", async () => {
+  test("nu suprascrie datele fotografiilor când utilizatorul nu le modifică", async () => {
     mockedUseProfile.mockReturnValue({
       profile: { photoUrl: "https://exemplu.ro/poza-existenta.jpg" },
       updateProfile,
@@ -241,12 +246,9 @@ describe("Ecranul de creare a profilului", () => {
     await fireEvent.press(screen.getByText("Creează profilul"));
 
     await waitFor(() => {
-      expect(mockedUploadProfilePhoto).not.toHaveBeenCalled();
-      expect(updateProfile).toHaveBeenCalledWith(
-        expect.objectContaining({
-          photoUrl: "https://exemplu.ro/poza-existenta.jpg",
-        }),
-      );
+      expect(onAddPhoto).not.toHaveBeenCalled();
+      expect(updateProfile).toHaveBeenCalled();
+      expect(updateProfile.mock.calls[0][0]).not.toHaveProperty("photoUrl");
     });
   });
 

@@ -4,7 +4,7 @@ import { Alert } from "react-native";
 import EditProfileScreen from "@/app/profile/edit";
 import { useAuth } from "@/contexts/AuthContext";
 import { useProfile } from "@/contexts/ProfileContext";
-import { uploadProfilePhoto } from "@/services/profileImageService";
+import { useProfilePhotoManagement } from "@/hooks/useProfilePhotoManagement";
 import { getManagerRelationship } from "@/services/social/managerService";
 import { requestConfirmation } from "@/utils/platformAlert";
 
@@ -26,8 +26,8 @@ jest.mock("@/contexts/ProfileContext", () => ({
   useProfile: jest.fn(),
 }));
 
-jest.mock("@/services/profileImageService", () => ({
-  uploadProfilePhoto: jest.fn(),
+jest.mock("@/hooks/useProfilePhotoManagement", () => ({
+  useProfilePhotoManagement: jest.fn(),
 }));
 
 jest.mock("@/services/social/managerService", () => ({
@@ -38,11 +38,11 @@ jest.mock("@/utils/platformAlert", () => ({
   requestConfirmation: jest.fn(),
 }));
 
-jest.mock("@/components/ProfilePhotoPicker", () => ({
-  ProfilePhotoPicker: ({
-    onPhotoSelected,
+jest.mock("@/components/ProfilePhotoManager", () => ({
+  ProfilePhotoManager: ({
+    onAddPhoto,
   }: {
-    onPhotoSelected: (photo: {
+    onAddPhoto: (photo: {
       uri: string;
       mimeType: string;
     }) => void;
@@ -53,7 +53,7 @@ jest.mock("@/components/ProfilePhotoPicker", () => ({
       <Pressable
         accessibilityRole="button"
         onPress={() =>
-          onPhotoSelected({
+          onAddPhoto({
             uri: "file:///poza-noua.jpg",
             mimeType: "image/jpeg",
           })
@@ -67,10 +67,13 @@ jest.mock("@/components/ProfilePhotoPicker", () => ({
 
 const mockedUseAuth = jest.mocked(useAuth);
 const mockedUseProfile = jest.mocked(useProfile);
-const mockedUploadProfilePhoto = jest.mocked(uploadProfilePhoto);
+const mockedUseProfilePhotoManagement = jest.mocked(
+  useProfilePhotoManagement,
+);
 const mockedGetManagerRelationship = jest.mocked(getManagerRelationship);
 const mockedRequestConfirmation = jest.mocked(requestConfirmation);
 const updateProfile = jest.fn();
+const onAddPhoto = jest.fn();
 
 const savedProfile = {
   uid: "user-123",
@@ -100,11 +103,18 @@ describe("Ecranul de editare a profilului", () => {
       profile: savedProfile,
       updateProfile,
     } as never);
+    mockedUseProfilePhotoManagement.mockReturnValue({
+      photos: [],
+      operation: null,
+      errorMessage: "",
+      onAddPhoto,
+      onReplacePhoto: jest.fn(),
+      onRemovePhoto: jest.fn(),
+      onSetPrimaryPhoto: jest.fn(),
+    });
     mockedGetManagerRelationship.mockResolvedValue(null);
     updateProfile.mockResolvedValue(undefined);
-    mockedUploadProfilePhoto.mockResolvedValue(
-      "https://exemplu.ro/poza-noua.jpg",
-    );
+    onAddPhoto.mockResolvedValue(undefined);
   });
 
   afterEach(() => {
@@ -150,7 +160,6 @@ describe("Ecranul de editare a profilului", () => {
         gender: "female",
         interests: ["Tehnologie"],
         isPrivate: true,
-        photoUrl: "https://exemplu.ro/poza-veche.jpg",
       });
       expect(Alert.alert).toHaveBeenCalledWith(
         "SetItUp",
@@ -204,23 +213,18 @@ describe("Ecranul de editare a profilului", () => {
     });
   });
 
-  test("încarcă o fotografie nouă înainte de salvare", async () => {
+  test("trimite fotografia nouă către managerul de fotografii", async () => {
     await render(<EditProfileScreen />);
 
     await fireEvent.press(screen.getByText("Alege poza nouă"));
     await fireEvent.press(screen.getByText("Salvează"));
 
     await waitFor(() => {
-      expect(mockedUploadProfilePhoto).toHaveBeenCalledWith(
-        "user-123",
-        "file:///poza-noua.jpg",
-        "image/jpeg",
-      );
-      expect(updateProfile).toHaveBeenCalledWith(
-        expect.objectContaining({
-          photoUrl: "https://exemplu.ro/poza-noua.jpg",
-        }),
-      );
+      expect(onAddPhoto).toHaveBeenCalledWith({
+        uri: "file:///poza-noua.jpg",
+        mimeType: "image/jpeg",
+      });
+      expect(updateProfile).toHaveBeenCalled();
     });
   });
 
