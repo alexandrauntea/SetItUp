@@ -1,6 +1,7 @@
 import { AppButton } from "@/components/AppButton";
 import { MatchCard } from "@/components/matches/MatchCard";
 import { ScreenBackground } from "@/components/ScreenBackground";
+import { PageBanner } from "@/components/PageBanner";
 import { COLORS } from "@/constants/colors";
 import { useAuth } from "@/contexts/AuthContext";
 import { listMatches } from "@/services/feed/matchService";
@@ -9,7 +10,6 @@ import { getPublicProfileByUid } from "@/services/social/userSearchService";
 import type { Match } from "@/types/feed";
 import type { ManagerRelationship, PublicProfile } from "@/types/social";
 import { Ionicons } from "@expo/vector-icons";
-import { LinearGradient } from "expo-linear-gradient";
 import { useRouter } from "expo-router";
 import { useCallback, useEffect, useRef, useState } from "react";
 import {
@@ -139,19 +139,10 @@ export default function MatchesScreen() {
           showsVerticalScrollIndicator={false}
         >
           <View style={styles.content}>
-            <LinearGradient
-              colors={[COLORS.primary, COLORS.primaryPressed]}
-              start={{ x: 0, y: 0 }}
-              end={{ x: 1, y: 1 }}
-              style={[styles.headerCard, isCompact && styles.headerCardCompact]}
-            >
-              <Text style={styles.title}>Match-uri</Text>
-              {managedOwner ? (
-                <Text style={styles.subtitle}>
-                  Pentru @{managedOwner.ownerUsername}
-                </Text>
-              ) : null}
-            </LinearGradient>
+            <PageBanner
+              title="Match-uri"
+              subtitle={managedOwner ? `Pentru @${managedOwner.ownerUsername}` : undefined}
+            />
 
             {isLoading ? (
               <View style={styles.stateCard}>
@@ -237,21 +228,6 @@ const styles = StyleSheet.create({
   container: { flexGrow: 1, padding: 20, paddingBottom: 120 },
   containerCompact: { paddingHorizontal: 14 },
   content: { width: "100%", maxWidth: 430, alignSelf: "center", gap: 22 },
-  headerCard: {
-    minHeight: 104,
-    justifyContent: "center",
-    gap: 5,
-    padding: 24,
-    borderRadius: 24,
-    shadowColor: COLORS.primaryPressed,
-    shadowOffset: { width: 0, height: 8 },
-    shadowOpacity: 0.18,
-    shadowRadius: 16,
-    elevation: 4,
-  },
-  headerCardCompact: { minHeight: 96, padding: 18, borderRadius: 20 },
-  title: { color: COLORS.background, fontSize: 24, fontWeight: "bold" },
-  subtitle: { color: "rgba(255,255,255,0.82)", fontSize: 14 },
   matchesList: { gap: 14 },
   sectionTitle: { color: COLORS.text, fontSize: 19, fontWeight: "800" },
   stateCard: {

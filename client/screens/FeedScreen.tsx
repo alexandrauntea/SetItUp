@@ -1,5 +1,6 @@
 ﻿import { AppButton } from "@/components/AppButton";
 import { ScreenBackground } from "@/components/ScreenBackground";
+import { PageBanner } from "@/components/PageBanner";
 import { FeedCard } from "@/components/feed/FeedCard";
 import { FeedFilterModal } from "@/components/feed/FeedFilterModal";
 import { MatchModal } from "@/components/feed/MatchModal";
@@ -16,7 +17,6 @@ import {
 } from "@/types/feed";
 import { ManagerRelationship } from "@/types/social";
 import { Ionicons } from "@expo/vector-icons";
-import { LinearGradient } from "expo-linear-gradient";
 import React, { useCallback, useEffect, useState } from "react";
 import {
   ActivityIndicator,
@@ -170,22 +170,10 @@ export function FeedScreen() {
       <SafeAreaView style={styles.safeArea}>
         <View style={styles.container}>
           {/* Top Header */}
-          <LinearGradient
-            colors={[COLORS.primary, COLORS.primaryPressed]}
-            start={{ x: 0, y: 0 }}
-            end={{ x: 1, y: 1 }}
-            style={styles.header}
-          >
-            <View>
-              <Text style={styles.headerTitle}>Feed Potriviri</Text>
-              {managerRel && (
-                <Text style={styles.headerSubtitle}>
-                  Căuți match-uri pentru @{managerRel.ownerUsername}
-                </Text>
-              )}
-            </View>
-
-            {managerRel && (
+          <PageBanner
+            title="Feed Potriviri"
+            subtitle={managerRel ? `Căuți match-uri pentru @${managerRel.ownerUsername}` : undefined}
+            action={managerRel ? (
               <TouchableOpacity
                 accessibilityLabel="Filtre"
                 accessibilityRole="button"
@@ -195,8 +183,8 @@ export function FeedScreen() {
               >
                 <Ionicons name="options-outline" size={22} color={COLORS.primary} />
               </TouchableOpacity>
-            )}
-          </LinearGradient>
+            ) : undefined}
+          />
 
           {/* Main Content Area */}
           <ScrollView
@@ -303,35 +291,6 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     paddingHorizontal: 20,
-  },
-  header: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    minHeight: 104,
-    padding: 24,
-    marginTop: 6,
-    maxWidth: 430,
-    width: "100%",
-    alignSelf: "center",
-    borderRadius: 24,
-    shadowColor: COLORS.primaryPressed,
-    shadowOffset: { width: 0, height: 8 },
-    shadowOpacity: 0.18,
-    shadowRadius: 16,
-    elevation: 4,
-  },
-  headerTitle: {
-    color: COLORS.background,
-    fontSize: 24,
-    fontWeight: "bold",
-  },
-  headerSubtitle: {
-    color: COLORS.background,
-    fontSize: 13,
-    fontWeight: "600",
-    marginTop: 4,
-    opacity: 0.9,
   },
   filterButton: {
     width: 42,

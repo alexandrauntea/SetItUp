@@ -1,5 +1,6 @@
 import { FriendRequestCard } from "@/components/social/FriendRequestCard";
 import { ScreenBackground } from "@/components/ScreenBackground";
+import { PageBanner } from "@/components/PageBanner";
 import { COLORS } from "@/constants/colors";
 import { useAuth } from "@/contexts/AuthContext";
 import {
@@ -12,7 +13,6 @@ import {
 import type { FriendRequest } from "@/types/social";
 import { requestConfirmation } from "@/utils/platformAlert";
 import { Ionicons } from "@expo/vector-icons";
-import { LinearGradient } from "expo-linear-gradient";
 import { type Href, useRouter } from "expo-router";
 import { useCallback, useEffect, useState } from "react";
 import {
@@ -215,35 +215,7 @@ export default function FriendRequestsScreen() {
           showsVerticalScrollIndicator={false}
         >
           <View style={styles.content}>
-            <LinearGradient
-              colors={[COLORS.primary, COLORS.primaryPressed]}
-              start={{ x: 0, y: 0 }}
-              end={{ x: 1, y: 1 }}
-              style={[
-                styles.headerCard,
-                isCompact && styles.headerCardCompact,
-              ]}
-            >
-              <Pressable
-                accessibilityLabel="Înapoi"
-                accessibilityRole="button"
-                hitSlop={8}
-                onPress={handleBack}
-                style={({ pressed }) => [
-                  styles.backButton,
-                  pressed && styles.backButtonPressed,
-                ]}
-              >
-                <Ionicons
-                  color={COLORS.primary}
-                  name="arrow-back"
-                  size={23}
-                />
-              </Pressable>
-              <Text style={[styles.title, isCompact && styles.titleCompact]}>
-                Cereri de prietenie
-              </Text>
-            </LinearGradient>
+            <PageBanner title="Cereri de prietenie" onBack={handleBack} />
 
             {errorMessage ? (
               <View style={styles.errorBox}>
@@ -374,25 +346,6 @@ const styles = StyleSheet.create({
   stateText: {
     color: COLORS.textSecondary,
     fontSize: 15,
-  },
-  headerCard: {
-    minHeight: 104,
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 12,
-    padding: 24,
-    borderRadius: 24,
-    shadowColor: COLORS.primaryPressed,
-    shadowOffset: { width: 0, height: 8 },
-    shadowOpacity: 0.18,
-    shadowRadius: 16,
-    elevation: 4,
-  },
-  headerCardCompact: {
-    minHeight: 96,
-    gap: 10,
-    padding: 18,
-    borderRadius: 20,
   },
   backButton: {
     width: 42,

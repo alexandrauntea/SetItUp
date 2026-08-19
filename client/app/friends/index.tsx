@@ -1,4 +1,5 @@
 import { ScreenBackground } from "@/components/ScreenBackground";
+import { PageBanner } from "@/components/PageBanner";
 import { FriendsCard } from "@/components/social/FriendsCard";
 import { COLORS } from "@/constants/colors";
 import { useAuth } from "@/contexts/AuthContext";
@@ -9,7 +10,6 @@ import {
   showPlatformAlert,
 } from "@/utils/platformAlert";
 import { Ionicons } from "@expo/vector-icons";
-import { LinearGradient } from "expo-linear-gradient";
 import { type Href, useRouter } from "expo-router";
 import { useCallback, useEffect, useState } from "react";
 import {
@@ -131,14 +131,7 @@ export default function FriendsScreen() {
           showsVerticalScrollIndicator={false}
         >
           <View style={styles.content}>
-            <LinearGradient
-              colors={[COLORS.primary, COLORS.primaryPressed]}
-              start={{ x: 0, y: 0 }}
-              end={{ x: 1, y: 1 }}
-              style={[styles.headerCard, isCompact && styles.headerCardCompact]}
-            >
-              <Text style={styles.title}>Prieteni</Text>
-            </LinearGradient>
+            <PageBanner title="Prieteni" />
 
             <View style={[styles.shortcuts, isCompact && styles.shortcutsCompact]}>
               <Shortcut icon="search-outline" label="Caută" onPress={() => router.push("/friends/search")} />
@@ -195,19 +188,6 @@ const styles = StyleSheet.create({
   container: { padding: 20, paddingBottom: 120 },
   containerCompact: { paddingHorizontal: 14 },
   content: { width: "100%", maxWidth: 430, alignSelf: "center", gap: 22 },
-  headerCard: {
-    minHeight: 104,
-    justifyContent: "center",
-    padding: 24,
-    borderRadius: 24,
-    shadowColor: COLORS.primaryPressed,
-    shadowOffset: { width: 0, height: 8 },
-    shadowOpacity: 0.18,
-    shadowRadius: 16,
-    elevation: 4,
-  },
-  headerCardCompact: { minHeight: 96, padding: 18, borderRadius: 20 },
-  title: { color: COLORS.background, fontSize: 24, fontWeight: "bold" },
   shortcuts: { flexDirection: "row", gap: 10 },
   shortcutsCompact: { gap: 6 },
   shortcut: {

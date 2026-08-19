@@ -1,4 +1,5 @@
 import { ScreenBackground } from "@/components/ScreenBackground";
+import { PageBanner } from "@/components/PageBanner";
 import { UserSearchCard } from "@/components/social/UserSearchCard";
 import { COLORS } from "@/constants/colors";
 import { useAuth } from "@/contexts/AuthContext";
@@ -7,7 +8,6 @@ import { sendFriendRequest } from "@/services/social/friendRequestSendService";
 import { findUserByUsername } from "@/services/social/userSearchService";
 import type { UserSearchResult } from "@/types/social";
 import { Ionicons } from "@expo/vector-icons";
-import { LinearGradient } from "expo-linear-gradient";
 import { type Href, useRouter } from "expo-router";
 import { useState } from "react";
 import {
@@ -121,28 +121,7 @@ export default function FriendSearchScreen() {
           keyboardShouldPersistTaps="handled"
         >
           <View style={styles.page}>
-            <LinearGradient
-              colors={[COLORS.primary, COLORS.primaryPressed]}
-              start={{ x: 0, y: 0 }}
-              end={{ x: 1, y: 1 }}
-              style={[styles.headerCard, isCompact && styles.headerCardCompact]}
-            >
-              <Pressable
-                accessibilityRole="button"
-                accessibilityLabel="Înapoi"
-                hitSlop={8}
-                onPress={handleBack}
-                style={({ pressed }) => [
-                  styles.backButton,
-                  pressed && styles.backButtonPressed,
-                ]}
-              >
-                <Ionicons name="arrow-back" size={23} color={COLORS.primary} />
-              </Pressable>
-              <Text style={[styles.title, isCompact && styles.titleCompact]}>
-                Caută prieteni
-              </Text>
-            </LinearGradient>
+            <PageBanner title="Caută prieteni" onBack={handleBack} />
 
             <View style={styles.searchRow}>
               <View style={styles.searchInputContainer}>
@@ -241,29 +220,6 @@ const styles = StyleSheet.create({
     alignSelf: "center",
     gap: 16,
   },
-  headerCard: {
-    minHeight: 104,
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 12,
-    paddingHorizontal: 24,
-    paddingVertical: 18,
-    borderRadius: 24,
-    shadowColor: COLORS.primaryPressed,
-    shadowOffset: { width: 0, height: 8 },
-    shadowOpacity: 0.18,
-    shadowRadius: 16,
-    elevation: 4,
-  },
-  headerCardCompact: {
-    minHeight: 96,
-    gap: 10,
-    paddingHorizontal: 18,
-    paddingVertical: 18,
-    borderRadius: 20,
-  },
-  title: { color: COLORS.background, fontSize: 24, fontWeight: "bold" },
-  titleCompact: { fontSize: 21 },
   searchRow: { flexDirection: "row", alignItems: "center", gap: 10 },
   searchInputContainer: {
     minHeight: 50,
