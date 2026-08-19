@@ -7,6 +7,7 @@
 import {
   deleteField,
   doc,
+  getDoc,
   runTransaction,
 } from "firebase/firestore";
 import { storage, db } from "./firebase";
@@ -38,6 +39,27 @@ function assertOwnedStoragePath(uid: string, storagePath: string): void {
   if (!storagePath.startsWith(`profilePhotos/${uid}/`)) {
     throw new Error("PHOTO_ACCESS_DENIED");
   }
+}
+
+async function deleteStorageObjectWithRetry(
+  storagePath: string,
+  failureMessage: string,
+): Promise<void> {
+  const photoRef = ref(storage, storagePath);
+  let lastError: unknown;
+
+  for (let attempt = 0; attempt < 3; attempt += 1) {
+    try {
+      await deleteObject(photoRef);
+      return;
+    } catch (error) {
+      lastError = error;
+    }
+  }
+
+  // Firestore no longer references this object, so a failed cleanup cannot
+  // break the profile. It can be removed later as an orphaned Storage object.
+  console.info(failureMessage, lastError);
 }
 
 export async function getPhotoDownloadUrl(
@@ -152,8 +174,29 @@ export async function deleteProfilePhoto(
   const userRef = doc(db, "users", uid);
   const publicRef = doc(db, "publicProfiles", uid);
 
-  let newPrimaryPath: string | null = null;
-  let wasPrimary = false;
+  const initialUserSnap = await getDoc(userRef);
+  if (!initialUserSnap.exists()) {
+    throw new Error("PROFILE_NOT_FOUND");
+  }
+
+  const initialData = initialUserSnap.data();
+  const initialPaths: string[] = Array.isArray(initialData.photoPaths)
+    ? initialData.photoPaths
+    : [];
+
+  if (!initialPaths.includes(storagePath)) {
+    return;
+  }
+
+  const initialWasPrimary = initialData.primaryPhotoPath === storagePath;
+  const initialUpdatedPaths = initialPaths.filter((path) => path !== storagePath);
+  const initialNewPrimaryPath = initialWasPrimary
+    ? (initialUpdatedPaths[0] ?? null)
+    : (initialData.primaryPhotoPath ?? null);
+  const newPrimaryDownloadUrl =
+    initialWasPrimary && initialNewPrimaryPath
+      ? await getPhotoDownloadUrl(initialNewPrimaryPath)
+      : null;
 
   await runTransaction(db, async (transaction) => {
     const userSnap = await transaction.get(userRef);
@@ -167,63 +210,44 @@ export async function deleteProfilePhoto(
       ? data.photoPaths
       : [];
 
-    if (!existingPaths.includes(storagePath)) {
-      return;
+    // Avoid applying a URL calculated for stale profile data if another photo
+    // operation completed while the replacement URL was being resolved.
+    if (
+      JSON.stringify(existingPaths) !== JSON.stringify(initialPaths) ||
+      data.primaryPhotoPath !== initialData.primaryPhotoPath
+    ) {
+      throw new Error("PHOTO_STATE_CHANGED");
     }
 
-    const updatedPaths = existingPaths.filter((p) => p !== storagePath);
-    wasPrimary = data.primaryPhotoPath === storagePath;
-    newPrimaryPath = wasPrimary
-      ? (updatedPaths[0] ?? null)
-      : (data.primaryPhotoPath ?? null);
-
     const updates: Record<string, unknown> = {
-      photoPaths: updatedPaths,
-      primaryPhotoPath: newPrimaryPath ?? deleteField(),
+      photoPaths: initialUpdatedPaths,
+      primaryPhotoPath: initialNewPrimaryPath ?? deleteField(),
       updatedAt: new Date().toISOString(),
     };
 
-    if (wasPrimary && !newPrimaryPath) {
-      updates.photoUrl = deleteField();
+    if (initialWasPrimary) {
+      updates.photoUrl = newPrimaryDownloadUrl ?? deleteField();
     }
 
     transaction.update(userRef, updates);
 
     if (publicSnap.exists()) {
       const publicUpdates: Record<string, unknown> = {
-        photoPaths: updatedPaths,
-        primaryPhotoPath: newPrimaryPath ?? deleteField(),
+        photoPaths: initialUpdatedPaths,
+        primaryPhotoPath: initialNewPrimaryPath ?? deleteField(),
         updatedAt: new Date().toISOString(),
       };
-      if (wasPrimary && !newPrimaryPath) {
-        publicUpdates.photoUrl = deleteField();
+      if (initialWasPrimary) {
+        publicUpdates.photoUrl = newPrimaryDownloadUrl ?? deleteField();
       }
       transaction.update(publicRef, publicUpdates);
     }
   });
 
-  const photoRef = ref(storage, storagePath);
-  try {
-    await deleteObject(photoRef);
-  } catch (err) {
-    console.info("Imaginea nu există în Storage sau a fost deja ștearsă:", err);
-  }
-
-  if (wasPrimary && newPrimaryPath) {
-    try {
-      const newPrimaryDownloadUrl = await getPhotoDownloadUrl(newPrimaryPath);
-      await runTransaction(db, async (transaction) => {
-        const publicSnap = await transaction.get(publicRef);
-
-        transaction.update(userRef, { photoUrl: newPrimaryDownloadUrl });
-        if (publicSnap.exists()) {
-          transaction.update(publicRef, { photoUrl: newPrimaryDownloadUrl });
-        }
-      });
-    } catch (e) {
-      console.info("Nu s-a putut obține URL pentru noua poză primară:", e);
-    }
-  }
+  await deleteStorageObjectWithRetry(
+    storagePath,
+    "Fotografia eliminată din profil nu a putut fi curățată din Storage:",
+  );
 }
 
 export async function replaceProfilePhoto(
@@ -274,12 +298,11 @@ export async function replaceProfilePhoto(
 
       const targetIndex = existingPaths.indexOf(targetStoragePath);
       if (targetIndex === -1) {
-        existingPaths.push(newStoragePath);
-        finalPosition = existingPaths.length - 1;
-      } else {
-        existingPaths[targetIndex] = newStoragePath;
-        finalPosition = targetIndex;
+        throw new Error("PHOTO_NOT_FOUND");
       }
+
+      existingPaths[targetIndex] = newStoragePath;
+      finalPosition = targetIndex;
 
       const wasPrimary =
         data.primaryPhotoPath === targetStoragePath ||
@@ -319,12 +342,10 @@ export async function replaceProfilePhoto(
     throw error;
   }
 
-  const oldPhotoRef = ref(storage, targetStoragePath);
-  try {
-    await deleteObject(oldPhotoRef);
-  } catch (err) {
-    console.info("Vechea imagine nu a putut fi ștearsă din Storage:", err);
-  }
+  await deleteStorageObjectWithRetry(
+    targetStoragePath,
+    "Vechea imagine nu a putut fi curățată din Storage:",
+  );
 
   return {
     photo: {

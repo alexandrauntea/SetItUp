@@ -4,7 +4,7 @@
   ref,
   uploadBytes,
 } from "firebase/storage";
-import { runTransaction } from "firebase/firestore";
+import { getDoc, runTransaction } from "firebase/firestore";
 import {
   deleteProfilePhoto,
   getPhotoDownloadUrl,
@@ -20,7 +20,9 @@ jest.mock("firebase/storage", () => ({
 }));
 
 jest.mock("firebase/firestore", () => ({
+  deleteField: jest.fn(() => ({ __deleteField: true })),
   doc: jest.fn((_db, col, id) => `${col}/${id}`),
+  getDoc: jest.fn(),
   runTransaction: jest.fn(),
 }));
 
@@ -33,6 +35,7 @@ const mockedDeleteObject = jest.mocked(deleteObject);
 const mockedGetDownloadURL = jest.mocked(getDownloadURL);
 const mockedRef = jest.mocked(ref);
 const mockedUploadBytes = jest.mocked(uploadBytes);
+const mockedGetDoc = jest.mocked(getDoc);
 const mockedRunTransaction = jest.mocked(runTransaction);
 const mockedFetch = jest.fn();
 
@@ -169,6 +172,10 @@ describe("Serviciul pentru stocarea fotografiilor de profil (photoStorageService
       mockedRunTransaction.mockImplementation(async (_db, cb) => {
         return cb(mockTransaction as never);
       });
+      mockedGetDoc.mockResolvedValue({
+        exists: () => true,
+        data: () => userDocData,
+      } as never);
 
       await deleteProfilePhoto("user1", targetPath);
 
@@ -178,8 +185,62 @@ describe("Serviciul pentru stocarea fotografiilor de profil (photoStorageService
         expect.objectContaining({
           photoPaths: [remainingPath],
           primaryPhotoPath: remainingPath,
+          photoUrl: expect.stringContaining("firebasestorage.googleapis.com"),
         }),
       );
+      expect(mockedRunTransaction).toHaveBeenCalledTimes(1);
+    });
+
+    test("nu modifică Firestore dacă URL-ul noii fotografii principale nu poate fi obținut", async () => {
+      const targetPath = "profilePhotos/user1/photo1.jpg";
+      const remainingPath = "profilePhotos/user1/photo2.jpg";
+      const userDocData = {
+        photoPaths: [targetPath, remainingPath],
+        primaryPhotoPath: targetPath,
+      };
+
+      mockedGetDoc.mockResolvedValue({
+        exists: () => true,
+        data: () => userDocData,
+      } as never);
+      mockedGetDownloadURL.mockRejectedValue(new Error("NETWORK_ERROR"));
+
+      await expect(deleteProfilePhoto("user1", targetPath)).rejects.toThrow(
+        "NETWORK_ERROR",
+      );
+
+      expect(mockedRunTransaction).not.toHaveBeenCalled();
+      expect(mockedDeleteObject).not.toHaveBeenCalled();
+    });
+
+    test("reîncearcă ștergerea obiectului din Storage", async () => {
+      const targetPath = "profilePhotos/user1/photo1.jpg";
+      const userDocData = {
+        photoPaths: [targetPath],
+        primaryPhotoPath: targetPath,
+      };
+      const mockTransaction = {
+        get: jest.fn().mockResolvedValue({
+          exists: () => true,
+          data: () => userDocData,
+        }),
+        update: jest.fn(),
+      };
+
+      mockedGetDoc.mockResolvedValue({
+        exists: () => true,
+        data: () => userDocData,
+      } as never);
+      mockedRunTransaction.mockImplementation(async (_db, cb) =>
+        cb(mockTransaction as never),
+      );
+      mockedDeleteObject
+        .mockRejectedValueOnce(new Error("TEMPORARY_ERROR"))
+        .mockResolvedValueOnce(undefined);
+
+      await deleteProfilePhoto("user1", targetPath);
+
+      expect(mockedDeleteObject).toHaveBeenCalledTimes(2);
     });
   });
 
@@ -244,6 +305,44 @@ describe("Serviciul pentru stocarea fotografiilor de profil (photoStorageService
       ).rejects.toThrow("PHOTO_READ_FAILED");
 
       expect(mockedUploadBytes).not.toHaveBeenCalled();
+    });
+
+    test("curăță fotografia nouă dacă fotografia înlocuită nu mai există în profil", async () => {
+      const blob = { type: "image/jpeg" } as Blob;
+      mockedFetch.mockResolvedValue({
+        ok: true,
+        blob: jest.fn().mockResolvedValue(blob),
+      });
+      const mockTransaction = {
+        get: jest.fn().mockResolvedValue({
+          exists: () => true,
+          data: () => ({
+            photoPaths: ["profilePhotos/user1/another.jpg"],
+            primaryPhotoPath: "profilePhotos/user1/another.jpg",
+          }),
+        }),
+        update: jest.fn(),
+      };
+      mockedRunTransaction.mockImplementation(async (_db, cb) =>
+        cb(mockTransaction as never),
+      );
+
+      await expect(
+        replaceProfilePhoto(
+          "user1",
+          "profilePhotos/user1/missing.jpg",
+          "file:///local/new.jpg",
+          "image/jpeg",
+        ),
+      ).rejects.toThrow("PHOTO_NOT_FOUND");
+
+      expect(mockTransaction.update).not.toHaveBeenCalled();
+      expect(mockedDeleteObject).toHaveBeenCalledTimes(1);
+      expect(mockedDeleteObject).toHaveBeenCalledWith(
+        expect.objectContaining({
+          path: expect.stringMatching(/^profilePhotos\/user1\/.+\.jpg$/),
+        }),
+      );
     });
   });
 });
