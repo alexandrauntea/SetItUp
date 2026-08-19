@@ -25,8 +25,6 @@ import {
 export type GetFeed = (request: FeedRequest) => Promise<FeedPage>;
 
 export const FEED_DEFAULT_PAGE_SIZE = 20;
-export const FEED_PREFERRED_PROFILE_RATIO = 0.8;
-export const FEED_RANDOM_PROFILE_RATIO = 0.2;
 
 const PUBLIC_PROFILES_COLLECTION = "publicProfiles";
 const FRIENDSHIPS_COLLECTION = "friendships";
@@ -99,66 +97,6 @@ export function matchesFeedPreferences(
     && (preferences.genders.length === 0
       || preferences.genders.includes(profile.gender))
     && matchesInterest;
-}
-
-function mixProfiles(
-  preferredProfiles: FeedProfile[],
-  randomProfiles: FeedProfile[],
-  pageSize: number,
-): FeedProfile[] {
-  const result: FeedProfile[] = [];
-  let preferredIndex = 0;
-  let randomIndex = 0;
-
-  while (
-    preferredIndex < preferredProfiles.length
-    || randomIndex < randomProfiles.length
-  ) {
-    const remainingSlots = Math.min(
-      pageSize,
-      preferredProfiles.length - preferredIndex + randomProfiles.length - randomIndex,
-    );
-    const preferredTarget = Math.round(remainingSlots * FEED_PREFERRED_PROFILE_RATIO);
-    const randomTarget = remainingSlots - preferredTarget;
-    const preferredCount = Math.min(
-      preferredTarget,
-      preferredProfiles.length - preferredIndex,
-    );
-    const randomCount = Math.min(
-      randomTarget,
-      randomProfiles.length - randomIndex,
-    );
-
-    result.push(
-      ...preferredProfiles.slice(preferredIndex, preferredIndex + preferredCount),
-      ...randomProfiles.slice(randomIndex, randomIndex + randomCount),
-    );
-    preferredIndex += preferredCount;
-    randomIndex += randomCount;
-
-    const missingCount = remainingSlots - preferredCount - randomCount;
-    if (missingCount > 0) {
-      const preferredFallbackCount = Math.min(
-        missingCount,
-        preferredProfiles.length - preferredIndex,
-      );
-      result.push(
-        ...preferredProfiles.slice(
-          preferredIndex,
-          preferredIndex + preferredFallbackCount,
-        ),
-      );
-      preferredIndex += preferredFallbackCount;
-
-      const randomFallbackCount = missingCount - preferredFallbackCount;
-      result.push(
-        ...randomProfiles.slice(randomIndex, randomIndex + randomFallbackCount),
-      );
-      randomIndex += randomFallbackCount;
-    }
-  }
-
-  return result;
 }
 
 function otherMember(friendship: Friendship, uid: string): string | null {
@@ -289,11 +227,9 @@ export const getFeed: GetFeed = async (request) => {
     eligibleProfiles.filter((profile) => profile.matchesPreferences),
     `${cursor.seed}p`,
   );
-  const randomProfiles = seededOrder(
-    eligibleProfiles.filter((profile) => !profile.matchesPreferences),
-    `${cursor.seed}r`,
-  );
-  const orderedProfiles = mixProfiles(preferredProfiles, randomProfiles, pageSize);
+  const orderedProfiles = preferredProfiles.length > 0
+    ? preferredProfiles
+    : seededOrder(eligibleProfiles, `${cursor.seed}f`);
   const profiles = orderedProfiles.slice(cursor.offset, cursor.offset + pageSize);
   const nextOffset = cursor.offset + profiles.length;
 

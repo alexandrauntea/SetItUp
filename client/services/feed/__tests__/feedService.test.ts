@@ -85,7 +85,7 @@ describe("feedService", () => {
     expect(mockGetDocs).not.toHaveBeenCalled();
   });
 
-  test("excludes ineligible profiles and keeps an 80/20 first page", async () => {
+  test("exclude profilurile neeligibile și afișează numai profilurile compatibile", async () => {
     const preferred = Array.from({ length: 10 }, (_, index) =>
       profile(`preferred-${index}`),
     );
@@ -151,7 +151,7 @@ describe("feedService", () => {
     });
 
     expect(firstPage.profiles).toHaveLength(10);
-    expect(firstPage.profiles.filter((item) => item.matchesPreferences)).toHaveLength(8);
+    expect(firstPage.profiles.every((item) => item.matchesPreferences)).toBe(true);
     expect(firstPage.profiles.map((item) => item.uid)).not.toEqual(
       expect.arrayContaining([
         "owner",
@@ -164,22 +164,43 @@ describe("feedService", () => {
         "private",
       ]),
     );
-    expect(firstPage.nextCursor).toMatch(/:10$/);
+    expect(firstPage.nextCursor).toBeNull();
+  });
 
-    const secondPage = await getFeed({
+  test("afișează toate profilurile eligibile ca rezervă când niciunul nu respectă filtrele", async () => {
+    const fallbackProfiles = [
+      profile("fallback-1", { interests: ["Music"] }),
+      profile("fallback-2", { gender: "male", interests: ["Sport"] }),
+    ];
+
+    mockGetDoc.mockImplementation(async (reference: string) => {
+      if (reference === "doc:managerRelationships:owner") {
+        return {
+          exists: () => true,
+          data: () => ({ ownerId: "owner", managerId: "manager" }),
+        };
+      }
+      const uid = reference.split(":").at(-1);
+      return {
+        exists: () => true,
+        data: () => ({ uid, role: "owner", counterpartId: `manager-${uid}` }),
+      };
+    });
+    mockGetDocs.mockImplementation(async (reference: string) => {
+      if (reference === "collection:publicProfiles|isPrivate:==:false") {
+        return snapshot(fallbackProfiles);
+      }
+      return snapshot([]);
+    });
+
+    const page = await getFeed({
       ownerId: "owner",
       actorId: "manager",
       preferences,
-      limit: 10,
-      cursor: firstPage.nextCursor!,
     });
 
-    expect(secondPage.profiles).toHaveLength(4);
-    expect(secondPage.nextCursor).toBeNull();
-    expect(new Set([
-      ...firstPage.profiles.map((item) => item.uid),
-      ...secondPage.profiles.map((item) => item.uid),
-    ])).toHaveProperty("size", 14);
+    expect(page.profiles).toHaveLength(2);
+    expect(page.profiles.every((item) => !item.matchesPreferences)).toBe(true);
   });
 
   test("rejects malformed cursors and unsafe page sizes", async () => {
