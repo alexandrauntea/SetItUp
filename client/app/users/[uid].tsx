@@ -8,7 +8,7 @@ import { getPublicProfileByUid } from "@/services/social/userSearchService";
 import type { PublicProfile } from "@/types/social";
 import { Ionicons } from "@expo/vector-icons";
 import { LinearGradient } from "expo-linear-gradient";
-import { useLocalSearchParams, useRouter } from "expo-router";
+import { type Href, useLocalSearchParams, useRouter } from "expo-router";
 import { useEffect, useState } from "react";
 import {
   ActivityIndicator,
@@ -26,8 +26,16 @@ export default function PublicUserProfileScreen() {
   const { user: currentUser } = useAuth();
   const { width } = useWindowDimensions();
   const isCompact = width < 380;
-  const params = useLocalSearchParams<{ uid?: string | string[] }>();
+  const params = useLocalSearchParams<{
+    uid?: string | string[];
+    backToChat?: string | string[];
+    conversationId?: string | string[];
+  }>();
   const uid = Array.isArray(params.uid) ? params.uid[0] : params.uid;
+  const backToChat = (Array.isArray(params.backToChat) ? params.backToChat[0] : params.backToChat) === "true";
+  const conversationId = Array.isArray(params.conversationId)
+    ? params.conversationId[0]
+    : params.conversationId;
   const [profile, setProfile] = useState<PublicProfile | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [hasError, setHasError] = useState(false);
@@ -60,6 +68,14 @@ export default function PublicUserProfileScreen() {
   }, [uid, currentUser?.uid]);
 
   function handleBack() {
+    if (backToChat && conversationId) {
+      router.replace({
+        pathname: "/messages/[conversationId]",
+        params: { conversationId },
+      } as unknown as Href);
+      return;
+    }
+
     if (router.canGoBack()) {
       router.back();
     } else {
@@ -111,7 +127,7 @@ export default function PublicUserProfileScreen() {
           <View style={styles.navigationHeader}>
             <Pressable
               accessibilityRole="button"
-              accessibilityLabel="Înapoi"
+              accessibilityLabel={backToChat ? "Închide profilul" : "Înapoi"}
               hitSlop={8}
               onPress={handleBack}
               style={({ pressed }) => [
@@ -119,7 +135,7 @@ export default function PublicUserProfileScreen() {
                 pressed && styles.backButtonPressed,
               ]}
             >
-              <Ionicons name="arrow-back" size={23} color={COLORS.text} />
+              <Ionicons name={backToChat ? "close" : "arrow-back"} size={23} color={COLORS.text} />
             </Pressable>
             <Text style={styles.navigationTitle}>Profil</Text>
           </View>
