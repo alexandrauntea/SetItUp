@@ -22,6 +22,75 @@ function generateMessageId(): string {
   return `${Date.now()}_${Math.random().toString(36).substring(2, 9)}`;
 }
 
+export async function ensureConversationsForManager(
+  managerId: string,
+): Promise<void> {
+  try {
+    const relsRef = collection(db, "managerRelationships");
+    const relsQuery = query(relsRef, where("managerId", "==", managerId));
+    const relsSnap = await getDocs(relsQuery);
+
+    if (!relsSnap || !relsSnap.docs || relsSnap.empty) return;
+
+    for (const relDoc of relsSnap.docs) {
+      const rel = relDoc.data();
+      if (!rel || !rel.ownerId) continue;
+      const ownerId = rel.ownerId;
+
+      const matchesRef = collection(db, "matches");
+      const matchesQuery = query(
+        matchesRef,
+        where("memberIds", "array-contains", ownerId),
+      );
+      const matchesSnap = await getDocs(matchesQuery);
+
+      if (!matchesSnap || !matchesSnap.docs || matchesSnap.empty) continue;
+
+      for (const matchDoc of matchesSnap.docs) {
+        const matchId = matchDoc.id;
+        const matchData = matchDoc.data();
+        if (!matchData || !Array.isArray(matchData.memberIds)) continue;
+        const memberIds = matchData.memberIds as [string, string];
+
+        const convRef = doc(db, CONVERSATIONS_COLLECTION, matchId);
+        const convSnap = await getDoc(convRef);
+
+        if (!convSnap || !convSnap.exists()) {
+          const otherOwnerId = memberIds.find((id) => id !== ownerId);
+          let otherManagerId = "";
+
+          if (otherOwnerId) {
+            const otherRelSnap = await getDoc(
+              doc(db, "managerRelationships", otherOwnerId),
+            );
+            if (otherRelSnap && otherRelSnap.exists()) {
+              otherManagerId = otherRelSnap.data()?.managerId || "";
+            }
+          }
+
+          const managerIds: [string, string] = [
+            managerId,
+            otherManagerId || managerId,
+          ].sort() as [string, string];
+
+          const nowIso = matchData.createdAt || new Date().toISOString();
+          await setDoc(convRef, {
+            id: matchId,
+            matchId,
+            memberIds,
+            managerIds,
+            blockedBy: null,
+            createdAt: nowIso,
+            updatedAt: nowIso,
+          });
+        }
+      }
+    }
+  } catch (err) {
+    console.info("Nu s-au putut sincroniza conversațiile existente:", err);
+  }
+}
+
 export async function createConversationForMatch(
   matchId: string,
   memberIds: [string, string],
@@ -30,7 +99,7 @@ export async function createConversationForMatch(
   const convRef = doc(db, CONVERSATIONS_COLLECTION, matchId);
   const snap = await getDoc(convRef);
 
-  if (snap.exists()) {
+  if (snap && snap.exists()) {
     return;
   }
 
@@ -51,9 +120,15 @@ export async function createConversationForMatch(
 export async function getConversationsForManager(
   managerId: string,
 ): Promise<Conversation[]> {
+  await ensureConversationsForManager(managerId);
+
   const convsRef = collection(db, CONVERSATIONS_COLLECTION);
   const q = query(convsRef, where("managerIds", "array-contains", managerId));
   const snapshot = await getDocs(q);
+
+  if (!snapshot || !snapshot.docs) {
+    return [];
+  }
 
   const conversations = snapshot.docs.map(
     (docSnap) => docSnap.data() as Conversation,
@@ -68,12 +143,18 @@ export function subscribeToConversations(
   managerId: string,
   callback: (conversations: Conversation[]) => void,
 ): () => void {
+  void ensureConversationsForManager(managerId);
+
   const convsRef = collection(db, CONVERSATIONS_COLLECTION);
   const q = query(convsRef, where("managerIds", "array-contains", managerId));
 
   return onSnapshot(
     q,
     (snapshot) => {
+      if (!snapshot || !snapshot.docs) {
+        callback([]);
+        return;
+      }
       const conversations = snapshot.docs.map(
         (docSnap) => docSnap.data() as Conversation,
       );
@@ -103,6 +184,10 @@ export function subscribeToMessages(
   return onSnapshot(
     q,
     (snapshot) => {
+      if (!snapshot || !snapshot.docs) {
+        callback([]);
+        return;
+      }
       const messages = snapshot.docs.map(
         (docSnap) => docSnap.data() as Message,
       );
@@ -217,7 +302,7 @@ export async function isConversationBlocked(
   const convRef = doc(db, CONVERSATIONS_COLLECTION, conversationId);
   const convSnap = await getDoc(convRef);
 
-  if (!convSnap.exists()) {
+  if (!convSnap || !convSnap.exists()) {
     return false;
   }
 

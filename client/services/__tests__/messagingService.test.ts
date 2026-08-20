@@ -99,12 +99,14 @@ describe("Serviciul de Mesagerie (messagingService)", () => {
         updatedAt: "2026-08-20T12:00:00.000Z",
       };
 
-      mockedGetDocs.mockResolvedValueOnce({
-        docs: [
-          { data: () => conv1 },
-          { data: () => conv2 },
-        ],
-      } as never);
+      mockedGetDocs
+        .mockResolvedValueOnce({ empty: true, docs: [] } as never)
+        .mockResolvedValueOnce({
+          docs: [
+            { data: () => conv1 },
+            { data: () => conv2 },
+          ],
+        } as never);
 
       const result = await getConversationsForManager("mgr1");
       expect(result).toEqual([conv2, conv1]);
@@ -114,6 +116,7 @@ describe("Serviciul de Mesagerie (messagingService)", () => {
   describe("subscribeToConversations", () => {
     test("instalează subscripție realtime pentru conversații", () => {
       const unsubscribeMock = jest.fn();
+      mockedGetDocs.mockResolvedValue({ empty: true, docs: [] } as never);
       mockedOnSnapshot.mockImplementation((_q, callback: any) => {
         callback({
           docs: [

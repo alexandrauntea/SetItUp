@@ -8,6 +8,7 @@ import { COLORS } from "@/constants/colors";
 import { useAuth } from "@/contexts/AuthContext";
 import { getFeed } from "@/services/feed/feedService";
 import { saveReaction } from "@/services/feed/reactionService";
+import { getFirebaseErrorMessage } from "@/utils/firebaseErrors";
 import { getManagedProfiles } from "@/services/social/managerService";
 import { getPublicProfileByUid } from "@/services/social/userSearchService";
 import {
@@ -186,7 +187,7 @@ export function FeedScreen() {
       setCurrentIndex((prev) => prev + 1);
     } catch (err) {
       console.error("Eroare la salvarea aprecierii:", err);
-      setErrorMessage("A apărut o eroare la salvarea aprecierii. Încearcă din nou.");
+      setErrorMessage(getFirebaseErrorMessage(err, "A apărut o eroare la salvarea aprecierii. Ïncearcă din nou."));
     } finally {
       setActionLoading(null);
     }
