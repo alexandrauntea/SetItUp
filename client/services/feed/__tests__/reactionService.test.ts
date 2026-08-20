@@ -1,4 +1,4 @@
-import type { Match, Reaction } from "@/types/feed";
+﻿import type { Match, Reaction } from "@/types/feed";
 import { DISLIKE_COOLDOWN_DAYS, saveReaction } from "../reactionService";
 
 jest.mock("@/services/firebase", () => ({ db: {} }));
@@ -197,7 +197,7 @@ describe("reactionService", () => {
       "matches/owner-a_owner-b",
       expectedMatch,
     );
-    expect(mockTransactionSet).toHaveBeenCalledTimes(2);
+    expect(mockTransactionSet).toHaveBeenCalledTimes(3);
   });
 
   test("returnează match-ul existent fără o a doua scriere", async () => {

@@ -1,4 +1,4 @@
-import { db } from "@/services/firebase";
+﻿import { db } from "@/services/firebase";
 import { createMatchId, createReactionId } from "@/services/social/socialIds";
 import type { Match, Reaction, SaveReactionInput } from "@/types/feed";
 import type { ManagerRelationship, ManagerRole } from "@/types/social";
@@ -17,6 +17,7 @@ export const DISLIKE_COOLDOWN_DAYS = 30;
 
 const REACTIONS_COLLECTION = "reactions";
 const MATCHES_COLLECTION = "matches";
+const CONVERSATIONS_COLLECTION = "conversations";
 const MANAGER_RELATIONSHIPS_COLLECTION = "managerRelationships";
 const MANAGER_ROLES_COLLECTION = "managerRoles";
 const DAY_IN_MILLISECONDS = 24 * 60 * 60 * 1_000;
@@ -67,6 +68,7 @@ export const saveReaction: SaveReaction = async (
   const reactionRef = doc(db, REACTIONS_COLLECTION, reactionId);
   const reverseReactionRef = doc(db, REACTIONS_COLLECTION, reverseReactionId);
   const matchRef = doc(db, MATCHES_COLLECTION, matchId);
+  const convRef = doc(db, CONVERSATIONS_COLLECTION, matchId);
   const ownerRelationshipRef = doc(
     db,
     MANAGER_RELATIONSHIPS_COLLECTION,
@@ -180,6 +182,16 @@ export const saveReaction: SaveReaction = async (
       createdAt: nowIso,
     };
     transaction.set(matchRef, match);
+
+    transaction.set(convRef, {
+      id: matchId,
+      matchId,
+      memberIds: match.memberIds,
+      managerIds: sortedMembers(input.actorId, targetRole.counterpartId),
+      blockedBy: null,
+      createdAt: nowIso,
+      updatedAt: nowIso,
+    });
 
     return { reaction, match };
   });
