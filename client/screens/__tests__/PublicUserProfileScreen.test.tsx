@@ -8,9 +8,15 @@ const mockBack = jest.fn();
 const mockReplace = jest.fn();
 const mockCanGoBack = jest.fn();
 let mockUid: string | undefined = "target-uid";
+let mockBackToChat: string | undefined;
+let mockConversationId: string | undefined;
 
 jest.mock("expo-router", () => ({
-  useLocalSearchParams: () => ({ uid: mockUid }),
+  useLocalSearchParams: () => ({
+    uid: mockUid,
+    backToChat: mockBackToChat,
+    conversationId: mockConversationId,
+  }),
   useRouter: () => ({
     back: mockBack,
     replace: mockReplace,
@@ -65,6 +71,8 @@ describe("Ecranul profilului public", () => {
   beforeEach(() => {
     jest.clearAllMocks();
     mockUid = "target-uid";
+    mockBackToChat = undefined;
+    mockConversationId = undefined;
     mockCanGoBack.mockReturnValue(true);
     mockedGetPublicProfileByUid.mockResolvedValue(publicProfile);
   });
@@ -136,6 +144,24 @@ describe("Ecranul profilului public", () => {
     fireEvent.press(screen.getByRole("button", { name: "Înapoi" }));
 
     expect(mockReplace).toHaveBeenCalledWith("/friends/search");
+  });
+
+  test("închide profilul în conversația exactă când backToChat este activ", async () => {
+    mockBackToChat = "true";
+    mockConversationId = "match-owner-a-owner-b";
+
+    await render(<PublicUserProfileScreen />);
+    await waitFor(() => expect(screen.getByText("Profil")).toBeTruthy());
+
+    fireEvent.press(
+      screen.getByRole("button", { name: "Închide profilul" }),
+    );
+
+    expect(mockReplace).toHaveBeenCalledWith({
+      pathname: "/messages/[conversationId]",
+      params: { conversationId: "match-owner-a-owner-b" },
+    });
+    expect(mockBack).not.toHaveBeenCalled();
   });
 
   test("nu interoghează serviciul când ruta nu conține uid", async () => {

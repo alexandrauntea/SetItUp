@@ -33,12 +33,16 @@ export function AppBottomNav() {
   const router = useRouter();
   const segments = useSegments();
   const insets = useSafeAreaInsets();
-  const isProfile = segments[0] === "profile" && segments[1] === "view";
-  const isFriends = segments[0] === "friends";
-  const isFeed = segments[0] === "feed";
-  const isMatches = segments[0] === "matches";
+  const rootSegment = segments[0] as string | undefined;
+  const isProfile = rootSegment === "profile" && segments[1] === "view";
+  const isFriends = rootSegment === "friends";
+  const isFeed = rootSegment === "feed";
+  const isMatches = rootSegment === "matches";
+  const isMessages = rootSegment === "messages" && segments.length === 1;
 
-  if (!isProfile && !isFriends && !isFeed && !isMatches) return null;
+  if (!isProfile && !isFriends && !isFeed && !isMatches && !isMessages) {
+    return null;
+  }
 
   return (
     <View style={[styles.container, { paddingBottom: Math.max(insets.bottom, 8) }]}>
@@ -65,6 +69,12 @@ export function AppBottomNav() {
         icon={isMatches ? "heart" : "heart-outline"}
         label="Potriviri"
         onPress={() => router.replace("/matches" as Href)}
+      />
+      <NavItem
+        active={isMessages}
+        icon={isMessages ? "chatbubbles" : "chatbubbles-outline"}
+        label="Mesaje"
+        onPress={() => router.replace("/messages" as Href)}
       />
     </View>
   );
