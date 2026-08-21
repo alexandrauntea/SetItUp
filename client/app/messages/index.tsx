@@ -160,12 +160,7 @@ export default function ConversationsScreen() {
           contentContainerStyle={styles.content}
           data={items}
           keyExtractor={(item) => item.conversation.id}
-          ListHeaderComponent={
-            <PageBanner
-              title="Mesaje"
-              subtitle="Conversațiile potrivirilor tale"
-            />
-          }
+          ListHeaderComponent={<PageBanner title="Mesaje" />}
           ListEmptyComponent={
             isLoading ? (
               <View style={styles.stateCard}>
@@ -289,7 +284,8 @@ const styles = StyleSheet.create({
   content: {
     flexGrow: 1,
     width: "100%",
-    maxWidth: 430,
+    // 430 px content width + 20 px horizontal padding on each side.
+    maxWidth: 470,
     alignSelf: "center",
     gap: 18,
     paddingHorizontal: 20,

@@ -127,7 +127,7 @@ describe("Ecranul profilului public", () => {
 
   test("revine la ecranul anterior când există istoric", async () => {
     await render(<PublicUserProfileScreen />);
-    await waitFor(() => expect(screen.getByText("Profil")).toBeTruthy());
+    await waitFor(() => expect(screen.getByText("Anca Popescu, 21")).toBeTruthy());
 
     fireEvent.press(screen.getByRole("button", { name: "Înapoi" }));
 
@@ -139,7 +139,7 @@ describe("Ecranul profilului public", () => {
     mockCanGoBack.mockReturnValue(false);
 
     await render(<PublicUserProfileScreen />);
-    await waitFor(() => expect(screen.getByText("Profil")).toBeTruthy());
+    await waitFor(() => expect(screen.getByText("Anca Popescu, 21")).toBeTruthy());
 
     fireEvent.press(screen.getByRole("button", { name: "Înapoi" }));
 
@@ -151,11 +151,9 @@ describe("Ecranul profilului public", () => {
     mockConversationId = "match-owner-a-owner-b";
 
     await render(<PublicUserProfileScreen />);
-    await waitFor(() => expect(screen.getByText("Profil")).toBeTruthy());
+    await waitFor(() => expect(screen.getByText("Anca Popescu, 21")).toBeTruthy());
 
-    fireEvent.press(
-      screen.getByRole("button", { name: "Închide profilul" }),
-    );
+    fireEvent.press(screen.getByRole("button", { name: "Înapoi" }));
 
     expect(mockReplace).toHaveBeenCalledWith({
       pathname: "/messages/[conversationId]",
@@ -175,13 +173,13 @@ describe("Ecranul profilului public", () => {
     expect(mockedGetPublicProfileByUid).not.toHaveBeenCalled();
   });
 
-  test("afișează X și revine exact în chat când profilul este deschis din conversație", async () => {
+  test("afișează butonul Înapoi și revine exact în chat când profilul este deschis din conversație", async () => {
     mockBackToChat = "true";
     mockConversationId = "owner-a_owner-b";
 
     await render(<PublicUserProfileScreen />);
     await screen.findByText("Anca Popescu, 21");
-    fireEvent.press(screen.getByRole("button", { name: "Închide profilul" }));
+    fireEvent.press(screen.getByRole("button", { name: "Înapoi" }));
 
     expect(mockReplace).toHaveBeenCalledWith({
       pathname: "/messages/[conversationId]",

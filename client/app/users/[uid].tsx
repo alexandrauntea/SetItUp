@@ -1,4 +1,5 @@
 import { AppButton } from "@/components/AppButton";
+import { PageBanner } from "@/components/PageBanner";
 import { ProfilePhotoGallery } from "@/components/ProfilePhotoGallery";
 import { ScreenBackground } from "@/components/ScreenBackground";
 import { COLORS } from "@/constants/colors";
@@ -7,12 +8,10 @@ import { useAuth } from "@/contexts/AuthContext";
 import { getPublicProfileByUid } from "@/services/social/userSearchService";
 import type { PublicProfile } from "@/types/social";
 import { Ionicons } from "@expo/vector-icons";
-import { LinearGradient } from "expo-linear-gradient";
 import { type Href, useLocalSearchParams, useRouter } from "expo-router";
 import { useEffect, useState } from "react";
 import {
   ActivityIndicator,
-  Pressable,
   ScrollView,
   StyleSheet,
   Text,
@@ -130,35 +129,11 @@ export default function PublicUserProfileScreen() {
             isCompact && styles.contentCompact,
           ]}
         >
-          <View style={styles.navigationHeader}>
-            <Pressable
-              accessibilityRole="button"
-              accessibilityLabel={backToChat ? "Închide profilul" : "Înapoi"}
-              hitSlop={8}
-              onPress={handleBack}
-              style={({ pressed }) => [
-                styles.backButton,
-                pressed && styles.backButtonPressed,
-              ]}
-            >
-              <Ionicons
-                name={backToChat ? "close" : "arrow-back"}
-                size={23}
-                color={COLORS.text}
-              />
-            </Pressable>
-            <Text style={styles.navigationTitle}>Profil</Text>
-          </View>
-
-          <LinearGradient
-            colors={[COLORS.primary, COLORS.primaryPressed]}
-            style={[styles.header, isCompact && styles.headerCompact]}
-          >
-            <Text style={styles.name}>
-              {fullName}{profile.age > 0 ? `, ${profile.age}` : ""}
-            </Text>
-            <Text style={styles.username}>@{profile.username}</Text>
-          </LinearGradient>
+          <PageBanner
+            title={`${fullName}${profile.age > 0 ? `, ${profile.age}` : ""}`}
+            subtitle={`@${profile.username}`}
+            onBack={handleBack}
+          />
 
           <ProfilePhotoGallery
             name={fullName}
@@ -211,28 +186,13 @@ const styles = StyleSheet.create({
   },
   content: {
     width: "100%",
-    maxWidth: 430,
+    maxWidth: 470,
     alignSelf: "center",
     gap: 18,
-    padding: 20,
+    paddingHorizontal: 20,
     paddingBottom: 40,
   },
   contentCompact: { paddingHorizontal: 14 },
-  navigationHeader: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 12,
-  },
-  backButton: {
-    width: 42,
-    height: 42,
-    alignItems: "center",
-    justifyContent: "center",
-    borderRadius: 21,
-    backgroundColor: COLORS.background,
-  },
-  backButtonPressed: { opacity: 0.65 },
-  navigationTitle: { color: COLORS.text, fontSize: 27, fontWeight: "800" },
   messageCard: {
     width: "100%",
     maxWidth: 420,
@@ -249,15 +209,6 @@ const styles = StyleSheet.create({
     fontSize: 16,
     lineHeight: 23,
   },
-  header: { alignItems: "center", gap: 8, padding: 24, borderRadius: 24 },
-  headerCompact: { padding: 20, borderRadius: 20 },
-  name: {
-    color: COLORS.background,
-    textAlign: "center",
-    fontSize: 25,
-    fontWeight: "800",
-  },
-  username: { color: "rgba(255,255,255,0.8)", fontSize: 16 },
   section: {
     gap: 10,
     padding: 18,

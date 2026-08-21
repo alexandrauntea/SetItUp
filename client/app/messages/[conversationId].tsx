@@ -1,4 +1,4 @@
-import { ProfileImage } from "@/components/ProfileImage";
+import { PageBanner } from "@/components/PageBanner";
 import { ScreenBackground } from "@/components/ScreenBackground";
 import { COLORS } from "@/constants/colors";
 import { useAuth } from "@/contexts/AuthContext";
@@ -207,36 +207,34 @@ export default function ChatScreen() {
           behavior={Platform.OS === "ios" ? "padding" : undefined}
           style={styles.keyboardView}
         >
-          <View style={styles.header}>
-            <Pressable accessibilityLabel="Înapoi" accessibilityRole="button" hitSlop={8} onPress={() => router.back()} style={styles.iconButton}>
-              <Ionicons color={COLORS.text} name="arrow-back" size={23} />
-            </Pressable>
-            <Pressable accessibilityLabel="Vezi profilul" accessibilityRole="button" disabled={!profile} onPress={handleOpenProfile} style={styles.profileButton}>
-              <ProfileImage name={profileName} size={42} uri={profile?.photoUrl} />
-              <View style={styles.headerText}>
-                <Text numberOfLines={1} style={styles.headerTitle}>{profileName}</Text>
-                <Text style={styles.headerSubtitle}>{blocked ? "Conversație blocată" : "Potrivire activă"}</Text>
-              </View>
-            </Pressable>
-            <Pressable accessibilityLabel="Acțiuni conversație" accessibilityRole="button" onPress={() => setMenuOpen((open) => !open)} style={styles.iconButton}>
-              <Ionicons color={COLORS.text} name="ellipsis-vertical" size={23} />
-            </Pressable>
-            {menuOpen ? (
-              <View style={styles.menu}>
-                <Pressable
-                  accessibilityLabel={blockedByCurrentUser ? "Deblochează" : "Blochează"}
-                  accessibilityRole="button"
-                  disabled={(blocked && !blockedByCurrentUser) || isChangingBlock}
-                  onPress={() => void handleToggleBlock()}
-                  style={styles.menuAction}
-                >
-                  <Text style={[styles.menuText, !blockedByCurrentUser && styles.menuTextDanger]}>
-                    {blockedByCurrentUser ? "Deblochează" : "Blochează"}
-                  </Text>
+          <PageBanner
+            action={(
+              <>
+                <Pressable accessibilityLabel="Acțiuni conversație" accessibilityRole="button" onPress={() => setMenuOpen((open) => !open)} style={styles.bannerActionButton}>
+                  <Ionicons color={COLORS.background} name="ellipsis-vertical" size={23} />
                 </Pressable>
-              </View>
-            ) : null}
-          </View>
+                {menuOpen ? (
+                  <View style={styles.menu}>
+                    <Pressable
+                      accessibilityLabel={blockedByCurrentUser ? "Deblochează" : "Blochează"}
+                      accessibilityRole="button"
+                      disabled={(blocked && !blockedByCurrentUser) || isChangingBlock}
+                      onPress={() => void handleToggleBlock()}
+                      style={styles.menuAction}
+                    >
+                      <Text style={[styles.menuText, !blockedByCurrentUser && styles.menuTextDanger]}>
+                        {blockedByCurrentUser ? "Deblochează" : "Blochează"}
+                      </Text>
+                    </Pressable>
+                  </View>
+                ) : null}
+              </>
+            )}
+            contentAccessibilityLabel="Vezi profilul"
+            onBack={() => router.back()}
+            onContentPress={profile ? handleOpenProfile : undefined}
+            title={profileName}
+          />
 
           <FlatList
             contentContainerStyle={[styles.messageList, messages.length === 0 && styles.emptyList]}
@@ -294,36 +292,41 @@ export default function ChatScreen() {
 }
 
 const styles = StyleSheet.create({
-  safeArea: { flex: 1 },
-  keyboardView: { flex: 1, width: "100%", maxWidth: 600, alignSelf: "center" },
+  safeArea: {
+    flex: 1,
+    paddingHorizontal: 20,
+    paddingTop: 0,
+    paddingBottom: 12,
+  },
+  keyboardView: {
+    flex: 1,
+    width: "100%",
+    maxWidth: 430,
+    alignSelf: "center",
+  },
   centered: { flex: 1, alignItems: "center", justifyContent: "center", gap: 12, padding: 24 },
   stateTitle: { color: COLORS.text, fontSize: 22, fontWeight: "800", textAlign: "center" },
   stateText: { color: COLORS.textSecondary, fontSize: 15, textAlign: "center" },
   retryButton: { marginTop: 8, paddingHorizontal: 24, paddingVertical: 12, borderRadius: 22, backgroundColor: COLORS.primary },
   retryText: { color: COLORS.background, fontWeight: "700" },
-  header: { zIndex: 2, minHeight: 66, flexDirection: "row", alignItems: "center", gap: 8, paddingHorizontal: 12, borderBottomWidth: 1, borderBottomColor: COLORS.border, backgroundColor: COLORS.background },
-  iconButton: { width: 42, height: 42, alignItems: "center", justifyContent: "center", borderRadius: 21 },
-  profileButton: { flex: 1, minWidth: 0, flexDirection: "row", alignItems: "center", gap: 10 },
-  headerText: { flex: 1, minWidth: 0 },
-  headerTitle: { color: COLORS.text, fontSize: 16, fontWeight: "800" },
-  headerSubtitle: { color: COLORS.textSecondary, fontSize: 12, marginTop: 2 },
-  menu: { position: "absolute", top: 58, right: 12, minWidth: 170, padding: 6, borderWidth: 1, borderColor: COLORS.border, borderRadius: 14, backgroundColor: COLORS.background, shadowColor: COLORS.text, shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.12, shadowRadius: 12, elevation: 8 },
+  bannerActionButton: { width: 42, height: 42, alignItems: "center", justifyContent: "center", borderRadius: 21 },
+  menu: { zIndex: 1000, position: "absolute", top: 48, right: 0, minWidth: 170, padding: 6, borderWidth: 1, borderColor: COLORS.border, borderRadius: 14, backgroundColor: COLORS.background, shadowColor: COLORS.text, shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.12, shadowRadius: 12, elevation: 24 },
   menuAction: { padding: 12 },
   menuText: { color: COLORS.primary, fontWeight: "700" },
   menuTextDanger: { color: COLORS.error },
-  messageList: { flexGrow: 1, gap: 8, padding: 16, paddingBottom: 20 },
+  messageList: { zIndex: 0, flexGrow: 1, gap: 8, padding: 16, paddingBottom: 20 },
   emptyList: { justifyContent: "center" },
   emptyText: { color: COLORS.textSecondary, textAlign: "center" },
   bubble: { maxWidth: "82%", gap: 3, paddingHorizontal: 13, paddingVertical: 9, borderRadius: 18 },
-  ownBubble: { alignSelf: "flex-end", borderBottomRightRadius: 5, backgroundColor: COLORS.primary },
-  receivedBubble: { alignSelf: "flex-start", borderBottomLeftRadius: 5, backgroundColor: COLORS.surface },
+  ownBubble: { alignSelf: "flex-end", borderBottomRightRadius: 5, backgroundColor: COLORS.primarySoft },
+  receivedBubble: { alignSelf: "flex-start", borderBottomLeftRadius: 5, borderWidth: 1, borderColor: COLORS.border, backgroundColor: COLORS.background },
   messageText: { color: COLORS.text, fontSize: 16, lineHeight: 21 },
-  ownMessageText: { color: COLORS.background },
+  ownMessageText: { color: COLORS.primaryPressed },
   messageTime: { color: COLORS.textSecondary, fontSize: 10, alignSelf: "flex-end" },
-  ownMessageTime: { color: "rgba(255,255,255,0.72)" },
+  ownMessageTime: { color: COLORS.primaryPressed },
   blockedNotice: { alignItems: "center", justifyContent: "center", paddingHorizontal: 16, paddingVertical: 10, backgroundColor: COLORS.errorBackground },
   blockedText: { color: COLORS.error, fontSize: 13, fontWeight: "600", textAlign: "center" },
-  composer: { flexDirection: "row", alignItems: "flex-end", gap: 10, padding: 12, borderTopWidth: 1, borderTopColor: COLORS.border, backgroundColor: COLORS.background },
+  composer: { flexDirection: "row", alignItems: "flex-end", gap: 10, padding: 10, borderWidth: 1, borderColor: COLORS.border, borderRadius: 28, backgroundColor: COLORS.background },
   input: { flex: 1, minHeight: 44, maxHeight: 112, paddingHorizontal: 15, paddingVertical: 11, borderWidth: 1, borderColor: COLORS.border, borderRadius: 22, color: COLORS.text, backgroundColor: COLORS.canvas, fontSize: 16 },
   inputDisabled: { opacity: 0.55 },
   sendButton: { width: 44, height: 44, alignItems: "center", justifyContent: "center", borderRadius: 22, backgroundColor: COLORS.primary },
