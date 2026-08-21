@@ -1,17 +1,8 @@
-﻿import { db } from "@/services/firebase";
+import { db } from "@/services/firebase";
 import type { Conversation, Message, UserBlock } from "@/types/messaging";
 import {
-  collection,
-  deleteDoc,
-  doc,
-  getDoc,
-  getDocs,
-  onSnapshot,
-  orderBy,
-  query,
-  runTransaction,
-  setDoc,
-  where,
+  collection, doc, getDoc, getDocs, onSnapshot, orderBy, query,
+  runTransaction, setDoc, type Unsubscribe, where,
 } from "firebase/firestore";
 
 const CONVERSATIONS_COLLECTION = "conversations";
@@ -22,72 +13,59 @@ function generateMessageId(): string {
   return `${Date.now()}_${Math.random().toString(36).substring(2, 9)}`;
 }
 
-export async function ensureConversationsForManager(
-  managerId: string,
-): Promise<void> {
+function blockDocumentId(blockerId: string, blockedId: string): string {
+  return `${blockerId}_${blockedId}`;
+}
+
+export async function ensureConversationsForManager(managerId: string): Promise<void> {
   try {
-    const relsRef = collection(db, "managerRelationships");
-    const relsQuery = query(relsRef, where("managerId", "==", managerId));
-    const relsSnap = await getDocs(relsQuery);
+    const relationships = await getDocs(query(
+      collection(db, "managerRelationships"),
+      where("managerId", "==", managerId),
+    ));
+    if (!relationships?.docs || relationships.empty) return;
 
-    if (!relsSnap || !relsSnap.docs || relsSnap.empty) return;
-
-    for (const relDoc of relsSnap.docs) {
-      const rel = relDoc.data();
-      if (!rel || !rel.ownerId) continue;
-      const ownerId = rel.ownerId;
-
-      const matchesRef = collection(db, "matches");
-      const matchesQuery = query(
-        matchesRef,
+    for (const relationship of relationships.docs) {
+      const ownerId = relationship.data()?.ownerId;
+      if (!ownerId) continue;
+      const matches = await getDocs(query(
+        collection(db, "matches"),
         where("memberIds", "array-contains", ownerId),
-      );
-      const matchesSnap = await getDocs(matchesQuery);
+      ));
+      if (!matches?.docs || matches.empty) continue;
 
-      if (!matchesSnap || !matchesSnap.docs || matchesSnap.empty) continue;
+      for (const match of matches.docs) {
+        const matchData = match.data();
+        if (!Array.isArray(matchData?.memberIds)) continue;
+        const conversationRef = doc(db, CONVERSATIONS_COLLECTION, match.id);
+        const conversation = await getDoc(conversationRef);
+        if (conversation?.exists()) continue;
 
-      for (const matchDoc of matchesSnap.docs) {
-        const matchId = matchDoc.id;
-        const matchData = matchDoc.data();
-        if (!matchData || !Array.isArray(matchData.memberIds)) continue;
         const memberIds = matchData.memberIds as [string, string];
-
-        const convRef = doc(db, CONVERSATIONS_COLLECTION, matchId);
-        const convSnap = await getDoc(convRef);
-
-        if (!convSnap || !convSnap.exists()) {
-          const otherOwnerId = memberIds.find((id) => id !== ownerId);
-          let otherManagerId = "";
-
-          if (otherOwnerId) {
-            const otherRelSnap = await getDoc(
-              doc(db, "managerRelationships", otherOwnerId),
-            );
-            if (otherRelSnap && otherRelSnap.exists()) {
-              otherManagerId = otherRelSnap.data()?.managerId || "";
-            }
+        const otherOwnerId = memberIds.find((id) => id !== ownerId);
+        let otherManagerId = "";
+        if (otherOwnerId) {
+          const otherRelationship = await getDoc(doc(db, "managerRelationships", otherOwnerId));
+          if (otherRelationship?.exists()) {
+            otherManagerId = otherRelationship.data()?.managerId || "";
           }
-
-          const managerIds: [string, string] = [
-            managerId,
-            otherManagerId || managerId,
-          ].sort() as [string, string];
-
-          const nowIso = matchData.createdAt || new Date().toISOString();
-          await setDoc(convRef, {
-            id: matchId,
-            matchId,
-            memberIds,
-            managerIds,
-            blockedBy: null,
-            createdAt: nowIso,
-            updatedAt: nowIso,
-          });
         }
+
+        const managerIds = [managerId, otherManagerId || managerId].sort() as [string, string];
+        const now = matchData.createdAt || new Date().toISOString();
+        await setDoc(conversationRef, {
+          id: match.id,
+          matchId: match.id,
+          memberIds,
+          managerIds,
+          blockedBy: null,
+          createdAt: now,
+          updatedAt: now,
+        });
       }
     }
-  } catch (err) {
-    console.info("Nu s-au putut sincroniza conversațiile existente:", err);
+  } catch (error) {
+    console.info("Nu s-au putut sincroniza conversațiile existente:", error);
   }
 }
 
@@ -96,157 +74,109 @@ export async function createConversationForMatch(
   memberIds: [string, string],
   managerIds: [string, string],
 ): Promise<void> {
-  const convRef = doc(db, CONVERSATIONS_COLLECTION, matchId);
-  const snap = await getDoc(convRef);
-
-  if (snap && snap.exists()) {
-    return;
-  }
-
-  const nowIso = new Date().toISOString();
-  const newConversation: Conversation = {
-    id: matchId,
-    matchId,
-    memberIds,
-    managerIds,
-    blockedBy: null,
-    createdAt: nowIso,
-    updatedAt: nowIso,
+  const conversationRef = doc(db, CONVERSATIONS_COLLECTION, matchId);
+  if ((await getDoc(conversationRef))?.exists()) return;
+  const now = new Date().toISOString();
+  const conversation: Conversation = {
+    id: matchId, matchId, memberIds, managerIds, blockedBy: null,
+    createdAt: now, updatedAt: now,
   };
-
-  await setDoc(convRef, newConversation);
+  await setDoc(conversationRef, conversation);
 }
 
-export async function getConversationsForManager(
-  managerId: string,
-): Promise<Conversation[]> {
+export async function getConversationsForManager(managerId: string): Promise<Conversation[]> {
   await ensureConversationsForManager(managerId);
-
-  const convsRef = collection(db, CONVERSATIONS_COLLECTION);
-  const q = query(convsRef, where("managerIds", "array-contains", managerId));
-  const snapshot = await getDocs(q);
-
-  if (!snapshot || !snapshot.docs) {
-    return [];
-  }
-
-  const conversations = snapshot.docs.map(
-    (docSnap) => docSnap.data() as Conversation,
-  );
-
-  return conversations.sort((a, b) =>
-    (b.updatedAt || b.createdAt).localeCompare(a.updatedAt || a.createdAt),
-  );
+  const snapshot = await getDocs(query(
+    collection(db, CONVERSATIONS_COLLECTION),
+    where("managerIds", "array-contains", managerId),
+  ));
+  if (!snapshot?.docs) return [];
+  return snapshot.docs
+    .map((item) => item.data() as Conversation)
+    .sort((a, b) => (b.updatedAt || b.createdAt).localeCompare(a.updatedAt || a.createdAt));
 }
 
 export function subscribeToConversations(
   managerId: string,
   callback: (conversations: Conversation[]) => void,
-): () => void {
+): Unsubscribe {
   void ensureConversationsForManager(managerId);
+  const conversationsQuery = query(
+    collection(db, CONVERSATIONS_COLLECTION),
+    where("managerIds", "array-contains", managerId),
+  );
+  return onSnapshot(conversationsQuery, (snapshot) => {
+    const conversations = snapshot?.docs
+      ? snapshot.docs.map((item) => item.data() as Conversation)
+      : [];
+    callback(conversations.sort((a, b) =>
+      (b.updatedAt || b.createdAt).localeCompare(a.updatedAt || a.createdAt),
+    ));
+  }, (error) => console.info("Eroare la ascultarea conversațiilor:", error));
+}
 
-  const convsRef = collection(db, CONVERSATIONS_COLLECTION);
-  const q = query(convsRef, where("managerIds", "array-contains", managerId));
-
+export function subscribeToConversation(
+  conversationId: string,
+  callback: (conversation: Conversation | null) => void,
+  onError?: (error: Error) => void,
+): Unsubscribe {
   return onSnapshot(
-    q,
-    (snapshot) => {
-      if (!snapshot || !snapshot.docs) {
-        callback([]);
-        return;
-      }
-      const conversations = snapshot.docs.map(
-        (docSnap) => docSnap.data() as Conversation,
-      );
-      const sorted = conversations.sort((a, b) =>
-        (b.updatedAt || b.createdAt).localeCompare(a.updatedAt || a.createdAt),
-      );
-      callback(sorted);
-    },
-    (error) => {
-      console.info("Eroare la ascultarea conversațiilor:", error);
-    },
+    doc(db, CONVERSATIONS_COLLECTION, conversationId),
+    (snapshot) => callback(snapshot.exists()
+      ? ({ id: snapshot.id, ...snapshot.data() } as Conversation)
+      : null),
+    (error) => onError?.(error),
   );
 }
 
 export function subscribeToMessages(
   conversationId: string,
   callback: (messages: Message[]) => void,
-): () => void {
-  const messagesRef = collection(
-    db,
-    CONVERSATIONS_COLLECTION,
-    conversationId,
-    MESSAGES_SUBCOLLECTION,
+  onError?: (error: Error) => void,
+): Unsubscribe {
+  const messagesQuery = query(
+    collection(db, CONVERSATIONS_COLLECTION, conversationId, MESSAGES_SUBCOLLECTION),
+    orderBy("createdAt", "asc"),
   );
-  const q = query(messagesRef, orderBy("createdAt", "asc"));
-
-  return onSnapshot(
-    q,
-    (snapshot) => {
-      if (!snapshot || !snapshot.docs) {
-        callback([]);
-        return;
-      }
-      const messages = snapshot.docs.map(
-        (docSnap) => docSnap.data() as Message,
-      );
-      callback(messages);
-    },
-    (error) => {
-      console.info("Eroare la ascultarea mesajelor:", error);
-    },
-  );
+  return onSnapshot(messagesQuery, (snapshot) => {
+    const messages = snapshot?.docs
+      ? snapshot.docs.map((item) => ({ id: item.id, ...item.data() })) as Message[]
+      : [];
+    callback(messages);
+  }, (error) => {
+    if (onError) onError(error);
+    else console.info("Eroare la ascultarea mesajelor:", error);
+  });
 }
 
 export async function sendMessage(
   conversationId: string,
   senderId: string,
-  text: string,
+  value: string,
 ): Promise<void> {
-  const trimmedText = text.trim();
-  if (!trimmedText) {
-    throw new Error("INVALID_MESSAGE_TEXT");
-  }
-
-  const convRef = doc(db, CONVERSATIONS_COLLECTION, conversationId);
-  const msgId = generateMessageId();
-  const msgRef = doc(
-    db,
-    CONVERSATIONS_COLLECTION,
-    conversationId,
-    MESSAGES_SUBCOLLECTION,
-    msgId,
+  const text = value.trim();
+  if (!text) throw new Error("INVALID_MESSAGE_TEXT");
+  if (text.length > 2_000) throw new Error("MESSAGE_TOO_LONG");
+  const conversationRef = doc(db, CONVERSATIONS_COLLECTION, conversationId);
+  const messageId = generateMessageId();
+  const messageRef = doc(
+    db, CONVERSATIONS_COLLECTION, conversationId, MESSAGES_SUBCOLLECTION, messageId,
   );
-
-  const nowIso = new Date().toISOString();
-
   await runTransaction(db, async (transaction) => {
-    const convSnap = await transaction.get(convRef);
-    if (!convSnap.exists()) {
-      throw new Error("CONVERSATION_NOT_FOUND");
+    const snapshot = await transaction.get(conversationRef);
+    if (!snapshot.exists()) throw new Error("CONVERSATION_NOT_FOUND");
+    const conversation = snapshot.data() as Conversation;
+    if (conversation.blockedBy) throw new Error("CONVERSATION_BLOCKED");
+    if (Array.isArray(conversation.managerIds) && !conversation.managerIds.includes(senderId)) {
+      throw new Error("UNAUTHORIZED");
     }
-
-    const data = convSnap.data() as Conversation;
-    if (data.blockedBy) {
-      throw new Error("CONVERSATION_BLOCKED");
-    }
-
+    const now = new Date().toISOString();
     const message: Message = {
-      id: msgId,
-      conversationId,
-      senderId,
-      senderRole: "manager",
-      text: trimmedText,
-      createdAt: nowIso,
+      id: messageId, conversationId, senderId, senderRole: "manager", text, createdAt: now,
     };
-
-    transaction.set(msgRef, message);
-    transaction.update(convRef, {
-      lastMessage: trimmedText,
-      lastMessageAt: nowIso,
-      lastMessageSenderId: senderId,
-      updatedAt: nowIso,
+    transaction.set(messageRef, message);
+    transaction.update(conversationRef, {
+      lastMessage: text, lastMessageAt: now, lastMessageSenderId: senderId, updatedAt: now,
     });
   });
 }
@@ -256,24 +186,13 @@ export async function blockUser(
   blockerId: string,
   blockedId: string,
 ): Promise<void> {
-  const blockId = `${blockerId}_${blockedId}`;
-  const blockRef = doc(db, BLOCKS_COLLECTION, blockId);
-  const convRef = doc(db, CONVERSATIONS_COLLECTION, conversationId);
-  const nowIso = new Date().toISOString();
-
-  const userBlock: UserBlock = {
-    id: blockId,
-    blockerId,
-    blockedId,
-    createdAt: nowIso,
-  };
-
+  const conversationRef = doc(db, CONVERSATIONS_COLLECTION, conversationId);
+  const id = blockDocumentId(blockerId, blockedId);
   await runTransaction(db, async (transaction) => {
-    transaction.set(blockRef, userBlock);
-    transaction.update(convRef, {
-      blockedBy: blockerId,
-      updatedAt: nowIso,
-    });
+    const now = new Date().toISOString();
+    const block: UserBlock = { id, blockerId, blockedId, createdAt: now };
+    transaction.set(doc(db, BLOCKS_COLLECTION, id), block);
+    transaction.update(conversationRef, { blockedBy: blockerId, updatedAt: now });
   });
 }
 
@@ -282,30 +201,16 @@ export async function unblockUser(
   blockerId: string,
   blockedId: string,
 ): Promise<void> {
-  const blockId = `${blockerId}_${blockedId}`;
-  const blockRef = doc(db, BLOCKS_COLLECTION, blockId);
-  const convRef = doc(db, CONVERSATIONS_COLLECTION, conversationId);
-  const nowIso = new Date().toISOString();
-
+  const conversationRef = doc(db, CONVERSATIONS_COLLECTION, conversationId);
+  const id = blockDocumentId(blockerId, blockedId);
   await runTransaction(db, async (transaction) => {
-    transaction.delete(blockRef);
-    transaction.update(convRef, {
-      blockedBy: null,
-      updatedAt: nowIso,
-    });
+    transaction.delete(doc(db, BLOCKS_COLLECTION, id));
+    transaction.update(conversationRef, { blockedBy: null, updatedAt: new Date().toISOString() });
   });
 }
 
-export async function isConversationBlocked(
-  conversationId: string,
-): Promise<boolean> {
-  const convRef = doc(db, CONVERSATIONS_COLLECTION, conversationId);
-  const convSnap = await getDoc(convRef);
-
-  if (!convSnap || !convSnap.exists()) {
-    return false;
-  }
-
-  const data = convSnap.data() as Conversation;
-  return Boolean(data.blockedBy);
+export async function isConversationBlocked(conversationId: string): Promise<boolean> {
+  const snapshot = await getDoc(doc(db, CONVERSATIONS_COLLECTION, conversationId));
+  if (!snapshot?.exists()) return false;
+  return Boolean((snapshot.data() as Conversation).blockedBy);
 }

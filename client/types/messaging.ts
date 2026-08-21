@@ -1,4 +1,4 @@
-﻿export interface Conversation {
+export interface Conversation {
   id: string;
   matchId: string;
   memberIds: [string, string];
@@ -19,7 +19,6 @@ export interface Message {
   text: string;
   createdAt: string;
 }
-
 export interface UserBlock {
   id: string;
   blockerId: string;

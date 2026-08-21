@@ -174,4 +174,19 @@ describe("Ecranul profilului public", () => {
     });
     expect(mockedGetPublicProfileByUid).not.toHaveBeenCalled();
   });
+
+  test("afișează X și revine exact în chat când profilul este deschis din conversație", async () => {
+    mockBackToChat = "true";
+    mockConversationId = "owner-a_owner-b";
+
+    await render(<PublicUserProfileScreen />);
+    await screen.findByText("Anca Popescu, 21");
+    fireEvent.press(screen.getByRole("button", { name: "Închide profilul" }));
+
+    expect(mockReplace).toHaveBeenCalledWith({
+      pathname: "/messages/[conversationId]",
+      params: { conversationId: "owner-a_owner-b" },
+    });
+    expect(mockBack).not.toHaveBeenCalled();
+  });
 });

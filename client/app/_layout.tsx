@@ -122,6 +122,7 @@ function RootLayoutNav() {
         <Stack.Screen name="friends" options={{ headerShown: false }} />
         <Stack.Screen name="feed" options={{ headerShown: false }} />
         <Stack.Screen name="matches" options={{ headerShown: false }} />
+        <Stack.Screen name="messages" options={{ headerShown: false }} />
         <Stack.Screen name="users/[uid]" options={{ headerShown: false }} />
       </Stack>
       <AppBottomNav />
