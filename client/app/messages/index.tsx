@@ -3,8 +3,10 @@ import { ProfileImage } from "@/components/ProfileImage";
 import { ScreenBackground } from "@/components/ScreenBackground";
 import { COLORS } from "@/constants/colors";
 import { useAuth } from "@/contexts/AuthContext";
-import { db } from "@/services/firebase";
+import { subscribeToConversations } from "@/services/messagingService";
+import { getManagedProfiles } from "@/services/social/managerService";
 import { getPublicProfileByUid } from "@/services/social/userSearchService";
+import type { Conversation } from "@/types/messaging";
 import type { PublicProfile } from "@/types/social";
 import { Ionicons } from "@expo/vector-icons";
 import { type Href, useRouter } from "expo-router";
@@ -18,26 +20,6 @@ import {
   View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import {
-  collection,
-  onSnapshot,
-  query,
-  where,
-} from "firebase/firestore";
-
-type Conversation = {
-  id: string;
-  matchId: string;
-  memberIds: [string, string];
-  managerIds: [string, string];
-  lastMessage?: string;
-  lastMessageAt?: string;
-  lastMessageSenderId?: string;
-  blockedBy?: string | null;
-  createdAt: string;
-  updatedAt: string;
-};
-
 type ConversationListItem = {
   conversation: Conversation;
   profile: PublicProfile | null;
@@ -45,13 +27,9 @@ type ConversationListItem = {
 
 function getOtherMemberId(
   conversation: Conversation,
-  managerId: string,
+  managedOwnerIds: ReadonlySet<string>,
 ): string | null {
-  const managerIndex = conversation.managerIds.indexOf(managerId);
-  if (managerIndex < 0) return null;
-
-  const otherMemberIndex = managerIndex === 0 ? 1 : 0;
-  return conversation.memberIds[otherMemberIndex] ?? null;
+  return conversation.memberIds.find((id) => !managedOwnerIds.has(id)) ?? null;
 }
 
 function conversationSortValue(conversation: Conversation): string {
@@ -98,68 +76,73 @@ export default function ConversationsScreen() {
     setIsLoading(true);
     setHasError(false);
 
-    const conversationsQuery = query(
-      collection(db, "conversations"),
-      where("managerIds", "array-contains", user.uid),
-    );
+    let unsubscribe: (() => void) | undefined;
 
-    const unsubscribe = onSnapshot(
-      conversationsQuery,
-      (snapshot) => {
-        const currentSequence = ++snapshotSequence;
-        const conversations = snapshot.docs
-          .map(
-            (documentSnapshot) =>
-              ({
-                ...documentSnapshot.data(),
-                id: documentSnapshot.id,
-              }) as Conversation,
-          )
-          .sort((first, second) =>
+    void getManagedProfiles(user.uid).then((managedProfiles) => {
+      if (!isActive) return;
+      const managedOwnerIds = new Set(
+        managedProfiles.map((relationship) => relationship.ownerId),
+      );
+
+      unsubscribe = subscribeToConversations(
+        user.uid,
+        (snapshot) => {
+          const currentSequence = ++snapshotSequence;
+          const conversations = snapshot.sort((first, second) =>
             conversationSortValue(second).localeCompare(
               conversationSortValue(first),
             ),
           );
 
-        void Promise.all(
-          conversations.map(async (conversation) => {
-            const otherMemberId = getOtherMemberId(conversation, user.uid);
-            if (!otherMemberId) return null;
-
-            try {
-              const profile = await getPublicProfileByUid(
-                otherMemberId,
-                user.uid,
+          void Promise.all(
+            conversations.map(async (conversation) => {
+              const otherMemberId = getOtherMemberId(
+                conversation,
+                managedOwnerIds,
               );
-              return { conversation, profile } satisfies ConversationListItem;
-            } catch {
-              return { conversation, profile: null } satisfies ConversationListItem;
-            }
-          }),
-        ).then((loadedItems) => {
-          if (!isActive || currentSequence !== snapshotSequence) return;
-          setItems(
-            loadedItems.filter(
-              (item): item is ConversationListItem => item !== null,
-            ),
-          );
-          setHasError(false);
+              if (!otherMemberId) return null;
+
+              try {
+                const profile = await getPublicProfileByUid(
+                  otherMemberId,
+                  user.uid,
+                );
+                return { conversation, profile } satisfies ConversationListItem;
+              } catch {
+                return { conversation, profile: null } satisfies ConversationListItem;
+              }
+            }),
+          ).then((loadedItems) => {
+            if (!isActive || currentSequence !== snapshotSequence) return;
+            setItems(
+              loadedItems.filter(
+                (item): item is ConversationListItem => item !== null,
+              ),
+            );
+            setHasError(false);
+            setIsLoading(false);
+          });
+        },
+        (error) => {
+          if (!isActive) return;
+          console.error("Nu am putut încărca conversațiile:", error);
+          setItems([]);
+          setHasError(true);
           setIsLoading(false);
-        });
-      },
-      (error) => {
-        if (!isActive) return;
-        console.error("Nu am putut încărca conversațiile:", error);
-        setItems([]);
-        setHasError(true);
-        setIsLoading(false);
-      },
-    );
+        },
+      );
+    }).catch((error) => {
+      if (!isActive) return;
+      console.error("Nu am putut identifica profilul administrat:", error);
+      setItems([]);
+      setHasError(true);
+      setIsLoading(false);
+    });
 
     return () => {
       isActive = false;
       snapshotSequence += 1;
-      unsubscribe();
+      unsubscribe?.();
     };
   }, [user?.uid]);
 
@@ -347,8 +330,8 @@ const styles = StyleSheet.create({
   blockedBadgeText: { color: COLORS.error },
   stateCard: {
     alignItems: "center",
-    gap: 10,
-    padding: 20,
+    gap: 12,
+    padding: 28,
     borderWidth: 1,
     borderColor: COLORS.border,
     borderRadius: 20,

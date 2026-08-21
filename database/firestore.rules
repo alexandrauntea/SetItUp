@@ -742,7 +742,11 @@ service cloud.firestore {
     // A conversation belongs to the two managers assigned to the matched
     // profiles. Queries must filter managerIds with array-contains.
     match /conversations/{conversationId} {
-      allow read: if isSignedIn()
+      allow get: if isSignedIn()
+        && (!exists(
+          /databases/$(database)/documents/conversations/$(conversationId)
+        ) || request.auth.uid in resource.data.managerIds);
+      allow list: if isSignedIn()
         && request.auth.uid in resource.data.managerIds;
 
       allow create: if isSignedIn()

@@ -45,13 +45,15 @@ export async function ensureConversationsForManager(managerId: string): Promise<
         const otherOwnerId = memberIds.find((id) => id !== ownerId);
         let otherManagerId = "";
         if (otherOwnerId) {
-          const otherRelationship = await getDoc(doc(db, "managerRelationships", otherOwnerId));
-          if (otherRelationship?.exists()) {
-            otherManagerId = otherRelationship.data()?.managerId || "";
+          const otherOwnerRole = await getDoc(doc(db, "managerRoles", otherOwnerId));
+          if (otherOwnerRole?.exists() && otherOwnerRole.data()?.role === "owner") {
+            otherManagerId = otherOwnerRole.data()?.counterpartId || "";
           }
         }
 
-        const managerIds = [managerId, otherManagerId || managerId].sort() as [string, string];
+        if (!otherManagerId || otherManagerId === managerId) continue;
+
+        const managerIds = [managerId, otherManagerId].sort() as [string, string];
         const now = matchData.createdAt || new Date().toISOString();
         await setDoc(conversationRef, {
           id: match.id,
@@ -99,6 +101,7 @@ export async function getConversationsForManager(managerId: string): Promise<Con
 export function subscribeToConversations(
   managerId: string,
   callback: (conversations: Conversation[]) => void,
+  onError?: (error: Error) => void,
 ): Unsubscribe {
   void ensureConversationsForManager(managerId);
   const conversationsQuery = query(
@@ -112,7 +115,10 @@ export function subscribeToConversations(
     callback(conversations.sort((a, b) =>
       (b.updatedAt || b.createdAt).localeCompare(a.updatedAt || a.createdAt),
     ));
-  }, (error) => console.info("Eroare la ascultarea conversațiilor:", error));
+  }, (error) => {
+    if (onError) onError(error);
+    else console.info("Eroare la ascultarea conversațiilor:", error);
+  });
 }
 
 export function subscribeToConversation(

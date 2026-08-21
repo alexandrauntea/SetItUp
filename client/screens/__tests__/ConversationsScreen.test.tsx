@@ -7,13 +7,15 @@ import {
 } from "@testing-library/react-native";
 
 import ConversationsScreen from "@/app/messages";
+import { subscribeToConversations } from "@/services/messagingService";
+import { getManagedProfiles } from "@/services/social/managerService";
 import { getPublicProfileByUid } from "@/services/social/userSearchService";
+import type { Conversation } from "@/types/messaging";
 
 const mockPush = jest.fn();
 const mockUnsubscribe = jest.fn();
-const mockOnSnapshot = jest.fn();
-let mockSnapshotHandler: ((snapshot: { docs: unknown[] }) => void) | undefined;
-let mockErrorHandler: (() => void) | undefined;
+let mockSnapshotHandler: ((conversations: Conversation[]) => void) | undefined;
+let mockErrorHandler: ((error: Error) => void) | undefined;
 
 jest.mock("expo-router", () => ({
   useRouter: () => ({ push: mockPush }),
@@ -23,19 +25,20 @@ jest.mock("@/contexts/AuthContext", () => ({
   useAuth: () => ({ user: { uid: "manager-a" } }),
 }));
 
-jest.mock("@/services/firebase", () => ({ db: {} }));
+jest.mock("@/services/messagingService", () => ({
+  subscribeToConversations: jest.fn(),
+}));
+
+jest.mock("@/services/social/managerService", () => ({
+  getManagedProfiles: jest.fn(),
+}));
 
 jest.mock("@/services/social/userSearchService", () => ({
   getPublicProfileByUid: jest.fn(),
 }));
 
-jest.mock("firebase/firestore", () => ({
-  collection: jest.fn(() => ({ kind: "collection" })),
-  where: jest.fn(() => ({ kind: "constraint" })),
-  query: jest.fn(() => ({ kind: "query" })),
-  onSnapshot: (...args: unknown[]) => mockOnSnapshot(...args),
-}));
-
+const mockedSubscribe = jest.mocked(subscribeToConversations);
+const mockedGetManagedProfiles = jest.mocked(getManagedProfiles);
 const mockedGetPublicProfile = jest.mocked(getPublicProfileByUid);
 
 const profile = {
@@ -56,19 +59,17 @@ const profile = {
 function conversationDocument(overrides: Record<string, unknown> = {}) {
   return {
     id: "match-owner-a-owner-b",
-    data: () => ({
-      matchId: "match-owner-a-owner-b",
-      memberIds: ["owner-a", "owner-b"],
-      managerIds: ["manager-a", "manager-b"],
-      lastMessage: "Salut! Ne auzim mâine?",
-      lastMessageAt: "2026-08-20T14:32:00",
-      lastMessageSenderId: "manager-b",
-      blockedBy: null,
-      createdAt: "2026-08-20T13:00:00",
-      updatedAt: "2026-08-20T14:32:00",
-      ...overrides,
-    }),
-  };
+    matchId: "match-owner-a-owner-b",
+    memberIds: ["owner-a", "owner-b"],
+    managerIds: ["manager-a", "manager-b"],
+    lastMessage: "Salut! Ne auzim mâine?",
+    lastMessageAt: "2026-08-20T14:32:00",
+    lastMessageSenderId: "manager-b",
+    blockedBy: null,
+    createdAt: "2026-08-20T13:00:00",
+    updatedAt: "2026-08-20T14:32:00",
+    ...overrides,
+  } as Conversation;
 }
 
 describe("Ecranul Conversații", () => {
@@ -76,17 +77,21 @@ describe("Ecranul Conversații", () => {
     jest.clearAllMocks();
     mockSnapshotHandler = undefined;
     mockErrorHandler = undefined;
-    mockOnSnapshot.mockImplementation(
-      (
-        _query: unknown,
-        onNext: (snapshot: { docs: unknown[] }) => void,
-        onError: () => void,
-      ) => {
+    mockedGetManagedProfiles.mockResolvedValue([
+      {
+        ownerId: "owner-a",
+        managerId: "manager-a",
+        memberIds: ["owner-a", "manager-a"],
+        ownerUsername: "andrei",
+        managerUsername: "manager_a",
+        createdAt: "2026-08-01T10:00:00.000Z",
+      },
+    ]);
+    mockedSubscribe.mockImplementation((_managerId, onNext, onError) => {
         mockSnapshotHandler = onNext;
         mockErrorHandler = onError;
         return mockUnsubscribe;
-      },
-    );
+    });
     mockedGetPublicProfile.mockResolvedValue(profile);
   });
 
@@ -94,7 +99,7 @@ describe("Ecranul Conversații", () => {
     await render(<ConversationsScreen />);
 
     await act(async () => {
-      mockSnapshotHandler?.({ docs: [conversationDocument()] });
+      mockSnapshotHandler?.([conversationDocument()]);
     });
 
     expect(await screen.findByText("Anca")).toBeTruthy();
@@ -122,9 +127,9 @@ describe("Ecranul Conversații", () => {
     await render(<ConversationsScreen />);
 
     await act(async () => {
-      mockSnapshotHandler?.({
-        docs: [conversationDocument({ blockedBy: "manager-a" })],
-      });
+      mockSnapshotHandler?.([
+        conversationDocument({ blockedBy: "manager-a" }),
+      ]);
     });
 
     expect(await screen.findByText("Blocat")).toBeTruthy();
@@ -135,7 +140,7 @@ describe("Ecranul Conversații", () => {
     await render(<ConversationsScreen />);
 
     await act(async () => {
-      mockSnapshotHandler?.({ docs: [] });
+      mockSnapshotHandler?.([]);
     });
 
     expect(await screen.findByText("Nicio conversație încă")).toBeTruthy();
@@ -145,7 +150,7 @@ describe("Ecranul Conversații", () => {
     await render(<ConversationsScreen />);
 
     await act(async () => {
-      mockErrorHandler?.();
+      mockErrorHandler?.(new Error("permission-denied"));
     });
 
     expect(

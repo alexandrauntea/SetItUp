@@ -61,6 +61,13 @@ describe("Firestore Security Rules - Match Chat (Sprint 4)", () => {
     );
   });
 
+  test("Managerul autentificat POATE verifica o conversație inexistentă", async () => {
+    const authedDb = testEnv.authenticatedContext("managerA").firestore();
+    await assertSucceeds(
+      authedDb.collection("conversations").doc("missing-match").get(),
+    );
+  });
+
   test("Managerul POATE crea mesaje dacă nu există un blocaj", async () => {
     const managerId = "managerA";
     await testEnv.withSecurityRulesDisabled(async (context) => {
