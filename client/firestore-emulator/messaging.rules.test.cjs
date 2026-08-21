@@ -43,6 +43,24 @@ describe("Firestore Security Rules - Match Chat (Sprint 4)", () => {
     await assertSucceeds(authedDb.collection("conversations").doc("match1").get());
   });
 
+  test("Managerul autorizat POATE lista propriile conversații", async () => {
+    const managerId = "managerA";
+    await testEnv.withSecurityRulesDisabled(async (context) => {
+      await context.firestore().collection("conversations").doc("match1").set({
+        managerIds: ["managerA", "managerB"],
+        blockedBy: null,
+      });
+    });
+
+    const authedDb = testEnv.authenticatedContext(managerId).firestore();
+    await assertSucceeds(
+      authedDb
+        .collection("conversations")
+        .where("managerIds", "array-contains", managerId)
+        .get(),
+    );
+  });
+
   test("Managerul POATE crea mesaje dacă nu există un blocaj", async () => {
     const managerId = "managerA";
     await testEnv.withSecurityRulesDisabled(async (context) => {

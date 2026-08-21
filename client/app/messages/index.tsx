@@ -147,8 +147,9 @@ export default function ConversationsScreen() {
           setIsLoading(false);
         });
       },
-      () => {
+      (error) => {
         if (!isActive) return;
+        console.error("Nu am putut încărca conversațiile:", error);
         setItems([]);
         setHasError(true);
         setIsLoading(false);
@@ -305,7 +306,7 @@ const styles = StyleSheet.create({
   content: {
     flexGrow: 1,
     width: "100%",
-    maxWidth: 520,
+    maxWidth: 430,
     alignSelf: "center",
     gap: 18,
     paddingHorizontal: 20,
@@ -346,8 +347,8 @@ const styles = StyleSheet.create({
   blockedBadgeText: { color: COLORS.error },
   stateCard: {
     alignItems: "center",
-    gap: 12,
-    padding: 28,
+    gap: 10,
+    padding: 20,
     borderWidth: 1,
     borderColor: COLORS.border,
     borderRadius: 20,
