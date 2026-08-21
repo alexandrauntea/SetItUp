@@ -1,5 +1,6 @@
 const { assertFails, assertSucceeds, initializeTestEnvironment } = require("@firebase/rules-unit-testing");
 const fs = require("fs");
+const path = require("path");
 
 describe("Firestore Security Rules - Match Chat (Sprint 4)", () => {
   let testEnv;
@@ -8,7 +9,10 @@ describe("Firestore Security Rules - Match Chat (Sprint 4)", () => {
     testEnv = await initializeTestEnvironment({
       projectId: "setitup-messaging-test",
       firestore: {
-        rules: fs.readFileSync("../../database/firestore.rules", "utf8"),
+        rules: fs.readFileSync(
+          path.join(__dirname, "../../database/firestore.rules"),
+          "utf8",
+        ),
       },
     });
   });
@@ -18,7 +22,7 @@ describe("Firestore Security Rules - Match Chat (Sprint 4)", () => {
   });
 
   beforeEach(async () => {
-    await testEnv.clearFirestoreData();
+    await testEnv.clearFirestore();
   });
 
   test("Utilizatorii neautorizați NU pot citi sau scrie mesaje", async () => {
