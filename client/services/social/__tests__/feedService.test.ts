@@ -184,7 +184,6 @@ describe("feedService", () => {
 
       expect(feed).toHaveLength(1);
       expect(feed[0].profile.uid).toBe("cand1");
-      expect(feed[0].commonFriendsCount).toBe(1); // friend1 is common
     });
   });
 

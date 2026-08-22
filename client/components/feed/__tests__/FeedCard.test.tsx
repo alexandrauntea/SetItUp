@@ -16,7 +16,6 @@ describe("FeedCard Component", () => {
       interests: ["Fotbal", "Muzică", "Gaming"],
       age: 27,
     },
-    commonFriendsCount: 3,
     isPreferred: true,
   };
 
@@ -32,32 +31,6 @@ describe("FeedCard Component", () => {
     expect(screen.getByText("#Fotbal")).toBeTruthy();
     expect(screen.getByText("#Muzică")).toBeTruthy();
     expect(screen.getByText("#Gaming")).toBeTruthy();
-  });
-
-  it("renders common friends badge when commonFriendsCount > 0", async () => {
-    await render(
-      <FeedCard item={sampleItem} onDislike={jest.fn()} onLike={jest.fn()} />
-    );
-
-    expect(screen.getByTestId("common-friends-badge")).toBeTruthy();
-    expect(screen.getByText("3 prieteni comuni")).toBeTruthy();
-  });
-
-  it("hides common friends badge when commonFriendsCount is 0", async () => {
-    const itemWithoutCommonFriends: FeedItem = {
-      ...sampleItem,
-      commonFriendsCount: 0,
-    };
-
-    await render(
-      <FeedCard
-        item={itemWithoutCommonFriends}
-        onDislike={jest.fn()}
-        onLike={jest.fn()}
-      />
-    );
-
-    expect(screen.queryByTestId("common-friends-badge")).toBeNull();
   });
 
   it("calls onLike when like button is pressed", async () => {

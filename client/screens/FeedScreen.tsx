@@ -119,13 +119,12 @@ export function FeedScreen() {
           });
           if (requestId !== requestSequence.current) return;
 
-          setFeedItems(
-            page.profiles.map((profile) => ({
-              profile,
-              commonFriendsCount: profile.mutualFriendsCount,
-              isPreferred: profile.matchesPreferences,
-            })),
-          );
+  setFeedItems(
+    page.profiles.map((profile) => ({
+      profile,
+      isPreferred: profile.matchesPreferences,
+    })),
+  );
           setCurrentIndex(0);
         } catch (err: any) {
           if (requestId !== requestSequence.current) return;

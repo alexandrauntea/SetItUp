@@ -143,26 +143,6 @@ function otherMember(friendship: Friendship, uid: string): string | null {
   return friendship.memberIds.find((memberId) => memberId !== uid) ?? null;
 }
 
-async function getMutualFriendsCount(
-  candidateId: string,
-  ownerFriendIds: Set<string>,
-): Promise<number> {
-  if (ownerFriendIds.size === 0) {
-    return 0;
-  }
-
-  const snapshot = await getDocs(query(
-    collection(db, FRIENDSHIPS_COLLECTION),
-    where("memberIds", "array-contains", candidateId),
-  ));
-
-  return snapshot.docs.reduce((count, friendshipDocument) => {
-    const friendship = friendshipDocument.data() as Friendship;
-    const friendId = otherMember(friendship, candidateId);
-    return count + (friendId && ownerFriendIds.has(friendId) ? 1 : 0);
-  }, 0);
-}
-
 export const getFeed: GetFeed = async (request) => {
   const pageSize = request.limit ?? FEED_DEFAULT_PAGE_SIZE;
   if (!Number.isSafeInteger(pageSize) || pageSize < 1 || pageSize > 50) {
@@ -255,11 +235,10 @@ export const getFeed: GetFeed = async (request) => {
       return null;
     }
 
-    return {
-      ...profile,
-      matchesPreferences: matchesFeedPreferences(profile, request.preferences),
-      mutualFriendsCount: await getMutualFriendsCount(profile.uid, ownerFriendIds),
-    } satisfies FeedProfile;
+      return {
+        ...profile,
+        matchesPreferences: matchesFeedPreferences(profile, request.preferences),
+      } satisfies FeedProfile;
   }))).filter((profile): profile is FeedProfile => profile !== null);
 
   const cursor = parseCursor(request.cursor);

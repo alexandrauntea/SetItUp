@@ -60,7 +60,6 @@ const sampleFeedProfile: FeedProfile = {
   age: 26,
   isPrivate: false,
   updatedAt: "2026-08-19T12:00:00.000Z",
-  mutualFriendsCount: 2,
   matchesPreferences: true,
 };
 

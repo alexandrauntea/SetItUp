@@ -138,30 +138,9 @@ export async function getFeedProfiles(
 
   const validCandidates = rawCandidates.filter((c) => managedOwnerUids.has(c.uid));
 
-  // 8. Compute common friends count & test filter preference match
+  // 8. Test filter preference match
   const items: FeedItem[] = [];
   for (const candidate of validCandidates) {
-    const candidateFriendships = await getFriends(candidate.uid);
-    const candidateFriendUids = new Set<string>();
-    for (const f of candidateFriendships) {
-      for (const id of f.memberIds) {
-        if (id !== candidate.uid) {
-          candidateFriendUids.add(id);
-        }
-      }
-    }
-
-    let commonCount = 0;
-    ownerFriendUids.forEach((fUid) => {
-      if (
-        fUid !== managerId &&
-        fUid !== candidate.uid &&
-        candidateFriendUids.has(fUid)
-      ) {
-        commonCount++;
-      }
-    });
-
     const candidateProfile: FeedCandidateProfile = {
       uid: candidate.uid,
       username: candidate.username,
@@ -203,7 +182,6 @@ export async function getFeedProfiles(
 
     items.push({
       profile: candidateProfile,
-      commonFriendsCount: commonCount,
       isPreferred: matchesFilter,
     });
   }

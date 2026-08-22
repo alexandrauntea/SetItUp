@@ -24,7 +24,7 @@ export function FeedCard({
   onDislike,
   loadingAction,
 }: FeedCardProps) {
-  const { profile, commonFriendsCount } = item;
+  const { profile } = item;
   const isLiking = loadingAction === "like";
   const isDisliking = loadingAction === "dislike";
   const isActionBusy = isLiking || isDisliking;
@@ -40,16 +40,6 @@ export function FeedCard({
           uri={profile.photoUrl}
         />
 
-        {/* Common Friends Badge (Only rendered if > 0) */}
-        {commonFriendsCount > 0 && (
-          <View style={styles.commonFriendsBadge} testID="common-friends-badge">
-            <Ionicons name="people" size={16} color={COLORS.background} />
-            <Text style={styles.commonFriendsText}>
-              {commonFriendsCount}{" "}
-              {commonFriendsCount === 1 ? "prieten comun" : "prieteni comuni"}
-            </Text>
-          </View>
-        )}
       </View>
 
       {/* Profile Info */}
@@ -149,23 +139,6 @@ const styles = StyleSheet.create({
     position: "relative",
     justifyContent: "center",
     alignItems: "center",
-  },
-  commonFriendsBadge: {
-    position: "absolute",
-    top: 16,
-    left: 16,
-    backgroundColor: "rgba(0, 0, 0, 0.72)",
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 20,
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 6,
-  },
-  commonFriendsText: {
-    color: COLORS.background,
-    fontSize: 13,
-    fontWeight: "700",
   },
   infoContainer: {
     padding: 20,

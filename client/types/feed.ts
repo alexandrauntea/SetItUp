@@ -6,7 +6,6 @@ export type ReactionActorRole = "owner" | "manager";
 
 export interface FeedProfile extends PublicProfile {
   matchesPreferences: boolean;
-  mutualFriendsCount: number;
 }
 
 export interface FeedPreferences {
@@ -72,7 +71,6 @@ export interface FeedCandidateProfile {
 
 export interface FeedItem {
   profile: FeedCandidateProfile;
-  commonFriendsCount: number;
   isPreferred?: boolean;
 }
 
