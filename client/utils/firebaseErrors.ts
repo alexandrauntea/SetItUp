@@ -1,4 +1,4 @@
-const FIREBASE_ERROR_MESSAGES: Record<string, string> = {
+﻿const FIREBASE_ERROR_MESSAGES: Record<string, string> = {
   "auth/email-already-in-use": "Există deja un cont cu această adresă de email.",
   "auth/invalid-email": "Adresa de email nu este validă.",
   "auth/weak-password": "Parola este prea slabă.",
@@ -26,6 +26,14 @@ const LOCAL_ERROR_MESSAGES: Record<string, string> = {
   PHOTO_ACCESS_DENIED: "Fotografia nu aparține profilului autentificat.",
   PHOTO_LIMIT_REACHED: "Poți avea maximum 6 fotografii în profil.",
   PROFILE_NOT_FOUND: "Profilul nu a fost găsit.",
+  OWNER_HAS_NO_MANAGER: "Contul pentru care cauți nu are un manager alocat.",
+  REACTION_MANAGER_ONLY: "Doar managerul desemnat poate evalua profiluri.",
+  TARGET_HAS_NO_MANAGER: "Profilul evaluat nu are un manager alocat.",
+  SAME_MANAGER_NOT_ALLOWED: "Nu poți potrivi doi utilizatori cu același manager.",
+  REACTION_ALREADY_RECORDED: "Ai evaluat deja acest profil.",
+  PROFILE_ALREADY_MATCHED: "Acești utilizatori au deja un match activ.",
+  CONVERSATION_BLOCKED: "Conversația este blocată. Nu poți trimite mesaje.",
+  INVALID_MESSAGE_TEXT: "Mesajul nu poate fi gol.",
 };
 
 export function getFirebaseErrorMessage(

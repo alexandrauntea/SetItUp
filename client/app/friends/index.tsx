@@ -1,5 +1,6 @@
 import { ScreenBackground } from "@/components/ScreenBackground";
 import { PageBanner } from "@/components/PageBanner";
+import { InformativeCard } from "@/components/InformativeCard";
 import { FriendsCard } from "@/components/social/FriendsCard";
 import { COLORS } from "@/constants/colors";
 import { useAuth } from "@/contexts/AuthContext";
@@ -157,17 +158,13 @@ export default function FriendsScreen() {
             {isLoading ? (
               <ActivityIndicator color={COLORS.primary} size="large" />
             ) : errorMessage ? (
-              <View style={styles.emptyCard}>
-                <Text style={styles.emptyText}>{errorMessage}</Text>
+              <InformativeCard icon="alert-circle-outline" message={errorMessage}>
                 <Pressable onPress={() => void loadFriends()}>
                   <Text style={styles.retry}>Încearcă din nou</Text>
                 </Pressable>
-              </View>
+              </InformativeCard>
             ) : friends.length === 0 ? (
-              <View style={styles.emptyCard}>
-                <Ionicons color={COLORS.primary} name="people-outline" size={36} />
-                <Text style={styles.emptyText}>Nu ai prieteni încă.</Text>
-              </View>
+              <InformativeCard icon="people-outline" message="Nu ai prieteni încă." />
             ) : (
               <View style={styles.list}>
                 {friends.map((friendship) => {
@@ -237,16 +234,6 @@ const styles = StyleSheet.create({
     backgroundColor: COLORS.primarySoft,
   },
   list: { gap: 12 },
-  emptyCard: {
-    alignItems: "center",
-    gap: 10,
-    padding: 28,
-    borderWidth: 1,
-    borderColor: COLORS.border,
-    borderRadius: 20,
-    backgroundColor: COLORS.background,
-  },
-  emptyText: { color: COLORS.textSecondary, textAlign: "center", lineHeight: 20 },
   retry: { color: COLORS.primary, fontWeight: "800" },
   pressed: { opacity: 0.65 },
 });

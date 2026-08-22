@@ -1,6 +1,7 @@
 ﻿import { AppButton } from "@/components/AppButton";
 import { ScreenBackground } from "@/components/ScreenBackground";
 import { PageBanner } from "@/components/PageBanner";
+import { RestrictedAccessCard } from "@/components/RestrictedAccessCard";
 import { FeedCard } from "@/components/feed/FeedCard";
 import { FeedFilterModal } from "@/components/feed/FeedFilterModal";
 import { MatchModal } from "@/components/feed/MatchModal";
@@ -8,6 +9,7 @@ import { COLORS } from "@/constants/colors";
 import { useAuth } from "@/contexts/AuthContext";
 import { getFeed } from "@/services/feed/feedService";
 import { saveReaction } from "@/services/feed/reactionService";
+import { getFirebaseErrorMessage } from "@/utils/firebaseErrors";
 import { getManagedProfiles } from "@/services/social/managerService";
 import { getPublicProfileByUid } from "@/services/social/userSearchService";
 import {
@@ -186,7 +188,7 @@ export function FeedScreen() {
       setCurrentIndex((prev) => prev + 1);
     } catch (err) {
       console.error("Eroare la salvarea aprecierii:", err);
-      setErrorMessage("A apărut o eroare la salvarea aprecierii. Încearcă din nou.");
+      setErrorMessage(getFirebaseErrorMessage(err, "A apărut o eroare la salvarea aprecierii. Ïncearcă din nou."));
     } finally {
       setActionLoading(null);
     }
@@ -279,13 +281,7 @@ export function FeedScreen() {
 
             {/* 3. Non-Manager State */}
             {!isLoading && !errorMessage && isManagerChecked && !managerRel && (
-              <View style={styles.emptyCard} testID="feed-not-manager-container">
-                <Ionicons name="shield-outline" size={56} color={COLORS.textSecondary} />
-                <Text style={styles.emptyTitle}>Doar pentru manageri</Text>
-                <Text style={styles.emptyDescription}>
-                  Un utilizator trebuie să te desemneze drept manager pentru a accesa recomandările.
-                </Text>
-              </View>
+              <RestrictedAccessCard testID="feed-not-manager-container" />
             )}
 
             {/* 4. Empty Feed State */}

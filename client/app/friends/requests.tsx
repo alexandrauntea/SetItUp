@@ -1,4 +1,5 @@
 import { FriendRequestCard } from "@/components/social/FriendRequestCard";
+import { InformativeCard } from "@/components/InformativeCard";
 import { ScreenBackground } from "@/components/ScreenBackground";
 import { PageBanner } from "@/components/PageBanner";
 import { COLORS } from "@/constants/colors";
@@ -248,14 +249,7 @@ export default function FriendRequestsScreen() {
               </View>
 
               {incomingRequests.length === 0 ? (
-                <View style={styles.emptyState}>
-                  <Ionicons
-                    color={COLORS.textSecondary}
-                    name="mail-open-outline"
-                    size={28}
-                  />
-                  <Text style={styles.emptyTitle}>Nicio cerere.</Text>
-                </View>
+                <InformativeCard icon="mail-open-outline" message="Nicio cerere." />
               ) : (
                 <View style={styles.cardList}>
                   {incomingRequests.map((request) => (
@@ -285,14 +279,7 @@ export default function FriendRequestsScreen() {
               </View>
 
               {outgoingRequests.length === 0 ? (
-                <View style={styles.emptyState}>
-                  <Ionicons
-                    color={COLORS.textSecondary}
-                    name="paper-plane-outline"
-                    size={28}
-                  />
-                  <Text style={styles.emptyTitle}>Nicio cerere.</Text>
-                </View>
+                <InformativeCard icon="paper-plane-outline" message="Nicio cerere." />
               ) : (
                 <View style={styles.cardList}>
                   {outgoingRequests.map((request) => (
@@ -420,21 +407,5 @@ const styles = StyleSheet.create({
   },
   cardList: {
     gap: 12,
-  },
-  emptyState: {
-    alignItems: "center",
-    gap: 5,
-    padding: 24,
-    backgroundColor: COLORS.background,
-    borderColor: COLORS.border,
-    borderRadius: 18,
-    borderStyle: "dashed",
-    borderWidth: 1,
-  },
-  emptyTitle: {
-    marginTop: 3,
-    color: COLORS.text,
-    fontSize: 15,
-    fontWeight: "700",
   },
 });

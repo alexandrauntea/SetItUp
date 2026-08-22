@@ -8,9 +8,15 @@ const mockBack = jest.fn();
 const mockReplace = jest.fn();
 const mockCanGoBack = jest.fn();
 let mockUid: string | undefined = "target-uid";
+let mockBackToChat: string | undefined;
+let mockConversationId: string | undefined;
 
 jest.mock("expo-router", () => ({
-  useLocalSearchParams: () => ({ uid: mockUid }),
+  useLocalSearchParams: () => ({
+    uid: mockUid,
+    backToChat: mockBackToChat,
+    conversationId: mockConversationId,
+  }),
   useRouter: () => ({
     back: mockBack,
     replace: mockReplace,
@@ -65,6 +71,8 @@ describe("Ecranul profilului public", () => {
   beforeEach(() => {
     jest.clearAllMocks();
     mockUid = "target-uid";
+    mockBackToChat = undefined;
+    mockConversationId = undefined;
     mockCanGoBack.mockReturnValue(true);
     mockedGetPublicProfileByUid.mockResolvedValue(publicProfile);
   });
@@ -119,7 +127,7 @@ describe("Ecranul profilului public", () => {
 
   test("revine la ecranul anterior când există istoric", async () => {
     await render(<PublicUserProfileScreen />);
-    await waitFor(() => expect(screen.getByText("Profil")).toBeTruthy());
+    await waitFor(() => expect(screen.getByText("Anca Popescu, 21")).toBeTruthy());
 
     fireEvent.press(screen.getByRole("button", { name: "Înapoi" }));
 
@@ -131,11 +139,27 @@ describe("Ecranul profilului public", () => {
     mockCanGoBack.mockReturnValue(false);
 
     await render(<PublicUserProfileScreen />);
-    await waitFor(() => expect(screen.getByText("Profil")).toBeTruthy());
+    await waitFor(() => expect(screen.getByText("Anca Popescu, 21")).toBeTruthy());
 
     fireEvent.press(screen.getByRole("button", { name: "Înapoi" }));
 
     expect(mockReplace).toHaveBeenCalledWith("/friends/search");
+  });
+
+  test("închide profilul în conversația exactă când backToChat este activ", async () => {
+    mockBackToChat = "true";
+    mockConversationId = "match-owner-a-owner-b";
+
+    await render(<PublicUserProfileScreen />);
+    await waitFor(() => expect(screen.getByText("Anca Popescu, 21")).toBeTruthy());
+
+    fireEvent.press(screen.getByRole("button", { name: "Înapoi" }));
+
+    expect(mockReplace).toHaveBeenCalledWith({
+      pathname: "/messages/[conversationId]",
+      params: { conversationId: "match-owner-a-owner-b" },
+    });
+    expect(mockBack).not.toHaveBeenCalled();
   });
 
   test("nu interoghează serviciul când ruta nu conține uid", async () => {
@@ -147,5 +171,20 @@ describe("Ecranul profilului public", () => {
       expect(screen.getByText("Profil indisponibil")).toBeTruthy();
     });
     expect(mockedGetPublicProfileByUid).not.toHaveBeenCalled();
+  });
+
+  test("afișează butonul Înapoi și revine exact în chat când profilul este deschis din conversație", async () => {
+    mockBackToChat = "true";
+    mockConversationId = "owner-a_owner-b";
+
+    await render(<PublicUserProfileScreen />);
+    await screen.findByText("Anca Popescu, 21");
+    fireEvent.press(screen.getByRole("button", { name: "Înapoi" }));
+
+    expect(mockReplace).toHaveBeenCalledWith({
+      pathname: "/messages/[conversationId]",
+      params: { conversationId: "owner-a_owner-b" },
+    });
+    expect(mockBack).not.toHaveBeenCalled();
   });
 });

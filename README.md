@@ -18,12 +18,15 @@ Implementat:
 - recomandări cu filtre de vârstă, gen și interese;
 - like, dislike și creare automată a unei potriviri la like reciproc;
 - lista potrivirilor;
+- ecranul conversației în timp real pentru manageri, cu trimitere de mesaje;
+- accesarea profilului potrivirii din chat și întoarcerea prin butonul X;
+- blocarea și deblocarea conversației cu păstrarea istoricului;
 - interfață în limba română pentru fluxurile principale;
 - teste Jest și teste pentru regulile Firestore și Storage în Firebase Emulator.
 
 Neimplementat încă:
 
-- conversații și mesaje;
+- inițializarea automată și lista conversațiilor;
 - notificări push;
 - block/unblock și eliminarea unei potriviri.
 
@@ -138,6 +141,7 @@ database/
 | `/feed` | recomandările folosite de manager |
 | `/feed/filters` | filtrele recomandărilor |
 | `/matches` | lista potrivirilor |
+| `/messages/{conversationId}` | chat-ul în timp real dintre managerii unei potriviri |
 | `/users/{uid}` | profilul altui utilizator |
 
 `app/_layout.tsx` protejează rutele:
@@ -256,6 +260,9 @@ Apăsările repetate și cererile identice sunt consolidate pentru a evita rezul
 | `preferences` | filtrele salvate pentru recomandări |
 | `reactions` | like/dislike direcționat |
 | `matches` | potriviri reciproce |
+| `conversations` | conversațiile potrivirilor și starea lor de blocare |
+| `conversations/{id}/messages` | mesajele în timp real dintre manageri |
+| `blocks` | blocările active dintre participanții conversației |
 
 ID-urile dintre două persoane sunt deterministe. Pentru relațiile fără direcție UID-urile sunt sortate; pentru reacții se păstrează ordinea owner → candidat.
 

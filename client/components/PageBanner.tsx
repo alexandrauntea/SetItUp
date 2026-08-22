@@ -9,9 +9,30 @@ type PageBannerProps = {
   subtitle?: string;
   onBack?: () => void;
   action?: ReactNode;
+  leading?: ReactNode;
+  onContentPress?: () => void;
+  contentAccessibilityLabel?: string;
 };
 
-export function PageBanner({ title, subtitle, onBack, action }: PageBannerProps) {
+export function PageBanner({
+  title,
+  subtitle,
+  onBack,
+  action,
+  leading,
+  onContentPress,
+  contentAccessibilityLabel,
+}: PageBannerProps) {
+  const content = (
+    <>
+      {leading}
+      <View style={styles.textContainer}>
+        <Text numberOfLines={1} style={styles.title}>{title}</Text>
+        {subtitle ? <Text numberOfLines={1} style={styles.subtitle}>{subtitle}</Text> : null}
+      </View>
+    </>
+  );
+
   return (
     <LinearGradient
       colors={[COLORS.primary, COLORS.primaryPressed]}
@@ -31,10 +52,18 @@ export function PageBanner({ title, subtitle, onBack, action }: PageBannerProps)
         </Pressable>
       ) : null}
 
-      <View style={styles.textContainer}>
-        <Text numberOfLines={1} style={styles.title}>{title}</Text>
-        {subtitle ? <Text numberOfLines={1} style={styles.subtitle}>{subtitle}</Text> : null}
-      </View>
+      {onContentPress ? (
+        <Pressable
+          accessibilityLabel={contentAccessibilityLabel}
+          accessibilityRole="button"
+          onPress={onContentPress}
+          style={({ pressed }) => [styles.content, pressed && styles.pressed]}
+        >
+          {content}
+        </Pressable>
+      ) : (
+        <View style={styles.content}>{content}</View>
+      )}
 
       {action ? <View style={styles.action}>{action}</View> : null}
     </LinearGradient>
@@ -43,6 +72,7 @@ export function PageBanner({ title, subtitle, onBack, action }: PageBannerProps)
 
 const styles = StyleSheet.create({
   banner: {
+    zIndex: 100,
     width: "100%",
     maxWidth: 430,
     height: 104,
@@ -60,6 +90,13 @@ const styles = StyleSheet.create({
     elevation: 4,
   },
   textContainer: { flex: 1, gap: 4 },
+  content: {
+    flex: 1,
+    minWidth: 0,
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 10,
+  },
   title: { color: COLORS.background, fontSize: 24, fontWeight: "bold" },
   subtitle: { color: "rgba(255,255,255,0.86)", fontSize: 14, fontWeight: "600" },
   roundButton: {
@@ -71,5 +108,10 @@ const styles = StyleSheet.create({
     backgroundColor: COLORS.background,
   },
   pressed: { opacity: 0.7 },
-  action: { alignItems: "center", justifyContent: "center" },
+  action: {
+    zIndex: 101,
+    position: "relative",
+    alignItems: "center",
+    justifyContent: "center",
+  },
 });
