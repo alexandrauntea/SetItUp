@@ -225,28 +225,26 @@ export function FeedScreen() {
     <ScreenBackground>
       <SafeAreaView style={styles.safeArea}>
         <View style={[styles.container, isCompact && styles.containerCompact]}>
-          {/* Top Header */}
-          <PageBanner
-            title="Recomandări"
-            subtitle={managerRel ? `Pentru @${managerRel.ownerUsername}` : undefined}
-            action={managerRel ? (
-              <TouchableOpacity
-                accessibilityLabel="Filtre"
-                accessibilityRole="button"
-                onPress={() => setIsFilterModalOpen(true)}
-                style={styles.filterButton}
-                testID="feed-filter-trigger"
-              >
-                <Ionicons name="options-outline" size={22} color={COLORS.primary} />
-              </TouchableOpacity>
-            ) : undefined}
-          />
-
-          {/* Main Content Area */}
           <ScrollView
             contentContainerStyle={styles.scrollContent}
             showsVerticalScrollIndicator={false}
           >
+            <PageBanner
+              title="Recomandări"
+              subtitle={managerRel ? `Pentru @${managerRel.ownerUsername}` : undefined}
+              action={managerRel ? (
+                <TouchableOpacity
+                  accessibilityLabel="Filtre"
+                  accessibilityRole="button"
+                  onPress={() => setIsFilterModalOpen(true)}
+                  style={styles.filterButton}
+                  testID="feed-filter-trigger"
+                >
+                  <Ionicons name="options-outline" size={22} color={COLORS.primary} />
+                </TouchableOpacity>
+              ) : undefined}
+            />
+
             {/* Warning Banner if Managed Owner Profile is Private */}
             {!isLoading && !errorMessage && managerRel && isOwnerPrivate && (
               <View style={styles.warningBanner} testID="feed-owner-private-warning">
@@ -367,7 +365,6 @@ const styles = StyleSheet.create({
     flexGrow: 1,
     alignItems: "center",
     paddingBottom: 110,
-    paddingTop: 22,
   },
   cardWrapper: {
     width: "100%",
@@ -376,6 +373,7 @@ const styles = StyleSheet.create({
   warningBanner: {
     width: "100%",
     maxWidth: 440,
+    marginTop: 16,
     backgroundColor: COLORS.errorBackground,
     borderWidth: 1,
     borderColor: COLORS.error,
