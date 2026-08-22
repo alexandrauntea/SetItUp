@@ -13,6 +13,9 @@ aplicației Expo:
 
 ## Ștergerea unui utilizator
 
+Contul este selectat exclusiv prin adresa de email. UID-ul afișat în simulare este
+doar informativ și nu poate fi folosit ca argument pentru ștergere.
+
 ### Ce șterge
 
 Pentru utilizatorul selectat, scriptul caută și elimină:
@@ -104,7 +107,7 @@ npm run cleanup:user -- \
 
 Dacă utilizatorul selectat se află în lista protejată, scriptul se oprește.
 
-### Simulare după email
+### Simulare
 
 Aceasta este forma recomandată pentru prima rulare:
 
@@ -115,39 +118,22 @@ npm run cleanup:user -- --email cont-de-sters@example.com
 Scriptul afișează proiectul, utilizatorul, toate documentele Firestore găsite,
 conversațiile șterse recursiv și fotografiile din Storage. Nu șterge nimic.
 
-### Simulare după UID
-
-```bash
-npm run cleanup:user -- --uid UID_FIREBASE
-```
-
 ### Ștergere reală
 
 1. Rulează simularea.
 2. Verifică fiecare resursă afișată.
-3. Copiază UID-ul afișat.
-4. Repetă comanda cu `--execute` și `--confirm UID`.
-
-După email:
+3. Repetă comanda cu `--execute` și confirmă exact emailul contului.
 
 ```bash
 npm run cleanup:user -- \
   --email cont-de-sters@example.com \
   --execute \
-  --confirm UID_AFISAT_DE_SIMULARE
+  --confirm cont-de-sters@example.com
 ```
 
-După UID:
-
-```bash
-npm run cleanup:user -- \
-  --uid UID_FIREBASE \
-  --execute \
-  --confirm UID_FIREBASE
-```
-
-Valoarea transmisă la `--confirm` trebuie să fie identică cu UID-ul contului.
-Emailul nu este acceptat drept confirmare.
+Scriptul acceptă selectarea contului numai după email. Valoarea transmisă la
+`--confirm` trebuie să fie aceeași adresă; comparația nu ține cont de litere
+mari sau mici.
 
 ### Alt proiect sau alt bucket
 
@@ -228,8 +214,8 @@ Firestore sau Storage. Folosește un cont administrativ autorizat.
 
 ### Confirmare invalidă la ștergerea unui utilizator
 
-Rulează din nou simularea și copiază exact UID-ul afișat după `UID:`. Nu folosi
-emailul și nu introduce manual un UID aproximativ.
+Rulează din nou simularea și folosește exact emailul afișat pentru opțiunea
+`--confirm`.
 
 Pentru curățarea reacțiilor, confirmarea este textul fix afișat de simulare:
 `DELETE_UNMATCHED_REACTIONS`.

@@ -35,18 +35,17 @@ function parseArguments(argv) {
 function printUsage() {
   console.log(`
 Utilizare:
-  npm run cleanup:user -- --uid UID
   npm run cleanup:user -- --email utilizator@example.com
 
-Ștergere reală (confirmarea trebuie să fie chiar UID-ul găsit):
-  npm run cleanup:user -- --email utilizator@example.com --execute --confirm UID
+Ștergere reală (confirmarea trebuie să fie chiar emailul contului):
+  npm run cleanup:user -- --email utilizator@example.com --execute --confirm utilizator@example.com
 
 Opțiuni:
   --project PROJECT_ID       implicit: ${DEFAULT_PROJECT_ID}
   --bucket BUCKET_NAME       implicit: ${DEFAULT_STORAGE_BUCKET}
   --protect-email EMAIL      poate fi repetat logic prin PROTECTED_EMAILS
   --execute                  execută ștergerea; în lipsă rulează doar simularea
-  --confirm UID              protecție obligatorie pentru --execute
+  --confirm EMAIL            protecție obligatorie pentru --execute
 
 Variabile de mediu:
   PROTECTED_EMAILS=email1@example.com,email2@example.com
@@ -54,7 +53,6 @@ Variabile de mediu:
 }
 
 const { values, flags } = parseArguments(process.argv.slice(2));
-const requestedUid = values.get("uid")?.trim();
 const requestedEmail = values.get("email")?.trim().toLowerCase();
 const execute = flags.has("execute");
 
@@ -63,7 +61,7 @@ if (flags.has("help")) {
   process.exit();
 }
 
-if ((!requestedUid && !requestedEmail) || (requestedUid && requestedEmail)) {
+if (!requestedEmail || values.has("uid")) {
   printUsage();
   process.exitCode = 1;
   process.exit();
@@ -120,9 +118,7 @@ function addReference(referenceMap, reference, recursive = false) {
 }
 
 async function resolveUser() {
-  return requestedUid
-    ? auth.getUser(requestedUid)
-    : auth.getUserByEmail(requestedEmail);
+  return auth.getUserByEmail(requestedEmail);
 }
 
 async function collectFirestoreReferences(uid) {
@@ -186,9 +182,10 @@ async function main() {
     throw new Error(`Contul ${user.email} este protejat și nu poate fi șters.`);
   }
 
-  if (execute && values.get("confirm") !== uid) {
+  const confirmationEmail = values.get("confirm")?.trim().toLowerCase();
+  if (execute && confirmationEmail !== requestedEmail) {
     throw new Error(
-      `Confirmare invalidă. Pentru ștergere reală adaugă: --confirm ${uid}`,
+      `Confirmare invalidă. Pentru ștergere reală adaugă: --confirm ${requestedEmail}`,
     );
   }
 
@@ -206,7 +203,9 @@ async function main() {
   for (const file of storageFiles) console.log(`  - ${file.name}`);
 
   if (!execute) {
-    console.log("\nNu s-a șters nimic. Repetă cu --execute și --confirm UID după verificare.");
+    console.log(
+      `\nNu s-a șters nimic. După verificare, repetă cu --execute --confirm ${requestedEmail}.`,
+    );
     return;
   }
 
