@@ -2,6 +2,7 @@ import { AppButton } from "@/components/AppButton";
 import { MatchCard } from "@/components/matches/MatchCard";
 import { ScreenBackground } from "@/components/ScreenBackground";
 import { PageBanner } from "@/components/PageBanner";
+import { RestrictedAccessCard } from "@/components/RestrictedAccessCard";
 import { COLORS } from "@/constants/colors";
 import { useAuth } from "@/contexts/AuthContext";
 import { listMatches } from "@/services/feed/matchService";
@@ -170,21 +171,7 @@ export default function MatchesScreen() {
                 />
               </View>
             ) : !managedOwner ? (
-              <View style={styles.stateCard}>
-                <View style={styles.stateIcon}>
-                  <Ionicons
-                    color={COLORS.primary}
-                    name="shield-outline"
-                    size={36}
-                  />
-                </View>
-                <Text style={styles.stateTitle}>
-                  Disponibil numai managerului
-                </Text>
-                <Text style={styles.description}>
-                  Managerul vede aici potrivirile utilizatorului pe care îl reprezintă.
-                </Text>
-              </View>
+              <RestrictedAccessCard testID="matches-restricted-access" />
             ) : items.length === 0 ? (
               <View style={styles.stateCard}>
                 <View style={styles.stateIcon}>

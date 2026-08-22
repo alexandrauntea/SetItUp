@@ -1,6 +1,7 @@
 ﻿import { AppButton } from "@/components/AppButton";
 import { ScreenBackground } from "@/components/ScreenBackground";
 import { PageBanner } from "@/components/PageBanner";
+import { RestrictedAccessCard } from "@/components/RestrictedAccessCard";
 import { FeedCard } from "@/components/feed/FeedCard";
 import { FeedFilterModal } from "@/components/feed/FeedFilterModal";
 import { MatchModal } from "@/components/feed/MatchModal";
@@ -280,13 +281,7 @@ export function FeedScreen() {
 
             {/* 3. Non-Manager State */}
             {!isLoading && !errorMessage && isManagerChecked && !managerRel && (
-              <View style={styles.emptyCard} testID="feed-not-manager-container">
-                <Ionicons name="shield-outline" size={56} color={COLORS.textSecondary} />
-                <Text style={styles.emptyTitle}>Doar pentru manageri</Text>
-                <Text style={styles.emptyDescription}>
-                  Un utilizator trebuie să te desemneze drept manager pentru a accesa recomandările.
-                </Text>
-              </View>
+              <RestrictedAccessCard testID="feed-not-manager-container" />
             )}
 
             {/* 4. Empty Feed State */}

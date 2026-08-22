@@ -114,8 +114,9 @@ describe("Ecranul Match-uri", () => {
     await render(<MatchesScreen />);
 
     expect(
-      await screen.findByText("Disponibil numai managerului"),
+      await screen.findByText("Acces restricționat"),
     ).toBeTruthy();
+    expect(screen.getByTestId("matches-restricted-access")).toBeTruthy();
     expect(mockedListMatches).not.toHaveBeenCalled();
   });
 
