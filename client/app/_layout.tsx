@@ -1,6 +1,6 @@
 import "@/services/firebase";
 import { useEffect } from "react";
-import { ActivityIndicator, StyleSheet, Text, View } from "react-native";
+import { StyleSheet, Text, View } from "react-native";
 import { Stack, useRouter, useSegments } from "expo-router";
 import { StatusBar } from "expo-status-bar";
 import "react-native-reanimated";
@@ -9,6 +9,7 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { AuthProvider, useAuth } from "../contexts/AuthContext";
 import { ProfileProvider, useProfile } from "@/contexts/ProfileContext";
 import { AppButton } from "@/components/AppButton";
+import { LoadingState } from "@/components/LoadingState";
 import { ScreenBackground } from "@/components/ScreenBackground";
 import { COLORS } from "@/constants/colors";
 import { logoutUser } from "@/services/authService";
@@ -81,9 +82,13 @@ function RootLayoutNav() {
 
   if (isLoading || (user && isProfileLoading)) {
     return (
-      <View style={{ flex: 1, justifyContent: "center", alignItems: "center" }}>
-        <ActivityIndicator size="large" />
-      </View>
+      <ScreenBackground>
+        <LoadingState
+          accessibilityLabel="Se încarcă aplicația"
+          fullScreen
+          message="Se încarcă aplicația..."
+        />
+      </ScreenBackground>
     );
   }
 

@@ -1,22 +1,22 @@
 import { AppButton } from "@/components/AppButton";
+import { PageBanner } from "@/components/PageBanner";
 import { ProfilePhotoGallery } from "@/components/ProfilePhotoGallery";
+import { LoadingState } from "@/components/LoadingState";
 import { ScreenBackground } from "@/components/ScreenBackground";
 import { COLORS } from "@/constants/colors";
 import { GENDER_OPTIONS } from "@/constants/profileOptions";
 import { useProfile } from "@/contexts/ProfileContext";
 import { logoutUser } from "@/services/authService";
+import { calculateAgeFromBirthDate } from "@/utils/profileData";
 import { Ionicons } from "@expo/vector-icons";
-import { LinearGradient } from "expo-linear-gradient";
 import { useRouter } from "expo-router";
 import {
-  ActivityIndicator,
   ScrollView,
   StyleSheet,
   Text,
   View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { calculateAgeFromBirthDate } from "@/utils/profileData";
 
 export default function ProfileScreen() {
   const router = useRouter();
@@ -25,14 +25,11 @@ export default function ProfileScreen() {
   if (!profile) {
     return (
       <ScreenBackground>
-        <View style={styles.loadingContainer}>
-          <ActivityIndicator
-            accessibilityLabel="Se încarcă profilul"
-            accessibilityRole="progressbar"
-            size="large"
-            color={COLORS.primary}
-          />
-        </View>
+        <LoadingState
+          accessibilityLabel="Se încarcă profilul"
+          fullScreen
+          message="Se încarcă profilul..."
+        />
       </ScreenBackground>
     );
   }
@@ -63,19 +60,10 @@ export default function ProfileScreen() {
           showsVerticalScrollIndicator={false}
         >
           <View style={styles.content}>
-            <LinearGradient
-              colors={[COLORS.primary, COLORS.primaryPressed]}
-              start={{ x: 0, y: 0 }}
-              end={{ x: 1, y: 1 }}
-              style={styles.headerCard}
-            >
-              <View style={styles.nameRow}>
-                <Text style={styles.name}>{fullName}</Text>
-                {age > 0 ? <Text style={styles.age}>{age}</Text> : null}
-              </View>
-
-              <Text style={styles.username}>@{profile.username}</Text>
-            </LinearGradient>
+            <PageBanner
+              title={`${fullName}${age > 0 ? `, ${age}` : ""}`}
+              subtitle={`@${profile.username}`}
+            />
 
             <ProfilePhotoGallery
               name={fullName}
@@ -157,11 +145,6 @@ export default function ProfileScreen() {
             <View style={styles.interests}>
               {profile.interests.map((interest) => (
                 <View key={interest} style={styles.interest}>
-                  <Ionicons
-                    name="heart-outline"
-                    size={15}
-                    color={COLORS.primary}
-                  />
                   <Text style={styles.interestText}>{interest}</Text>
                 </View>
               ))}
@@ -205,39 +188,6 @@ const styles = StyleSheet.create({
     maxWidth: 430,
     alignSelf: "center",
     gap: 18,
-  },
-  headerCard: {
-    alignItems: "center",
-    padding: 24,
-    borderRadius: 24,
-    shadowColor: COLORS.primaryPressed,
-    shadowOffset: { width: 0, height: 10 },
-    shadowOpacity: 0.2,
-    shadowRadius: 18,
-    elevation: 5,
-  },
-  nameRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "center",
-    gap: 8,
-  },
-  name: {
-    flexShrink: 1,
-    color: COLORS.background,
-    fontSize: 25,
-    fontWeight: "bold",
-    textAlign: "center",
-  },
-  age: {
-    color: "rgba(255, 255, 255, 0.78)",
-    fontSize: 20,
-    fontWeight: "600",
-  },
-  username: {
-    marginTop: 5,
-    color: "rgba(255, 255, 255, 0.78)",
-    fontSize: 16,
   },
   section: {
     padding: 18,
@@ -306,9 +256,6 @@ const styles = StyleSheet.create({
     borderColor: COLORS.primarySoft,
   },
   interest: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 5,
     paddingHorizontal: 12,
     paddingVertical: 8,
     backgroundColor: COLORS.primarySoft,

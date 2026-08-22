@@ -1,5 +1,6 @@
 import { AppButton } from "@/components/AppButton";
 import { MatchCard } from "@/components/matches/MatchCard";
+import { LoadingState } from "@/components/LoadingState";
 import { ScreenBackground } from "@/components/ScreenBackground";
 import { PageBanner } from "@/components/PageBanner";
 import { RestrictedAccessCard } from "@/components/RestrictedAccessCard";
@@ -14,7 +15,6 @@ import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 import { useCallback, useEffect, useRef, useState } from "react";
 import {
-  ActivityIndicator,
   ScrollView,
   StyleSheet,
   Text,
@@ -146,10 +146,7 @@ export default function MatchesScreen() {
             />
 
             {isLoading ? (
-              <View style={styles.stateCard}>
-                <ActivityIndicator color={COLORS.primary} size="large" />
-                <Text style={styles.stateTitle}>Se încarcă potrivirile...</Text>
-              </View>
+              <LoadingState message="Se încarcă potrivirile..." />
             ) : hasError ? (
               <View style={styles.stateCard}>
                 <View style={styles.stateIcon}>

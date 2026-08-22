@@ -1,6 +1,7 @@
 ﻿import { AppButton } from "@/components/AppButton";
 import { ScreenBackground } from "@/components/ScreenBackground";
 import { PageBanner } from "@/components/PageBanner";
+import { LoadingState } from "@/components/LoadingState";
 import { RestrictedAccessCard } from "@/components/RestrictedAccessCard";
 import { FeedCard } from "@/components/feed/FeedCard";
 import { FeedFilterModal } from "@/components/feed/FeedFilterModal";
@@ -22,7 +23,6 @@ import { ManagerRelationship } from "@/types/social";
 import { Ionicons } from "@expo/vector-icons";
 import React, { useCallback, useEffect, useRef, useState } from "react";
 import {
-  ActivityIndicator,
   ScrollView,
   StyleSheet,
   Text,
@@ -257,10 +257,10 @@ export function FeedScreen() {
 
             {/* 1. Loading State */}
             {isLoading && (
-              <View style={styles.centerCard} testID="feed-loading-container">
-                <ActivityIndicator size="large" color={COLORS.primary} />
-                <Text style={styles.loadingText}>Se încarcă profilurile...</Text>
-              </View>
+              <LoadingState
+                message="Se încarcă profilurile..."
+                testID="feed-loading-container"
+              />
             )}
 
             {/* 2. Error State with Retry */}
@@ -278,16 +278,24 @@ export function FeedScreen() {
             )}
 
             {/* 3. Non-Manager State */}
-            {!isLoading && !errorMessage && isManagerChecked && !managerRel && (
-              <RestrictedAccessCard testID="feed-not-manager-container" />
-            )}
+        {!isLoading && !errorMessage && isManagerChecked && !managerRel && (
+          <View style={styles.restrictedCardWrapper}>
+            <RestrictedAccessCard testID="feed-not-manager-container" />
+          </View>
+        )}
 
             {/* 4. Empty Feed State */}
             {!isLoading &&
               !errorMessage &&
               managerRel &&
               (currentIndex >= feedItems.length || feedItems.length === 0) && (
-                <View style={styles.emptyCard} testID="feed-empty-container">
+          <View
+            style={[
+              styles.emptyCard,
+              !isOwnerPrivate && styles.managerContentSpacing,
+            ]}
+            testID="feed-empty-container"
+          >
                   <Ionicons name="sparkles-outline" size={56} color={COLORS.primary} />
                   <Text style={styles.emptyTitle}>Nu mai sunt recomandări</Text>
                   <Text style={styles.emptyDescription}>
@@ -307,7 +315,13 @@ export function FeedScreen() {
               !errorMessage &&
               managerRel &&
               currentItem && (
-                <View style={styles.cardWrapper} testID="feed-card-wrapper">
+          <View
+            style={[
+              styles.cardWrapper,
+              !isOwnerPrivate && styles.managerContentSpacing,
+            ]}
+            testID="feed-card-wrapper"
+          >
                   <FeedCard
                     item={currentItem}
                     loadingAction={actionLoading}
@@ -370,6 +384,9 @@ const styles = StyleSheet.create({
     width: "100%",
     maxWidth: 440,
   },
+  managerContentSpacing: {
+    marginTop: 16,
+  },
   warningBanner: {
     width: "100%",
     maxWidth: 440,
@@ -383,6 +400,11 @@ const styles = StyleSheet.create({
     alignItems: "center",
     gap: 12,
     marginBottom: 14,
+  },
+  restrictedCardWrapper: {
+    width: "100%",
+    maxWidth: 430,
+    marginTop: 16,
   },
   warningBannerText: {
     flex: 1,

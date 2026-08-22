@@ -1,10 +1,10 @@
 import { AppButton } from "@/components/AppButton";
 import { ScreenBackground } from "@/components/ScreenBackground";
+import { LoadingState } from "@/components/LoadingState";
 import { COLORS } from "@/constants/colors";
 import { useRouter } from "expo-router";
 import React, { useEffect, useState } from "react";
 import {
-  ActivityIndicator,
   ScrollView,
   StyleSheet,
   Text,
@@ -118,10 +118,11 @@ export default function FeedFiltersScreen() {
     <ScreenBackground>
       <SafeAreaView style={styles.safeArea}>
         {loading ? (
-          <View style={styles.centerContainer} testID="loading-indicator">
-            <ActivityIndicator size="large" color={COLORS.primary || "#007AFF"} />
-            <Text style={styles.loadingText}>Se încarcă preferințele...</Text>
-          </View>
+          <LoadingState
+            fullScreen
+            message="Se încarcă preferințele..."
+            testID="loading-indicator"
+          />
         ) : (
           <ScrollView
             style={styles.container}

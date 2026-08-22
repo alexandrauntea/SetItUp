@@ -1,4 +1,5 @@
 import { PageBanner } from "@/components/PageBanner";
+import { LoadingState } from "@/components/LoadingState";
 import { ScreenBackground } from "@/components/ScreenBackground";
 import { COLORS } from "@/constants/colors";
 import { useAuth } from "@/contexts/AuthContext";
@@ -173,10 +174,7 @@ export default function ChatScreen() {
   if (isLoading) {
     return (
       <ScreenBackground>
-        <View style={styles.centered}>
-          <ActivityIndicator color={COLORS.primary} size="large" />
-          <Text style={styles.stateText}>Se încarcă conversația...</Text>
-        </View>
+        <LoadingState fullScreen message="Se încarcă conversația..." />
       </ScreenBackground>
     );
   }

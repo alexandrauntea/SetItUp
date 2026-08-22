@@ -57,7 +57,6 @@ function operationLabel(operation: ProfilePhotoOperation) {
 }
 
 export function ProfilePhotoManager({
-  initials,
   photos,
   operation = null,
   errorMessage = "",
@@ -139,10 +138,6 @@ export function ProfilePhotoManager({
     <View style={styles.container}>
       <View style={styles.heading}>
         <Text style={styles.title}>Fotografiile profilului</Text>
-        <Text style={styles.helperText}>
-          Poți adăuga maximum {MAX_PROFILE_PHOTOS} imagini JPG, PNG sau WebP,
-          fiecare de cel mult 5 MB. Fotografia principală apare prima.
-        </Text>
       </View>
 
       {sortedPhotos.length > 0 ? (
@@ -255,13 +250,7 @@ export function ProfilePhotoManager({
         </View>
       ) : (
         <View style={styles.emptyState}>
-          <View style={styles.initialsCircle}>
-            <Text style={styles.initials}>{initials || "?"}</Text>
-          </View>
-          <Text style={styles.emptyTitle}>Nu ai adăugat încă fotografii</Text>
-          <Text style={styles.emptyDescription}>
-            Prima fotografie încărcată va deveni automat principală.
-          </Text>
+          <Text style={styles.emptyTitle}>Nu ai adăugat fotografii</Text>
         </View>
       )}
 
@@ -347,11 +336,6 @@ const styles = StyleSheet.create({
     color: COLORS.text,
     fontSize: 18,
     fontWeight: "700",
-  },
-  helperText: {
-    color: COLORS.textSecondary,
-    fontSize: 13,
-    lineHeight: 19,
   },
   photoGrid: {
     gap: 14,
@@ -444,30 +428,10 @@ const styles = StyleSheet.create({
     backgroundColor: COLORS.surface,
     borderRadius: 18,
   },
-  initialsCircle: {
-    width: 76,
-    height: 76,
-    alignItems: "center",
-    justifyContent: "center",
-    marginBottom: 4,
-    backgroundColor: COLORS.primarySoft,
-    borderRadius: 38,
-  },
-  initials: {
-    color: COLORS.primary,
-    fontSize: 24,
-    fontWeight: "700",
-  },
   emptyTitle: {
     color: COLORS.text,
     fontSize: 15,
     fontWeight: "700",
-    textAlign: "center",
-  },
-  emptyDescription: {
-    color: COLORS.textSecondary,
-    fontSize: 13,
-    lineHeight: 18,
     textAlign: "center",
   },
   addButton: {

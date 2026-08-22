@@ -1,6 +1,7 @@
 import { ScreenBackground } from "@/components/ScreenBackground";
 import { PageBanner } from "@/components/PageBanner";
 import { InformativeCard } from "@/components/InformativeCard";
+import { LoadingState } from "@/components/LoadingState";
 import { FriendsCard } from "@/components/social/FriendsCard";
 import { COLORS } from "@/constants/colors";
 import { useAuth } from "@/contexts/AuthContext";
@@ -15,7 +16,6 @@ import { Ionicons } from "@expo/vector-icons";
 import { type Href, useRouter } from "expo-router";
 import { useCallback, useEffect, useState } from "react";
 import {
-  ActivityIndicator,
   Pressable,
   RefreshControl,
   ScrollView,
@@ -156,7 +156,7 @@ export default function FriendsScreen() {
             </View>
 
             {isLoading ? (
-              <ActivityIndicator color={COLORS.primary} size="large" />
+              <LoadingState message="Se încarcă prietenii..." />
             ) : errorMessage ? (
               <InformativeCard icon="alert-circle-outline" message={errorMessage}>
                 <Pressable onPress={() => void loadFriends()}>

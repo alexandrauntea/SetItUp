@@ -96,8 +96,7 @@ describe("Administrarea fotografiilor de profil", () => {
   test("afișează starea goală și permite adăugarea unei fotografii", async () => {
     await renderManager({ photos: [] });
 
-    expect(screen.getByText("Nu ai adăugat încă fotografii")).toBeTruthy();
-    expect(screen.getByText("SP")).toBeTruthy();
+    expect(screen.getByText("Nu ai adăugat fotografii")).toBeTruthy();
 
     await fireEvent.press(
       screen.getByLabelText("Adaugă o fotografie de profil"),

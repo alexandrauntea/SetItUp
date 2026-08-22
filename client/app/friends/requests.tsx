@@ -1,6 +1,7 @@
 import { FriendRequestCard } from "@/components/social/FriendRequestCard";
 import { InformativeCard } from "@/components/InformativeCard";
 import { ScreenBackground } from "@/components/ScreenBackground";
+import { LoadingState } from "@/components/LoadingState";
 import { PageBanner } from "@/components/PageBanner";
 import { COLORS } from "@/constants/colors";
 import { useAuth } from "@/contexts/AuthContext";
@@ -17,7 +18,6 @@ import { Ionicons } from "@expo/vector-icons";
 import { type Href, useRouter } from "expo-router";
 import { useCallback, useEffect, useState } from "react";
 import {
-  ActivityIndicator,
   Pressable,
   RefreshControl,
   ScrollView,
@@ -186,10 +186,7 @@ export default function FriendRequestsScreen() {
     return (
       <ScreenBackground>
         <SafeAreaView style={styles.safeArea}>
-          <View style={styles.centeredState}>
-            <ActivityIndicator color={COLORS.primary} size="large" />
-            <Text style={styles.stateText}>Se încarcă cererile...</Text>
-          </View>
+          <LoadingState fullScreen message="Se încarcă cererile..." />
         </SafeAreaView>
       </ScreenBackground>
     );

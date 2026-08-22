@@ -34,6 +34,20 @@ export const ManagerCard: React.FC<ManagerCardProps> = ({
     return name.slice(0, 2).toUpperCase();
   };
 
+  const fallbackSubtitle =
+    type === "incoming"
+      ? "Te-a propus drept manager"
+      : type === "outgoing"
+        ? "Cerere în așteptare"
+        : undefined;
+  const visibleSubtitle = subtitle || fallbackSubtitle;
+  const badgeLabel =
+    type === "incoming"
+      ? "Cerere"
+      : type === "outgoing"
+        ? "În așteptare"
+        : undefined;
+
   return (
     <View style={styles.card}>
       <View style={styles.headerRow}>
@@ -42,25 +56,15 @@ export const ManagerCard: React.FC<ManagerCardProps> = ({
         </View>
         <View style={styles.infoContainer}>
           <Text style={styles.username}>@{username}</Text>
-          {subtitle ? (
-            <Text style={styles.subtitle}>{subtitle}</Text>
-          ) : (
-            <Text style={styles.subtitle}>
-              {type === "incoming" && "Te-a propus drept manager"}
-              {type === "outgoing" && "Cerere în așteptare"}
-              {type === "active_as_owner" && "Managerul tău activ"}
-              {type === "active_as_manager" && "Ești manager pentru acest profil"}
-            </Text>
+          {visibleSubtitle && (
+            <Text style={styles.subtitle}>{visibleSubtitle}</Text>
           )}
         </View>
-        <View style={styles.badge}>
-          <Text style={styles.badgeText}>
-            {type === "incoming" && "Cerere"}
-            {type === "outgoing" && "În așteptare"}
-            {type === "active_as_owner" && "Manager"}
-            {type === "active_as_manager" && "Profil gestionat"}
-          </Text>
-        </View>
+        {badgeLabel && (
+          <View style={styles.badge}>
+            <Text style={styles.badgeText}>{badgeLabel}</Text>
+          </View>
+        )}
       </View>
 
       {loading ? (

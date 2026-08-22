@@ -2,6 +2,7 @@ import { AppButton } from "@/components/AppButton";
 import { PageBanner } from "@/components/PageBanner";
 import { ProfilePhotoGallery } from "@/components/ProfilePhotoGallery";
 import { ScreenBackground } from "@/components/ScreenBackground";
+import { LoadingState } from "@/components/LoadingState";
 import { COLORS } from "@/constants/colors";
 import { GENDER_OPTIONS } from "@/constants/profileOptions";
 import { useAuth } from "@/contexts/AuthContext";
@@ -11,7 +12,6 @@ import { Ionicons } from "@expo/vector-icons";
 import { type Href, useLocalSearchParams, useRouter } from "expo-router";
 import { useEffect, useState } from "react";
 import {
-  ActivityIndicator,
   ScrollView,
   StyleSheet,
   Text,
@@ -88,9 +88,7 @@ export default function PublicUserProfileScreen() {
   if (isLoading) {
     return (
       <ScreenBackground>
-        <View style={styles.centered}>
-          <ActivityIndicator size="large" color={COLORS.primary} />
-        </View>
+        <LoadingState fullScreen message="Se încarcă profilul..." />
       </ScreenBackground>
     );
   }

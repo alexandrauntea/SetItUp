@@ -1,4 +1,5 @@
 import { ScreenBackground } from "@/components/ScreenBackground";
+import { LoadingState } from "@/components/LoadingState";
 import { PageBanner } from "@/components/PageBanner";
 import { InformativeCard } from "@/components/InformativeCard";
 import { ManagerCard } from "@/components/social/ManagerCard";
@@ -248,10 +249,7 @@ export default function ManagerScreen() {
   if (loading) {
     return (
       <ScreenBackground>
-        <View style={styles.centerContainer}>
-          <ActivityIndicator size="large" color={COLORS.primary} />
-          <Text style={styles.loadingText}>Se încarcă datele de manager...</Text>
-        </View>
+        <LoadingState fullScreen message="Se încarcă datele de manager..." />
       </ScreenBackground>
     );
   }

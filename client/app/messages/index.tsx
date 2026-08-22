@@ -1,4 +1,5 @@
 import { PageBanner } from "@/components/PageBanner";
+import { LoadingState } from "@/components/LoadingState";
 import { ProfileImage } from "@/components/ProfileImage";
 import { RestrictedAccessCard } from "@/components/RestrictedAccessCard";
 import { ScreenBackground } from "@/components/ScreenBackground";
@@ -13,7 +14,6 @@ import { Ionicons } from "@expo/vector-icons";
 import { type Href, useRouter } from "expo-router";
 import { useEffect, useState } from "react";
 import {
-  ActivityIndicator,
   FlatList,
   Pressable,
   StyleSheet,
@@ -174,12 +174,7 @@ export default function ConversationsScreen() {
           ListHeaderComponent={<PageBanner title="Mesaje" />}
           ListEmptyComponent={
             isLoading ? (
-              <View style={styles.stateCard}>
-                <ActivityIndicator color={COLORS.primary} size="large" />
-                <Text style={styles.stateTitle}>
-                  Se încarcă conversațiile...
-                </Text>
-              </View>
+              <LoadingState message="Se încarcă conversațiile..." />
             ) : isAccessRestricted ? (
               <RestrictedAccessCard testID="messages-restricted-access" />
             ) : hasError ? (

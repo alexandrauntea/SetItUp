@@ -73,7 +73,7 @@ describe("Ecranul profilului", () => {
   test("afișează informațiile salvate ale utilizatorului", async () => {
     await render(<ProfileScreen />);
 
-    expect(screen.getByText("Andrei Barbuceanu")).toBeTruthy();
+    expect(screen.getByText("Andrei Barbuceanu, 21")).toBeTruthy();
     expect(screen.getByText("@andrei")).toBeTruthy();
     expect(screen.getByText("Îmi place să cunosc oameni noi.")).toBeTruthy();
     expect(screen.getByText("Student")).toBeTruthy();
@@ -114,7 +114,7 @@ describe("Ecranul profilului", () => {
         expect.any(Error),
       );
     });
-    expect(screen.getByText("Andrei Barbuceanu")).toBeTruthy();
+    expect(screen.getByText("Andrei Barbuceanu, 21")).toBeTruthy();
     consoleSpy.mockRestore();
   });
 });
