@@ -1,38 +1,58 @@
 # SetItUp
 
-SetItUp este o aplicație socială mobilă în care prietenii de încredere pot
-descoperi și conecta persoane compatibile în numele utilizatorilor pe care îi
-gestionează.
+SetItUp is a social application where trusted friends can discover and connect
+compatible people on behalf of the users they manage.
 
-Aplicația este construită cu Expo, React Native, TypeScript și Firebase și poate
-rula pe iOS, Android și web.
+The application is built with Expo, React Native, TypeScript, and Firebase and
+can run on iOS, Android, and the web.
 
-## Funcționalități
+## About the project
 
-- autentificare și creare de profil;
-- profil public sau privat și galerie foto;
-- căutare, cereri și gestionare de prieteni;
-- desemnarea unui prieten drept manager;
-- recomandări filtrate după vârstă, gen și interese;
-- reacții de tip like și dislike;
-- creare automată a potrivirilor la like reciproc;
-- conversații în timp real pentru managerii desemnați;
-- blocarea și deblocarea conversațiilor;
-- interfață adaptată pentru mobil și web.
+SetItUp was created as a team project during the **VOIS Summer School of
+Engineering**.
 
-## Tehnologii
+The project followed a role-rotation approach, giving team members practical
+experience across different parts of the software delivery process, including:
 
-- [Expo](https://expo.dev/) și React Native;
+- software development;
+- design and architecture;
+- quality assurance;
+- DevOps and Agile practices;
+- cybersecurity;
+- artificial intelligence.
+
+Working in rotating roles helped us understand how a product evolves from an
+initial idea to a working application. We collaborated on product decisions,
+designed the user experience, implemented and reviewed features, tested the
+application, worked with Firebase services and security rules, and prepared the
+project for delivery and presentation.
+
+## Features
+
+- authentication and profile creation;
+- public and private profiles with photo galleries;
+- friend search, requests, and friend management;
+- assigning a trusted friend as a manager;
+- recommendations filtered by age, gender, and interests;
+- like and dislike reactions;
+- automatic matches after a mutual like;
+- real-time conversations for assigned managers;
+- blocking and unblocking conversations;
+- responsive interfaces for mobile and web.
+
+## Technology
+
+- [Expo](https://expo.dev/) and React Native;
 - TypeScript;
 - Expo Router;
 - Firebase Authentication;
 - Cloud Firestore;
 - Firebase Storage;
-- Jest și React Native Testing Library.
+- Jest and React Native Testing Library.
 
-## Pornire locală
+## Run locally
 
-Ai nevoie de Node.js și npm instalate.
+Node.js and npm are required.
 
 ```bash
 git clone https://github.com/alexandrauntea/SetItUp.git
@@ -41,10 +61,10 @@ npm install
 npm start
 ```
 
-Din meniul Expo poți deschide aplicația pe un simulator iOS, emulator Android
-sau în browser.
+From the Expo menu, the application can be opened in an iOS simulator, an
+Android emulator, or a web browser.
 
-Comenzi alternative:
+Alternative commands:
 
 ```bash
 npm run ios
@@ -52,9 +72,9 @@ npm run android
 npm run web
 ```
 
-## Verificarea proiectului
+## Project checks
 
-Din folderul `client`:
+Run these commands from the `client` directory:
 
 ```bash
 npm test -- --runInBand
@@ -62,26 +82,26 @@ npm run lint
 npx tsc --noEmit
 ```
 
-Pentru testarea regulilor Firebase este necesar și Java:
+Java is also required to test the Firebase security rules:
 
 ```bash
 npm run test:firebase-rules
 ```
 
-## Structura proiectului
+## Project structure
 
 ```text
 SetItUp/
-├── client/       aplicația Expo și testele
-├── database/     regulile Firestore și Storage
-├── scripts/      instrumente administrative Firebase
+├── client/       Expo application and tests
+├── database/     Firestore and Storage security rules
+├── scripts/      Firebase administration tools
 ├── firebase.json
 └── README.md
 ```
 
-Instrucțiunile pentru curățarea datelor de test și folosirea scripturilor
-administrative se găsesc în [scripts/README.md](scripts/README.md).
+Instructions for cleaning test data and using the administrative scripts are
+available in [scripts/README.md](scripts/README.md).
 
-## Echipa
+## Team
 
-Proiect dezvoltat în cadrul echipei SetItUp.
+Developed collaboratively during the VOIS Summer School of Engineering.
