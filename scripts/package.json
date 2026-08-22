@@ -1,0 +1,11 @@
+{
+  "name": "setitup-admin-scripts",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "cleanup:user": "node cleanup-user.mjs"
+  },
+  "dependencies": {
+    "firebase-admin": "^13.5.0"
+  }
+}
