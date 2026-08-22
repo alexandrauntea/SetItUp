@@ -7,21 +7,25 @@ type InterestSelectorProps = {
   selectedInterests: string[];
   onToggleInterest: (interest: string) => void;
   disabled?: boolean;
+  showHeader?: boolean;
 };
 
 export function InterestSelector({
   selectedInterests,
   onToggleInterest,
   disabled = false,
+  showHeader = true,
 }: InterestSelectorProps) {
   const [openCategoryId, setOpenCategoryId] = useState<string | null>(null);
 
   return (
     <View style={styles.container}>
-      <View style={styles.header}>
-        <Text style={styles.label}>Interese</Text>
-        <Text style={styles.counter}>{selectedInterests.length} selectate</Text>
-      </View>
+      {showHeader ? (
+        <View style={styles.header}>
+          <Text style={styles.label}>Interese</Text>
+          <Text style={styles.counter}>{selectedInterests.length} selectate</Text>
+        </View>
+      ) : null}
 
       <View style={styles.categories}>
         {INTEREST_CATEGORIES.map((category) => {

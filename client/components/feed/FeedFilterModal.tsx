@@ -3,6 +3,7 @@ import { COLORS } from "@/constants/colors";
 import { Gender } from "@/types/social";
 import { FeedFilterPreferences } from "@/types/feed";
 import { Ionicons } from "@expo/vector-icons";
+import { LinearGradient } from "expo-linear-gradient";
 import React, { useState } from "react";
 import {
   Modal,
@@ -64,96 +65,143 @@ export function FeedFilterModal({
 
   return (
     <Modal
-      animationType="slide"
+      animationType="fade"
       transparent
       visible={visible}
       onRequestClose={onClose}
     >
       <View style={styles.overlay}>
         <View style={styles.container} testID="filter-modal-container">
-          <View style={styles.header}>
-            <Text style={styles.title}>Filtre</Text>
-            <TouchableOpacity onPress={onClose} testID="filter-close-header">
-              <Ionicons name="close-circle" size={28} color={COLORS.textSecondary} />
+          <LinearGradient
+            colors={[COLORS.primary, COLORS.primaryPressed]}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 1, y: 1 }}
+            style={styles.header}
+          >
+            <View style={styles.headerCopy}>
+              <Text style={styles.title}>Filtre</Text>
+              <Text style={styles.subtitle}>Personalizează recomandările</Text>
+            </View>
+            <TouchableOpacity
+              accessibilityLabel="Închide filtrele"
+              onPress={onClose}
+              style={styles.closeButton}
+              testID="filter-close-header"
+            >
+              <Ionicons name="close" size={23} color={COLORS.primary} />
             </TouchableOpacity>
-          </View>
+          </LinearGradient>
 
-          <ScrollView style={styles.body} showsVerticalScrollIndicator={false}>
+          <ScrollView
+            contentContainerStyle={styles.bodyContent}
+            keyboardShouldPersistTaps="handled"
+            showsVerticalScrollIndicator={false}
+            style={styles.body}
+          >
             {/* Age Range */}
-            <Text style={styles.sectionTitle}>Vârstă</Text>
-            <View style={styles.ageRow}>
-              <View style={styles.ageInputBox}>
-                <Text style={styles.inputLabel}>Min</Text>
-                <TextInput
-                  keyboardType="numeric"
-                  onChangeText={setMinAge}
-                  placeholder="18"
-                  style={styles.input}
-                  value={minAge}
-                  testID="filter-min-age"
-                />
+            <View style={styles.sectionCard}>
+              <View style={styles.sectionHeading}>
+                <View style={styles.sectionIcon}>
+                  <Ionicons name="calendar-outline" size={18} color={COLORS.primary} />
+                </View>
+                <Text style={styles.sectionTitle}>Interval de vârstă</Text>
               </View>
-              <Text style={styles.ageSeparator}>-</Text>
-              <View style={styles.ageInputBox}>
-                <Text style={styles.inputLabel}>Max</Text>
-                <TextInput
-                  keyboardType="numeric"
-                  onChangeText={setMaxAge}
-                  placeholder="99"
-                  style={styles.input}
-                  value={maxAge}
-                  testID="filter-max-age"
-                />
+              <View style={styles.ageRow}>
+                <View style={styles.ageInputBox}>
+                  <Text style={styles.inputLabel}>De la</Text>
+                  <TextInput
+                    keyboardType="numeric"
+                    onChangeText={setMinAge}
+                    placeholder="18"
+                    placeholderTextColor={COLORS.textSecondary}
+                    style={styles.input}
+                    value={minAge}
+                    testID="filter-min-age"
+                  />
+                </View>
+                <Text style={styles.ageSeparator}>–</Text>
+                <View style={styles.ageInputBox}>
+                  <Text style={styles.inputLabel}>Până la</Text>
+                  <TextInput
+                    keyboardType="numeric"
+                    onChangeText={setMaxAge}
+                    placeholder="99"
+                    placeholderTextColor={COLORS.textSecondary}
+                    style={styles.input}
+                    value={maxAge}
+                    testID="filter-max-age"
+                  />
+                </View>
               </View>
             </View>
 
             {/* Gender Preference */}
-            <Text style={styles.sectionTitle}>Gen</Text>
-            <View style={styles.genderRow}>
-              {[
-                { label: "Oricare", value: "any" },
-                { label: "Feminin", value: "female" },
-                { label: "Masculin", value: "male" },
-                { label: "Altul", value: "other" },
-              ].map((g) => {
-                const isSelected = selectedGender === g.value;
-                return (
-                  <TouchableOpacity
-                    key={g.value}
-                    style={[
-                      styles.genderChip,
-                      isSelected && styles.genderChipSelected,
-                    ]}
-                    onPress={() => setSelectedGender(g.value as Gender | "any")}
-                    testID={`filter-gender-${g.value}`}
-                  >
-                    <Text
+            <View style={styles.sectionCard}>
+              <View style={styles.sectionHeading}>
+                <View style={styles.sectionIcon}>
+                  <Ionicons name="people-outline" size={18} color={COLORS.primary} />
+                </View>
+                <Text style={styles.sectionTitle}>Gen</Text>
+              </View>
+              <View style={styles.genderRow}>
+                {[
+                  { label: "Oricare", value: "any" },
+                  { label: "Feminin", value: "female" },
+                  { label: "Masculin", value: "male" },
+                  { label: "Altul", value: "other" },
+                ].map((g) => {
+                  const isSelected = selectedGender === g.value;
+                  return (
+                    <TouchableOpacity
+                      key={g.value}
                       style={[
-                        styles.genderChipText,
-                        isSelected && styles.genderChipTextSelected,
+                        styles.genderChip,
+                        isSelected && styles.genderChipSelected,
                       ]}
+                      onPress={() => setSelectedGender(g.value as Gender | "any")}
+                      testID={`filter-gender-${g.value}`}
                     >
-                      {g.label}
-                    </Text>
-                  </TouchableOpacity>
-                );
-              })}
+                      <Text
+                        style={[
+                          styles.genderChipText,
+                          isSelected && styles.genderChipTextSelected,
+                        ]}
+                      >
+                        {g.label}
+                      </Text>
+                    </TouchableOpacity>
+                  );
+                })}
+              </View>
             </View>
 
             {/* Interests */}
-            <Text style={styles.sectionTitle}>Interese</Text>
-            <InterestSelector
-              selectedInterests={selectedInterests}
-              onToggleInterest={(interest) => {
-                if (selectedInterests.includes(interest)) {
-                  setSelectedInterests(
-                    selectedInterests.filter((i) => i !== interest)
-                  );
-                } else {
-                  setSelectedInterests([...selectedInterests, interest]);
-                }
-              }}
-            />
+            <View style={styles.sectionCard}>
+              <View style={styles.interestsHeading}>
+                <View style={styles.sectionHeading}>
+                  <View style={styles.sectionIcon}>
+                    <Ionicons name="sparkles-outline" size={18} color={COLORS.primary} />
+                  </View>
+                  <Text style={styles.sectionTitle}>Interese</Text>
+                </View>
+                <View style={styles.selectedBadge}>
+                  <Text style={styles.selectedBadgeText}>{selectedInterests.length}</Text>
+                </View>
+              </View>
+              <InterestSelector
+                selectedInterests={selectedInterests}
+                showHeader={false}
+                onToggleInterest={(interest) => {
+                  if (selectedInterests.includes(interest)) {
+                    setSelectedInterests(
+                      selectedInterests.filter((i) => i !== interest)
+                    );
+                  } else {
+                    setSelectedInterests([...selectedInterests, interest]);
+                  }
+                }}
+              />
+            </View>
           </ScrollView>
 
           {/* Footer Actions */}
@@ -183,36 +231,77 @@ export function FeedFilterModal({
 const styles = StyleSheet.create({
   overlay: {
     flex: 1,
-    backgroundColor: "rgba(0,0,0,0.5)",
-    justifyContent: "flex-end",
+    padding: 16,
+    backgroundColor: "rgba(26,26,26,0.58)",
+    justifyContent: "center",
+    alignItems: "center",
   },
   container: {
     backgroundColor: COLORS.background,
-    borderTopLeftRadius: 28,
-    borderTopRightRadius: 28,
-    maxHeight: "85%",
-    padding: 24,
-    gap: 16,
+    width: "100%",
+    maxWidth: 540,
+    maxHeight: "88%",
+    borderRadius: 28,
+    overflow: "hidden",
+    shadowColor: "#000000",
+    shadowOffset: { width: 0, height: 12 },
+    shadowOpacity: 0.24,
+    shadowRadius: 28,
+    elevation: 12,
   },
   header: {
+    minHeight: 104,
+    paddingHorizontal: 24,
+    paddingVertical: 20,
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
   },
+  headerCopy: { flex: 1, gap: 4 },
   title: {
-    color: COLORS.text,
-    fontSize: 20,
+    color: COLORS.background,
+    fontSize: 24,
     fontWeight: "800",
   },
+  subtitle: {
+    color: "rgba(255,255,255,0.84)",
+    fontSize: 14,
+    fontWeight: "600",
+  },
+  closeButton: {
+    width: 42,
+    height: 42,
+    borderRadius: 21,
+    backgroundColor: COLORS.background,
+    alignItems: "center",
+    justifyContent: "center",
+  },
   body: {
-    flexGrow: 0,
+    flexShrink: 1,
+    backgroundColor: COLORS.canvas,
+  },
+  bodyContent: { padding: 18, gap: 14 },
+  sectionCard: {
+    padding: 16,
+    gap: 14,
+    borderRadius: 20,
+    backgroundColor: COLORS.background,
+    borderWidth: 1,
+    borderColor: COLORS.border,
+  },
+  sectionHeading: { flexDirection: "row", alignItems: "center", gap: 10 },
+  sectionIcon: {
+    width: 34,
+    height: 34,
+    borderRadius: 12,
+    backgroundColor: COLORS.primarySoft,
+    alignItems: "center",
+    justifyContent: "center",
   },
   sectionTitle: {
     color: COLORS.text,
     fontSize: 16,
-    fontWeight: "700",
-    marginTop: 14,
-    marginBottom: 8,
+    fontWeight: "800",
   },
   ageRow: {
     flexDirection: "row",
@@ -224,14 +313,14 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     backgroundColor: COLORS.surface,
-    borderRadius: 12,
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-    gap: 8,
+    borderRadius: 14,
+    paddingHorizontal: 14,
+    paddingVertical: 10,
+    gap: 5,
   },
   inputLabel: {
     color: COLORS.textSecondary,
-    fontSize: 14,
+    fontSize: 12,
     fontWeight: "600",
   },
   input: {
@@ -240,7 +329,7 @@ const styles = StyleSheet.create({
     fontSize: 16,
   },
   ageSeparator: {
-    color: COLORS.textSecondary,
+    color: COLORS.primary,
     fontSize: 18,
     fontWeight: "bold",
   },
@@ -250,8 +339,11 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   genderChip: {
-    paddingHorizontal: 14,
-    paddingVertical: 8,
+    flexGrow: 1,
+    minWidth: 92,
+    alignItems: "center",
+    paddingHorizontal: 12,
+    paddingVertical: 11,
     borderRadius: 20,
     backgroundColor: COLORS.surface,
   },
@@ -267,10 +359,29 @@ const styles = StyleSheet.create({
     color: COLORS.background,
     fontWeight: "bold",
   },
+  interestsHeading: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+  },
+  selectedBadge: {
+    minWidth: 30,
+    height: 30,
+    paddingHorizontal: 8,
+    borderRadius: 15,
+    backgroundColor: COLORS.primarySoft,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  selectedBadgeText: { color: COLORS.primary, fontSize: 13, fontWeight: "800" },
   footer: {
     flexDirection: "row",
     gap: 12,
-    marginTop: 12,
+    padding: 18,
+    paddingTop: 14,
+    borderTopWidth: 1,
+    borderTopColor: COLORS.border,
+    backgroundColor: COLORS.background,
   },
   resetButton: {
     flex: 1,
