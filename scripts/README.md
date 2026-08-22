@@ -1,14 +1,19 @@
 # Scripturi administrative SetItUp
 
 Acest folder conține scripturi administrative care rulează local, în afara
-aplicației Expo. Scriptul `cleanup-user.mjs` șterge complet datele unui singur
-utilizator din Firebase.
+aplicației Expo:
+
+- `cleanup-user.mjs` șterge complet datele unui singur utilizator din Firebase;
+- `cleanup-unmatched-reactions.mjs` elimină reacțiile care nu au produs o
+  potrivire.
 
 > **Atenție:** operația executată cu `--execute` este ireversibilă. Rulează
 > întotdeauna mai întâi simularea și verifică proiectul, emailul, UID-ul și toate
 > resursele afișate.
 
-## Ce șterge
+## Ștergerea unui utilizator
+
+### Ce șterge
 
 Pentru utilizatorul selectat, scriptul caută și elimină:
 
@@ -99,7 +104,7 @@ npm run cleanup:user -- \
 
 Dacă utilizatorul selectat se află în lista protejată, scriptul se oprește.
 
-## Simulare după email
+### Simulare după email
 
 Aceasta este forma recomandată pentru prima rulare:
 
@@ -110,13 +115,13 @@ npm run cleanup:user -- --email cont-de-sters@example.com
 Scriptul afișează proiectul, utilizatorul, toate documentele Firestore găsite,
 conversațiile șterse recursiv și fotografiile din Storage. Nu șterge nimic.
 
-## Simulare după UID
+### Simulare după UID
 
 ```bash
 npm run cleanup:user -- --uid UID_FIREBASE
 ```
 
-## Ștergere reală
+### Ștergere reală
 
 1. Rulează simularea.
 2. Verifică fiecare resursă afișată.
@@ -144,7 +149,7 @@ npm run cleanup:user -- \
 Valoarea transmisă la `--confirm` trebuie să fie identică cu UID-ul contului.
 Emailul nu este acceptat drept confirmare.
 
-## Alt proiect sau alt bucket
+### Alt proiect sau alt bucket
 
 Pentru a evita ștergerea accidentală în proiectul greșit, verifică atent
 valorile afișate de simulare. Opțional, le poți transmite explicit:
@@ -156,10 +161,56 @@ npm run cleanup:user -- \
   --bucket setitup-84173.firebasestorage.app
 ```
 
-## Ajutor
+### Ajutor
 
 ```bash
 npm run cleanup:user -- --help
+```
+
+## Curățarea reacțiilor fără potrivire
+
+Scriptul verifică toate documentele din `reactions` și păstrează reacțiile
+dintre două persoane dacă există potrivirea lor în `matches`. Sunt eliminate
+numai reacțiile perechilor care nu au ajuns la o potrivire. Astfel, profilurile
+respective pot reveni în feed, în timp ce potrivirile și conversațiile valide
+rămân intacte.
+
+Documentele de reacție cu `ownerId` sau `targetId` lipsă ori invalid sunt
+raportate, dar nu sunt șterse automat. În timpul execuției, existența potrivirii
+este verificată din nou într-o tranzacție înainte de fiecare ștergere. Dacă o
+potrivire tocmai a fost creată, reacția este păstrată.
+
+### Simulare
+
+```bash
+npm run cleanup:reactions
+```
+
+Simularea afișează numărul total de reacții și potriviri, reacțiile păstrate,
+reacțiile invalide și lista exactă a reacțiilor care ar fi șterse, fără să
+modifice Firebase.
+
+### Ștergere reală
+
+Rulează mai întâi simularea și verifică lista completă. Apoi execută:
+
+```bash
+npm run cleanup:reactions -- \
+  --execute \
+  --confirm DELETE_UNMATCHED_REACTIONS
+```
+
+Pentru alt proiect:
+
+```bash
+npm run cleanup:reactions -- \
+  --project setitup-84173
+```
+
+### Ajutor
+
+```bash
+npm run cleanup:reactions -- --help
 ```
 
 ## Probleme frecvente
@@ -175,10 +226,13 @@ repository-ului.
 Contul autentificat nu are permisiunile IAM necesare pentru Authentication,
 Firestore sau Storage. Folosește un cont administrativ autorizat.
 
-### Confirmare invalidă
+### Confirmare invalidă la ștergerea unui utilizator
 
 Rulează din nou simularea și copiază exact UID-ul afișat după `UID:`. Nu folosi
 emailul și nu introduce manual un UID aproximativ.
+
+Pentru curățarea reacțiilor, confirmarea este textul fix afișat de simulare:
+`DELETE_UNMATCHED_REACTIONS`.
 
 ### Operația s-a oprit după ce a șters doar o parte din date
 

@@ -3,7 +3,8 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "cleanup:user": "node cleanup-user.mjs"
+    "cleanup:user": "node cleanup-user.mjs",
+    "cleanup:reactions": "node cleanup-unmatched-reactions.mjs"
   },
   "dependencies": {
     "firebase-admin": "^13.5.0"
