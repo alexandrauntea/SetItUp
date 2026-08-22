@@ -1,5 +1,6 @@
 import { ScreenBackground } from "@/components/ScreenBackground";
 import { PageBanner } from "@/components/PageBanner";
+import { InformativeCard } from "@/components/InformativeCard";
 import { ManagerCard } from "@/components/social/ManagerCard";
 import { COLORS } from "@/constants/colors";
 import { useAuth } from "@/contexts/AuthContext";
@@ -287,11 +288,10 @@ export default function ManagerScreen() {
                 Profiluri pentru care ești manager
               </Text>
               {managedProfiles.length === 0 ? (
-                <View style={styles.emptyCard}>
-                  <Text style={styles.emptyText}>
-                    Niciun profil gestionat.
-                  </Text>
-                </View>
+                <InformativeCard
+                  icon="briefcase-outline"
+                  message="Niciun profil gestionat."
+                />
               ) : (
                 managedProfiles.map((relationship) => (
                   <ManagerCard
@@ -321,9 +321,10 @@ export default function ManagerScreen() {
                   }
                 />
               ) : (
-                <View style={styles.emptyCard}>
-                  <Text style={styles.emptyText}>Niciun manager activ.</Text>
-                </View>
+                <InformativeCard
+                  icon="person-circle-outline"
+                  message="Niciun manager activ."
+                />
               )}
             </View>
 
@@ -332,11 +333,10 @@ export default function ManagerScreen() {
               <View style={styles.section}>
                 <Text style={styles.sectionTitle}>Propune un manager</Text>
                 {friends.length === 0 ? (
-                  <View style={styles.emptyCard}>
-                    <Text style={styles.emptyText}>
-                      Ai nevoie de cel puțin un prieten.
-                    </Text>
-                  </View>
+                  <InformativeCard
+                    icon="people-outline"
+                    message="Ai nevoie de cel puțin un prieten."
+                  />
                 ) : (
                   <View style={styles.proposalCard}>
                     <Text style={styles.proposalLabel}>
@@ -398,11 +398,7 @@ export default function ManagerScreen() {
             <View style={styles.section}>
               <Text style={styles.sectionTitle}>Cereri Primite</Text>
               {incomingRequests.length === 0 ? (
-                <View style={styles.emptyCard}>
-                  <Text style={styles.emptyText}>
-                    Nicio cerere.
-                  </Text>
-                </View>
+                <InformativeCard icon="mail-open-outline" message="Nicio cerere." />
               ) : (
                 incomingRequests.map((req) => (
                   <ManagerCard
@@ -422,11 +418,7 @@ export default function ManagerScreen() {
             <View style={styles.section}>
               <Text style={styles.sectionTitle}>Cereri Trimise</Text>
               {outgoingRequests.length === 0 ? (
-                <View style={styles.emptyCard}>
-                  <Text style={styles.emptyText}>
-                    Nicio cerere.
-                  </Text>
-                </View>
+                <InformativeCard icon="paper-plane-outline" message="Nicio cerere." />
               ) : (
                 outgoingRequests.map((req) => (
                   <ManagerCard
@@ -517,24 +509,6 @@ const styles = StyleSheet.create({
     fontSize: 18,
     fontWeight: "700",
     marginBottom: 4,
-  },
-  emptyCard: {
-    backgroundColor: COLORS.background,
-    padding: 18,
-    borderRadius: 18,
-    alignItems: "center",
-    borderWidth: 1,
-    borderColor: COLORS.primarySoft,
-    shadowColor: COLORS.text,
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.04,
-    shadowRadius: 10,
-    elevation: 1,
-  },
-  emptyText: {
-    color: COLORS.textSecondary,
-    fontSize: 14,
-    textAlign: "center",
   },
   proposalCard: {
     backgroundColor: COLORS.background,

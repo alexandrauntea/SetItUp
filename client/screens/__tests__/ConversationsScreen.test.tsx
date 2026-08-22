@@ -146,6 +146,19 @@ describe("Ecranul Conversații", () => {
     expect(await screen.findByText("Nicio conversație încă")).toBeTruthy();
   });
 
+  test("restricționează accesul ownerului și nu pornește abonarea", async () => {
+    mockedGetManagedProfiles.mockResolvedValue([]);
+
+    await render(<ConversationsScreen />);
+
+    expect(
+      await screen.findByTestId("messages-restricted-access"),
+    ).toBeTruthy();
+    expect(screen.getByText("Acces restricționat")).toBeTruthy();
+    expect(screen.queryByText("Nicio conversație încă")).toBeNull();
+    expect(mockedSubscribe).not.toHaveBeenCalled();
+  });
+
   test("afișează o stare sigură când abonarea eșuează", async () => {
     await render(<ConversationsScreen />);
 

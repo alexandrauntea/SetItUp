@@ -73,6 +73,8 @@ describe("Ecranul de căutare a prietenilor", () => {
 
     expect(screen.getByText("Caută prieteni")).toBeTruthy();
     expect(screen.getByPlaceholderText("Caută după numele de utilizator")).toBeTruthy();
+    expect(screen.getByTestId("friend-search-info-card")).toBeTruthy();
+    expect(screen.getByText("Rezultatele vor apărea aici.")).toBeTruthy();
     expect(screen.queryByText("Descoperă persoane")).toBeNull();
   });
 

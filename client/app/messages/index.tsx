@@ -1,5 +1,6 @@
 import { PageBanner } from "@/components/PageBanner";
 import { ProfileImage } from "@/components/ProfileImage";
+import { RestrictedAccessCard } from "@/components/RestrictedAccessCard";
 import { ScreenBackground } from "@/components/ScreenBackground";
 import { COLORS } from "@/constants/colors";
 import { useAuth } from "@/contexts/AuthContext";
@@ -59,6 +60,7 @@ export default function ConversationsScreen() {
   const [items, setItems] = useState<ConversationListItem[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [hasError, setHasError] = useState(false);
+  const [isAccessRestricted, setIsAccessRestricted] = useState(false);
 
   useEffect(() => {
     let isActive = true;
@@ -75,11 +77,20 @@ export default function ConversationsScreen() {
 
     setIsLoading(true);
     setHasError(false);
+    setIsAccessRestricted(false);
 
     let unsubscribe: (() => void) | undefined;
 
     void getManagedProfiles(user.uid).then((managedProfiles) => {
       if (!isActive) return;
+
+      if (managedProfiles.length === 0) {
+        setItems([]);
+        setIsAccessRestricted(true);
+        setIsLoading(false);
+        return;
+      }
+
       const managedOwnerIds = new Set(
         managedProfiles.map((relationship) => relationship.ownerId),
       );
@@ -169,6 +180,8 @@ export default function ConversationsScreen() {
                   Se încarcă conversațiile...
                 </Text>
               </View>
+            ) : isAccessRestricted ? (
+              <RestrictedAccessCard testID="messages-restricted-access" />
             ) : hasError ? (
               <View style={styles.stateCard}>
                 <Ionicons

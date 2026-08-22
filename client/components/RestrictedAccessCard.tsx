@@ -11,7 +11,7 @@ export function RestrictedAccessCard({ testID }: RestrictedAccessCardProps) {
     <View style={styles.card} testID={testID}>
       <View style={styles.iconContainer}>
         <Ionicons
-          color={COLORS.textSecondary}
+          color={COLORS.primary}
           name="shield-outline"
           size={48}
         />
@@ -30,7 +30,7 @@ const styles = StyleSheet.create({
     gap: 14,
     padding: 28,
     borderWidth: 1,
-    borderColor: COLORS.primarySoft,
+    borderColor: COLORS.border,
     borderRadius: 24,
     backgroundColor: COLORS.background,
     shadowColor: COLORS.text,

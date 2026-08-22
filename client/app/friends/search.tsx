@@ -1,5 +1,6 @@
 import { ScreenBackground } from "@/components/ScreenBackground";
 import { PageBanner } from "@/components/PageBanner";
+import { InformativeCard } from "@/components/InformativeCard";
 import { UserSearchCard } from "@/components/social/UserSearchCard";
 import { COLORS } from "@/constants/colors";
 import { useAuth } from "@/contexts/AuthContext";
@@ -48,6 +49,7 @@ export default function FriendSearchScreen() {
   const [message, setMessage] = useState("");
   const [isSearching, setIsSearching] = useState(false);
   const [isSending, setIsSending] = useState(false);
+  const [hasSearched, setHasSearched] = useState(false);
 
   function handleBack() {
     if (router.canGoBack()) {
@@ -61,6 +63,7 @@ export default function FriendSearchScreen() {
     if (!user) return;
 
     Keyboard.dismiss();
+    setHasSearched(true);
     setMessage("");
     setResult(null);
     setIsSearching(true);
@@ -186,16 +189,12 @@ export default function FriendSearchScreen() {
 
             {message ? <Text style={styles.message}>{message}</Text> : null}
 
-            {!result && !isSearching ? (
-              <View style={styles.emptyIllustration} pointerEvents="none">
-                <View style={styles.emptyIllustrationBanner}>
-                  <Ionicons
-                    name="people-outline"
-                    size={112}
-                    color={COLORS.primary}
-                  />
-                </View>
-              </View>
+            {!hasSearched && !result && !isSearching ? (
+              <InformativeCard
+                icon="search-outline"
+                message="Rezultatele vor apărea aici."
+                testID="friend-search-info-card"
+              />
             ) : null}
           </View>
         </ScrollView>
@@ -245,22 +244,6 @@ const styles = StyleSheet.create({
   searchButtonDisabled: { opacity: 0.45 },
   searchButtonPressed: { backgroundColor: COLORS.primarySoft },
   searchButtonText: { color: COLORS.primary, fontSize: 15, fontWeight: "700" },
-  emptyIllustration: {
-    flex: 1,
-    minHeight: 300,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  emptyIllustrationBanner: {
-    width: 190,
-    height: 190,
-    alignItems: "center",
-    justifyContent: "center",
-    borderWidth: 1,
-    borderColor: COLORS.border,
-    borderRadius: 95,
-    backgroundColor: COLORS.surface,
-  },
   resultsSection: { gap: 12, marginTop: 6 },
   sectionTitle: { color: COLORS.text, fontSize: 18, fontWeight: "800" },
   message: {
