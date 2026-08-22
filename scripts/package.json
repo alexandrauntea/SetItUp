@@ -4,7 +4,8 @@
   "type": "module",
   "scripts": {
     "cleanup:user": "node cleanup-user.mjs",
-    "cleanup:reactions": "node cleanup-unmatched-reactions.mjs"
+    "cleanup:reactions": "node cleanup-unmatched-reactions.mjs",
+    "reset:all": "node reset-all-data.mjs"
   },
   "dependencies": {
     "firebase-admin": "^13.5.0"

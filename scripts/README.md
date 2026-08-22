@@ -5,11 +5,73 @@ aplicației Expo:
 
 - `cleanup-user.mjs` șterge complet datele unui singur utilizator din Firebase;
 - `cleanup-unmatched-reactions.mjs` elimină reacțiile care nu au produs o
-  potrivire.
+  potrivire;
+- `reset-all-data.mjs` șterge toate conturile și toate datele aplicației,
+  pentru pregătirea unui set nou de date demonstrative.
 
 > **Atenție:** operația executată cu `--execute` este ireversibilă. Rulează
 > întotdeauna mai întâi simularea și verifică proiectul, emailul, UID-ul și toate
 > resursele afișate.
+
+## Resetarea completă a datelor
+
+Acest script este destinat pregătirii aplicației pentru prezentare, atunci când
+toate conturile și datele existente trebuie înlocuite cu un set demonstrativ
+nou.
+
+### Ce șterge
+
+- toate conturile din Firebase Authentication;
+- toate documentele din toate colecțiile Firestore descoperite în proiect;
+- toate subcolecțiile Firestore, inclusiv mesajele conversațiilor;
+- toate fotografiile din `profilePhotos/` în Firebase Storage.
+
+Scriptul elimină inclusiv profiluri, username-uri, preferințe, prietenii, cereri,
+relații de manager, reacții, potriviri, conversații și blocări. Nu șterge
+proiectul Firebase, regulile Firestore și Storage, indexurile sau configurația
+aplicației.
+
+> **Atenție:** resetarea reală nu păstrează niciun cont și nu poate fi anulată.
+> Realizează un backup sau export înainte de execuție dacă datele mai sunt
+> necesare.
+
+### Simulare
+
+Din folderul `scripts`:
+
+```bash
+npm run reset:all
+```
+
+Simularea listează proiectul, toate conturile, colecțiile Firestore și
+fotografiile care vor fi eliminate. Nu modifică datele.
+
+### Resetare reală
+
+După verificarea simulării:
+
+```bash
+npm run reset:all -- \
+  --execute \
+  --confirm DELETE_ALL_DATA_setitup-84173
+```
+
+Pentru alt proiect sau bucket, transmite valorile explicit. Confirmarea include
+ID-ul proiectului selectat:
+
+```bash
+npm run reset:all -- \
+  --project alt-project-id \
+  --bucket alt-project-id.firebasestorage.app \
+  --execute \
+  --confirm DELETE_ALL_DATA_alt-project-id
+```
+
+### Ajutor
+
+```bash
+npm run reset:all -- --help
+```
 
 ## Ștergerea unui utilizator
 
