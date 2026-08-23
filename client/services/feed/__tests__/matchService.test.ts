@@ -84,11 +84,29 @@ describe("matchService", () => {
     ]);
   });
 
+  test("permite ownerului să își listeze direct propriile match-uri", async () => {
+    Object.defineProperty(auth, "currentUser", {
+      configurable: true,
+      value: { uid: "owner-a" },
+      writable: true,
+    });
+
+    await listMatches("owner-a");
+
+    expect(mockGetDoc).not.toHaveBeenCalled();
+    expect(mockGetDocs).toHaveBeenCalledTimes(1);
+    expect(mockWhere).toHaveBeenCalledWith(
+      "memberIds",
+      "array-contains",
+      "owner-a",
+    );
+  });
+
   test("refuză accesul unei persoane care nu este managerul ownerului", async () => {
     mockGetDoc.mockResolvedValue(relationshipSnapshot("manager-b"));
 
     await expect(listMatches("owner-a")).rejects.toThrow(
-      "MATCHES_MANAGER_ONLY",
+      "MATCHES_ACCESS_DENIED",
     );
     expect(mockGetDocs).not.toHaveBeenCalled();
   });
