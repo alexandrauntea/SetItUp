@@ -914,7 +914,7 @@ describe("Regulile datelor din feed", () => {
     await assertFails(getDocs(forbiddenQuery));
   });
 
-  test("numai managerul ownerului poate lista reacțiile și match-urile", async () => {
+  test("managerul vede reacțiile, iar managerul și ownerii văd match-ul", async () => {
     await seedDocument("reactions", `${ALICE_UID}_${OUTSIDER_UID}`, {
       id: `${ALICE_UID}_${OUTSIDER_UID}`,
       ownerId: ALICE_UID,
@@ -946,8 +946,20 @@ describe("Regulile datelor din feed", () => {
       collection(alice.firestore(), "reactions"),
       where("ownerId", "==", ALICE_UID),
     )));
-    await assertFails(getDocs(query(
+    await assertSucceeds(getDocs(query(
       collection(alice.firestore(), "matches"),
+      where("memberIds", "array-contains", ALICE_UID),
+    )));
+
+    const matchedOwner = testEnv.authenticatedContext(OUTSIDER_UID);
+    await assertSucceeds(getDocs(query(
+      collection(matchedOwner.firestore(), "matches"),
+      where("memberIds", "array-contains", OUTSIDER_UID),
+    )));
+
+    const unaffiliated = testEnv.authenticatedContext("unaffiliated-uid");
+    await assertFails(getDocs(query(
+      collection(unaffiliated.firestore(), "matches"),
       where("memberIds", "array-contains", ALICE_UID),
     )));
   });

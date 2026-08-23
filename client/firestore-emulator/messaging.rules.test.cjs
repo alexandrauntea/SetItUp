@@ -61,6 +61,19 @@ describe("Firestore Security Rules - Match Chat (Sprint 4)", () => {
     );
   });
 
+  test("Ownerul potrivit NU poate citi conversația managerilor", async () => {
+    await testEnv.withSecurityRulesDisabled(async (context) => {
+      await context.firestore().collection("conversations").doc("match1").set({
+        memberIds: ["ownerA", "ownerB"],
+        managerIds: ["managerA", "managerB"],
+        blockedBy: null,
+      });
+    });
+
+    const ownerDb = testEnv.authenticatedContext("ownerA").firestore();
+    await assertFails(ownerDb.collection("conversations").doc("match1").get());
+  });
+
   test("Managerul autentificat POATE verifica o conversație inexistentă", async () => {
     const authedDb = testEnv.authenticatedContext("managerA").firestore();
     await assertSucceeds(
