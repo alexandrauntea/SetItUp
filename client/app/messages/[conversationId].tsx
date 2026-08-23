@@ -43,6 +43,7 @@ export default function ChatScreen() {
   const [conversation, setConversation] = useState<Conversation | null>(null);
   const [messages, setMessages] = useState<Message[]>([]);
   const [profile, setProfile] = useState<PublicProfile | null>(null);
+  const [managerProfile, setManagerProfile] = useState<PublicProfile | null>(null);
   const [text, setText] = useState("");
   const [isLoading, setIsLoading] = useState(true);
   const [hasError, setHasError] = useState(false);
@@ -112,10 +113,21 @@ export default function ChatScreen() {
       .catch(() => {
         if (active) setProfile(null);
       });
+
+    if (participant.managerId) {
+      void getPublicProfileByUid(participant.managerId, user?.uid)
+        .then((nextManager) => {
+          if (active) setManagerProfile(nextManager);
+        })
+        .catch(() => {
+          if (active) setManagerProfile(null);
+        });
+    }
+
     return () => {
       active = false;
     };
-  }, [participant?.ownerId, user?.uid]);
+  }, [participant?.managerId, participant?.ownerId, user?.uid]);
 
   async function handleSend() {
     if (!conversationId || !user?.uid || !text.trim() || blocked || isSending) return;
@@ -194,9 +206,24 @@ export default function ChatScreen() {
     );
   }
 
-  const profileName = profile
+  const ownerFullName = profile
     ? `${profile.firstName} ${profile.lastName}`.trim()
     : "Profilul potrivirii";
+  const ownerFirstName = profile?.firstName?.trim() || ownerFullName;
+
+  const isSeparateManager = Boolean(
+    managerProfile && profile && managerProfile.uid !== profile.uid,
+  );
+  const managerFirstName = isSeparateManager
+    ? managerProfile?.firstName?.trim() || (managerProfile?.username ? `@${managerProfile.username}` : null)
+    : null;
+
+  const displayTitle = managerFirstName
+    ? `Vorbești cu ${managerFirstName}`
+    : ownerFullName;
+  const displaySubtitle = isSeparateManager
+    ? `Managerul lui ${ownerFirstName}`
+    : undefined;
 
   return (
     <ScreenBackground>
@@ -213,6 +240,19 @@ export default function ChatScreen() {
                 </Pressable>
                 {menuOpen ? (
                   <View style={styles.menu}>
+                    {profile ? (
+                      <Pressable
+                        accessibilityLabel="Vezi profil"
+                        accessibilityRole="button"
+                        onPress={() => {
+                          setMenuOpen(false);
+                          handleOpenProfile();
+                        }}
+                        style={styles.menuAction}
+                      >
+                        <Text style={styles.menuText}>Vezi profil</Text>
+                      </Pressable>
+                    ) : null}
                     <Pressable
                       accessibilityLabel={blockedByCurrentUser ? "Deblochează" : "Blochează"}
                       accessibilityRole="button"
@@ -231,7 +271,8 @@ export default function ChatScreen() {
             contentAccessibilityLabel="Vezi profilul"
             onBack={() => router.back()}
             onContentPress={profile ? handleOpenProfile : undefined}
-            title={profileName}
+            title={displayTitle}
+            subtitle={displaySubtitle}
           />
 
           <FlatList

@@ -24,6 +24,7 @@ import { SafeAreaView } from "react-native-safe-area-context";
 type ConversationListItem = {
   conversation: Conversation;
   profile: PublicProfile | null;
+  managerProfile: PublicProfile | null;
 };
 
 function getOtherMemberId(
@@ -113,14 +114,21 @@ export default function ConversationsScreen() {
               );
               if (!otherMemberId) return null;
 
+              const userIndex = conversation.managerIds.indexOf(user.uid);
+              const otherIndex = userIndex === 0 ? 1 : 0;
+              const otherOwnerId = conversation.memberIds[otherIndex] || otherMemberId;
+              const otherManagerId = conversation.managerIds[otherIndex];
+
               try {
-                const profile = await getPublicProfileByUid(
-                  otherMemberId,
-                  user.uid,
-                );
-                return { conversation, profile } satisfies ConversationListItem;
+                const [profile, managerProfile] = await Promise.all([
+                  getPublicProfileByUid(otherOwnerId, user.uid).catch(() => null),
+                  otherManagerId
+                    ? getPublicProfileByUid(otherManagerId, user.uid).catch(() => null)
+                    : Promise.resolve(null),
+                ]);
+                return { conversation, profile, managerProfile } satisfies ConversationListItem;
               } catch {
-                return { conversation, profile: null } satisfies ConversationListItem;
+                return { conversation, profile: null, managerProfile: null } satisfies ConversationListItem;
               }
             }),
           ).then((loadedItems) => {
@@ -207,8 +215,17 @@ export default function ConversationsScreen() {
           }
           ItemSeparatorComponent={() => <View style={styles.separator} />}
           renderItem={({ item }) => {
-            const { conversation, profile } = item;
+            const { conversation, profile, managerProfile } = item;
             const firstName = profile?.firstName?.trim() || "Profil indisponibil";
+            const isSeparateManager = Boolean(
+              managerProfile && profile && managerProfile.uid !== profile.uid,
+            );
+            const managerFirstName = isSeparateManager
+              ? managerProfile?.firstName?.trim() || (managerProfile?.username ? "@" + managerProfile.username : null)
+              : null;
+            const displayTitle = managerFirstName
+              ? managerFirstName + " (Managerul lui " + firstName + ")"
+              : firstName;
             const fullName = profile
               ? `${profile.firstName} ${profile.lastName}`.trim()
               : firstName;
@@ -241,7 +258,7 @@ export default function ConversationsScreen() {
                 <View style={styles.conversationContent}>
                   <View style={styles.titleRow}>
                     <Text numberOfLines={1} style={styles.firstName}>
-                      {firstName}
+                      {displayTitle}
                     </Text>
                     {timestamp ? (
                       <Text style={styles.timestamp}>{timestamp}</Text>
