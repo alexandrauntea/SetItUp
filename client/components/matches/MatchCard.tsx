@@ -8,6 +8,7 @@ import { StyleSheet, Text, View } from "react-native";
 type MatchCardProps = {
   profile: PublicProfile | null;
   createdAt: string;
+  readOnly?: boolean;
   opening?: boolean;
   onOpenProfile: () => void;
 };
@@ -23,6 +24,7 @@ function formatMatchDate(createdAt: string): string {
 export function MatchCard({
   profile,
   createdAt,
+  readOnly = false,
   opening = false,
   onOpenProfile,
 }: MatchCardProps) {
@@ -55,13 +57,26 @@ export function MatchCard({
         Potrivire din {formatMatchDate(createdAt)}
       </Text>
 
-      <AppButton
-        disabled={!profile}
-        loading={opening}
-        onPress={onOpenProfile}
-        title="Vezi profilul"
-        variant="outline"
-      />
+      {readOnly ? (
+        <View style={styles.readOnlyNotice}>
+          <Ionicons
+            color={COLORS.primary}
+            name="eye-outline"
+            size={18}
+          />
+          <Text style={styles.readOnlyText}>
+            Managerul tău gestionează conversația.
+          </Text>
+        </View>
+      ) : (
+        <AppButton
+          disabled={!profile}
+          loading={opening}
+          onPress={onOpenProfile}
+          title="Vezi profilul"
+          variant="outline"
+        />
+      )}
     </View>
   );
 }
@@ -97,4 +112,20 @@ const styles = StyleSheet.create({
     backgroundColor: COLORS.primarySoft,
   },
   matchDate: { color: COLORS.textSecondary, fontSize: 13 },
+  readOnlyNotice: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    borderRadius: 14,
+    backgroundColor: COLORS.primarySoft,
+  },
+  readOnlyText: {
+    flex: 1,
+    color: COLORS.text,
+    fontSize: 13,
+    lineHeight: 18,
+    fontWeight: "600",
+  },
 });
