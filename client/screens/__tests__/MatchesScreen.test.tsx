@@ -11,6 +11,7 @@ import { getManagedProfiles } from "@/services/social/managerService";
 import { getPublicProfileByUid } from "@/services/social/userSearchService";
 
 const mockPush = jest.fn();
+let mockCurrentUid = "manager-a";
 
 jest.mock("expo-router", () => ({
   useRouter: () => ({ push: mockPush }),
@@ -29,7 +30,7 @@ jest.mock("@expo/vector-icons", () => ({
 }));
 
 jest.mock("@/contexts/AuthContext", () => ({
-  useAuth: () => ({ user: { uid: "manager-a" } }),
+  useAuth: () => ({ user: { uid: mockCurrentUid } }),
 }));
 
 jest.mock("@/services/feed/matchService", () => ({
@@ -80,6 +81,7 @@ const profile = {
 describe("Ecranul Match-uri", () => {
   beforeEach(() => {
     jest.clearAllMocks();
+    mockCurrentUid = "manager-a";
     mockedGetManagedProfiles.mockResolvedValue([relationship]);
     mockedListMatches.mockResolvedValue([match]);
     mockedGetPublicProfile.mockResolvedValue(profile);
@@ -109,15 +111,23 @@ describe("Ecranul Match-uri", () => {
     expect(await screen.findByText("Nicio potrivire încă")).toBeTruthy();
   });
 
-  test("nu expune lista unui utilizator care nu este manager", async () => {
+  test("ownerul vede propriile match-uri fără acces la acțiunile managerului", async () => {
+    mockCurrentUid = "owner-a";
     mockedGetManagedProfiles.mockResolvedValue([]);
     await render(<MatchesScreen />);
 
+    expect(await screen.findByText("Anca Pop")).toBeTruthy();
+    expect(screen.getByText("Potrivirile tale")).toBeTruthy();
     expect(
-      await screen.findByText("Acces restricționat"),
+      screen.getByText("Managerul tău gestionează conversația."),
     ).toBeTruthy();
-    expect(screen.getByTestId("matches-restricted-access")).toBeTruthy();
-    expect(mockedListMatches).not.toHaveBeenCalled();
+    expect(screen.queryByRole("button", { name: "Vezi profilul" })).toBeNull();
+    expect(mockedListMatches).toHaveBeenCalledWith("owner-a");
+    expect(mockedGetPublicProfile).toHaveBeenCalledWith(
+      "owner-b",
+      "owner-a",
+    );
+    expect(mockPush).not.toHaveBeenCalled();
   });
 
   test("afișează eroarea și reîncearcă încărcarea", async () => {

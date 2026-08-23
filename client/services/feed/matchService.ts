@@ -40,7 +40,7 @@ function asMatch(documentId: string, value: unknown, ownerId: string): Match {
   };
 }
 
-/** Listează match-urile ownerului numai pentru managerul său autentificat. */
+/** Listează match-urile ownerului pentru owner sau managerul său autentificat. */
 export const listMatches: ListMatches = async (ownerId) => {
   if (!ownerId.trim()) {
     throw new Error("INVALID_MATCH_OWNER");
@@ -51,16 +51,18 @@ export const listMatches: ListMatches = async (ownerId) => {
     throw new Error("AUTH_REQUIRED");
   }
 
-  const relationshipSnapshot = await getDoc(
-    doc(db, MANAGER_RELATIONSHIPS_COLLECTION, ownerId),
-  );
-  if (!relationshipSnapshot.exists()) {
-    throw new Error("OWNER_HAS_NO_MANAGER");
-  }
+  if (actorId !== ownerId) {
+    const relationshipSnapshot = await getDoc(
+      doc(db, MANAGER_RELATIONSHIPS_COLLECTION, ownerId),
+    );
+    if (!relationshipSnapshot.exists()) {
+      throw new Error("OWNER_HAS_NO_MANAGER");
+    }
 
-  const relationship = relationshipSnapshot.data() as ManagerRelationship;
-  if (relationship.managerId !== actorId) {
-    throw new Error("MATCHES_MANAGER_ONLY");
+    const relationship = relationshipSnapshot.data() as ManagerRelationship;
+    if (relationship.managerId !== actorId) {
+      throw new Error("MATCHES_ACCESS_DENIED");
+    }
   }
 
   const matchesSnapshot = await getDocs(

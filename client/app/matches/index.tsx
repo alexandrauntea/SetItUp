@@ -3,14 +3,13 @@ import { MatchCard } from "@/components/matches/MatchCard";
 import { LoadingState } from "@/components/LoadingState";
 import { ScreenBackground } from "@/components/ScreenBackground";
 import { PageBanner } from "@/components/PageBanner";
-import { RestrictedAccessCard } from "@/components/RestrictedAccessCard";
 import { COLORS } from "@/constants/colors";
 import { useAuth } from "@/contexts/AuthContext";
 import { listMatches } from "@/services/feed/matchService";
 import { getManagedProfiles } from "@/services/social/managerService";
 import { getPublicProfileByUid } from "@/services/social/userSearchService";
 import type { Match } from "@/types/feed";
-import type { ManagerRelationship, PublicProfile } from "@/types/social";
+import type { PublicProfile } from "@/types/social";
 import { Ionicons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 import { useCallback, useEffect, useRef, useState } from "react";
@@ -29,6 +28,12 @@ type MatchListItem = {
   profile: PublicProfile | null;
 };
 
+type MatchViewer = {
+  ownerId: string;
+  ownerUsername?: string;
+  role: "owner" | "manager";
+};
+
 function getMatchedProfileId(match: Match, ownerId: string): string {
   const profileId = match.memberIds.find((memberId) => memberId !== ownerId);
   if (!profileId) {
@@ -45,9 +50,7 @@ export default function MatchesScreen() {
   const isCompact = width < 380;
   const requestSequence = useRef(0);
   const navigationLocked = useRef(false);
-  const [managedOwner, setManagedOwner] = useState<ManagerRelationship | null>(
-    null,
-  );
+  const [matchViewer, setMatchViewer] = useState<MatchViewer | null>(null);
   const [items, setItems] = useState<MatchListItem[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [hasError, setHasError] = useState(false);
@@ -57,6 +60,7 @@ export default function MatchesScreen() {
     const requestId = ++requestSequence.current;
     setIsLoading(true);
     setHasError(false);
+    setMatchViewer(null);
 
     try {
       if (!user?.uid) {
@@ -65,29 +69,26 @@ export default function MatchesScreen() {
 
       const managedProfiles = await getManagedProfiles(user.uid);
       const ownerRelationship = managedProfiles[0] ?? null;
-      if (!ownerRelationship) {
-        if (requestId === requestSequence.current) {
-          setManagedOwner(null);
-          setItems([]);
-        }
-        return;
-      }
+      const viewer: MatchViewer = ownerRelationship
+        ? {
+            ownerId: ownerRelationship.ownerId,
+            ownerUsername: ownerRelationship.ownerUsername,
+            role: "manager",
+          }
+        : { ownerId: user.uid, role: "owner" };
 
-      const matches = await listMatches(ownerRelationship.ownerId);
+      const matches = await listMatches(viewer.ownerId);
       const loadedItems = await Promise.all(
         matches.map(async (match) => {
-          const profileId = getMatchedProfileId(
-            match,
-            ownerRelationship.ownerId,
-          );
-          const profile = await getPublicProfileByUid(profileId);
+          const profileId = getMatchedProfileId(match, viewer.ownerId);
+          const profile = await getPublicProfileByUid(profileId, user.uid);
 
           return { match, profileId, profile } satisfies MatchListItem;
         }),
       );
 
       if (requestId === requestSequence.current) {
-        setManagedOwner(ownerRelationship);
+        setMatchViewer(viewer);
         setItems(loadedItems);
       }
     } catch (error) {
@@ -142,7 +143,13 @@ export default function MatchesScreen() {
           <View style={styles.content}>
             <PageBanner
               title="Potriviri"
-              subtitle={managedOwner ? `Pentru @${managedOwner.ownerUsername}` : undefined}
+              subtitle={
+                matchViewer?.role === "manager"
+                  ? `Pentru @${matchViewer.ownerUsername}`
+                  : matchViewer?.role === "owner"
+                    ? "Potrivirile tale"
+                    : undefined
+              }
             />
 
             {isLoading ? (
@@ -167,8 +174,6 @@ export default function MatchesScreen() {
                   title="Încearcă din nou"
                 />
               </View>
-            ) : !managedOwner ? (
-              <RestrictedAccessCard testID="matches-restricted-access" />
             ) : items.length === 0 ? (
               <View style={styles.stateCard}>
                 <View style={styles.stateIcon}>
@@ -195,6 +200,7 @@ export default function MatchesScreen() {
                     onOpenProfile={() => handleOpenProfile(profileId)}
                     opening={openingProfileId === profileId}
                     profile={profile}
+                    readOnly={matchViewer?.role === "owner"}
                   />
                 ))}
               </View>
